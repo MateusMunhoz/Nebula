@@ -1,6 +1,6 @@
 {
   "name": "nebula-ios",
-  "version": "1.20.5",
+  "version": "1.20.7",
   "private": true,
   "description": "Nebula no iPhone (sideload): a interface do desktop numa WKWebView, com a ponte window.api em JavaScript",
   "scripts": {
