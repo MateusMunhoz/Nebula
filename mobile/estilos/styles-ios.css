@@ -11,6 +11,13 @@
   #openStatsRoom
 ) { display: none !important; }
 
+/* ---------- Área segura: relógio e Dynamic Island em cima, a barra de voltar ao início embaixo ---------- */
+/* A página vai até as bordas (viewport-fit=cover, contentInset "never" no capacitor.config.json) e se afasta delas aqui.
+   A barra de título cresce para baixo do relógio; o body usa --titlebar, então o resto do app desce junto. */
+:root[data-plataforma="ios"] { --titlebar: calc(32px + env(safe-area-inset-top)); }
+:root[data-plataforma="ios"] .titlebar { padding-top: env(safe-area-inset-top); }
+:root[data-plataforma="ios"] #workspaceNav { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+
 /* ---------- Tela estreita em pé ---------- */
 /* O desktop reserva a largura do painel (360 a 480 px) ao lado do palco; no iPhone o painel fica embaixo, então a reserva é zero */
 :root[data-plataforma="ios"] { --workspace-width: 0px; }
@@ -22,9 +29,11 @@
 /* O painel da sala (Voz, Chat, Pessoas) ocupa a parte de baixo, ao lado da barrinha, em vez de ficar com a largura do PC
    e passar da borda; o palco (as telas) fica numa faixa em cima */
 :root[data-plataforma="ios"] #workspacePanes {
-  left: 8px; right: calc(var(--rail-w) + 8px); width: auto; bottom: 8px;
+  left: 8px; right: calc(var(--rail-w) + 8px); width: auto; bottom: calc(8px + env(safe-area-inset-bottom));
   top: calc(var(--workspace-top) + 4px);
 }
+/* Na sala o desktop cola o painel no pé (bottom: 0, regra mais forte); no iPhone ele fica acima da barra de baixo */
+:root[data-plataforma="ios"] .workspace-in-room.has-workspace-pane:not(.workspace-wide) #workspacePanes { bottom: env(safe-area-inset-bottom); }
 :root[data-plataforma="ios"] .workspace-in-room.has-workspace-pane #workspacePanes { top: 42vh; }
 :root[data-plataforma="ios"] .workspace-in-room.has-workspace-pane #room:not([hidden]) { height: 42vh; }
 /* O mapa da voz e a troca lista/mapa ficam fora (o céu é pesado e a barra de abas não cabe); sobra o botão de recolher */

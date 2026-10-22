@@ -3,7 +3,7 @@
   "appName": "Nebula",
   "webDir": "www",
   "ios": {
-    "contentInset": "always",
+    "contentInset": "never",
     "backgroundColor": "#0B0D10"
   },
   "plugins": {
