@@ -3,9 +3,12 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
-    "version": "1.20.5",
-    "date": "2026-10-19",
+    "version": "1.20.7",
+    "date": "2026-10-20",
     "items": [
+      "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
+      "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
+      "README: apresentação do app com imagens das telas",
       "Voz: atraso de cada pessoa no Mapa de conexões; conexão lenta é refeita sozinha",
       "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
       "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
