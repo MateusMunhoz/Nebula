@@ -3,12 +3,32 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.8",
+    "date": "2026-10-27",
+    "items": [
+      "Palco e voz: cartões só de quem faz algo, em seções por atividade; prévia de quem transmite na voz; arrastar entre canais compacto e com rolagem",
+      "Atualização obrigatória: no máximo uma versão atrás; abaixo disso, tela no Início sem Depois",
+      "Atualização: instala sozinho ao abrir e com o app parado; nunca na sala, transmitindo ou jogando",
+      "Atividade: vídeo no Media Player não aparece mais no perfil",
+      "iOS: versão 1.20.7, a mesma do desktop",
+      "iOS: barra de título abaixo do relógio e guia para compilar no Mac",
+      "Desktop: palco com música e cartões, convite com QR, minimizar, duração da música",
+      "iOS: app Nebula para iPhone via sideload (Capacitor), ponte window.api, CSS do iPhone e CI do .ipa"
+    ]
+  },
+  {
     "version": "1.20.7",
     "date": "2026-10-20",
     "items": [
       "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
       "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
-      "README: apresentação do app com imagens das telas",
+      "README: apresentação do app com imagens das telas"
+    ]
+  },
+  {
+    "version": "1.20.5",
+    "date": "2026-10-19",
+    "items": [
       "Voz: atraso de cada pessoa no Mapa de conexões; conexão lenta é refeita sozinha",
       "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
       "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
@@ -75,26 +95,6 @@ const NOVIDADES = [
     "date": "2026-10-12",
     "items": [
       "Seu sinal e lista da voz: monitor de Assistir, pílula Transmitindo tela, botões redondos e canal vazio"
-    ]
-  },
-  {
-    "version": "1.19.1",
-    "date": "2026-10-10",
-    "items": [
-      "Tema Cloud: noite preta com nuvens vermelhas e enfeites em japonês"
-    ]
-  },
-  {
-    "version": "1.19.0",
-    "date": "2026-10-10",
-    "items": [
-      "Modo Líder, fase 3: sons próprios, aviso de app antigo e acabamento",
-      "Modo Líder, fase 2: pedir para falar",
-      "Modo Líder, fase 1: subsala que fala para a sala toda",
-      "Spec do Modo Líder: subsala que fala para a sala toda, com pedidos para falar",
-      "Sala nova: cabeçalho da sala, abas Voz/Chat/Pessoas e o cartão Seu sinal",
-      "Spec da sala nova: cabeçalho da sala, abas no painel e o cartão Seu sinal",
-      "Início novo: rede sempre à vista, criar e entrar lado a lado, amigos ao lado"
     ]
   }
 ];
