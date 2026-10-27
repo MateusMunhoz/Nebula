@@ -123,6 +123,9 @@ static void conferir(GlobalSystemMediaTransportControlsSessionManager const& ger
         const auto p = s.TryGetMediaPropertiesAsync().get();
         const std::string faixa = utf8(p.Title()), artista = utf8(p.Artist()), album = utf8(p.AlbumTitle()), app = utf8(id);
         if (faixa.empty()) continue;
+        // vídeo (o Media Player do Windows toca os dois): o nome do arquivo não vai para o perfil
+        const auto tipo = p.PlaybackType();
+        if (tipo && tipo.Value() == winrt::Windows::Media::MediaPlaybackType::Video) continue;
         // a capa às vezes chega um instante depois do nome: entra na chave para escrever de novo quando chegar
         chave = std::string(fase ? "P\n" : "T\n") + app + '\n' + faixa + '\n' + artista + '\n' + album + '\n' + (p.Thumbnail() ? '1' : '0');
         if (chave == ultima) return;

@@ -246,7 +246,7 @@ function renderSeuSinal() {
   $('miniMute').setAttribute('aria-pressed', String(voice.muted));
   setIcon($('miniDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('miniDeafen').setAttribute('aria-pressed', String(voice.deafened));
-  setIcon($('miniVoice'), na || voice.pending ? 'leave' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
+  setIcon($('miniVoice'), na || voice.pending ? 'phoneOff' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
   $('miniVoice').disabled = !voice.supported;
   $('miniVoice').classList.toggle('mini-sair', na || voice.pending);
   setIcon($('miniShare'), state.sharing ? 'stop' : 'monitor', state.sharing ? 'Parar de transmitir' : 'Transmitir tela');
@@ -309,6 +309,9 @@ function callbarAcordar() {
 }
 function renderCallbar() {
   if (!callbarPode()) setCallbar(false);
+  // Na voz, as telas terminam acima da barra (styles.css: .callbar-reserva): ela não cobre a barra de play nem a
+  // legenda. Segue a voz, não a barra à vista, para o palco não mudar de tamanho a cada mexida do mouse
+  document.body.classList.toggle('callbar-reserva', !!voice.session && !!state.myId);
   setIcon($('cbMic'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('cbMic').setAttribute('aria-pressed', String(voice.muted));
   $('cbMic').classList.toggle('off', voice.muted);
@@ -322,7 +325,7 @@ function renderCallbar() {
   $('cbShare').classList.toggle('ao-vivo', live);
   $('cbSwap').hidden = !live;
   $('cbAudience').hidden = !live;
-  setIcon($('cbLeave'), 'leave', 'Sair da voz');
+  setIcon($('cbLeave'), 'phoneOff', 'Sair da voz');
 }
 function setupCallbar() {
   const area = $('streamArea');
@@ -367,7 +370,7 @@ function layoutVoicePane(active) {
   const sub = $('paneVoiceSubsala');
   sub.hidden = !subsalasOn() || !state.myId;
   sub.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  sub.append(active ? 'Subsala' : 'Nova subsala');
+  sub.append('Nova subsala');
   sub.disabled = !voice.supported;
   actions.append(sub);
 }
@@ -402,7 +405,7 @@ function renderHomeCall() {
     sharing ? (sharing === 1 ? '1 transmitindo' : `${sharing} transmitindo`) : ''].filter(Boolean).join(' · ');
   // No saguão a barra flutuante não aparece: aqui ficam microfone, fone e sair da voz (sair da sala é pela barrinha)
   $('homeCallMute').hidden = $('homeCallDeafen').hidden = $('homeCallLeave').hidden = !voice.session;
-  setIcon($('homeCallLeave'), 'leave', 'Sair da voz');
+  setIcon($('homeCallLeave'), 'phoneOff', 'Sair da voz');
   setIcon($('homeCallMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('homeCallMute').setAttribute('aria-pressed', String(voice.muted));
   setIcon($('homeCallDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
@@ -436,8 +439,7 @@ function renderVoicePane() {
   // Quem transmite vem em cima, em cartões com a miniatura da tela (assistir.js: pedirMiniaturas); na lista embaixo,
   // a linha dessas pessoas fica enxuta, sem o Assistir e o "Transmitindo" (o cartão já diz)
   const live = map ? [] : [...state.members.keys()].filter(sharing);
-  pedirMiniaturas(live);
-  if (live.length) list.append(voiceLiveCards(live));
+  if (live.length) { pedirMiniaturas(live); list.append(voiceLiveCards(live)); }
   if (map) { /* no mapa, os canais e as pessoas estão no céu */ }
   else if (channels) renderVoiceChannels(list);
   else {
@@ -642,7 +644,8 @@ function setupWorkspace() {
   $('closeProfile').onclick = closeProfilePopup;
   setupUtilityPopup('profilePane', closeProfilePopup);
   setupUtilityPopup('generalSettingsDialog', closeGeneralSettings);
-  $('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings() : closeGeneralSettings();
+  // Com jogos novos da Steam esperando escolha (a bolinha da engrenagem), abre direto onde se escolhe (conta.js)
+$('navSettings').onclick = () => $('generalSettingsDialog').hidden ? openGeneralSettings(steamUi.pendentes.length ? 'activity' : undefined) : closeGeneralSettings();
   setupRoomHead();
   setupSeuSinal();
   setupCallbar();

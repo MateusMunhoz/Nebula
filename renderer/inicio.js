@@ -18,6 +18,8 @@ setIcon($('voiceJoinMore'), 'chevronUp', 'Escolher o canal para entrar');
 $('voiceMute').onclick = () => voice.mute();
 $('mutadoIcone').innerHTML = ICON.micOff;
 $('mutadoLigar').onclick = () => { if (voice.muted) voice.mute(); mutadoFala.ate = 0; $('mutadoAviso').hidden = true; };
+$('mutadoFechar').innerHTML = ICON.close;
+$('mutadoFechar').onclick = () => { mutadoFala.calado = true; mutadoFala.ate = 0; $('mutadoAviso').hidden = true; };
 $('paneVoiceSubsala').onclick = () => subsalaButtonClick($('paneVoiceSubsala'));
 $('voiceDeafen').onclick = () => voice.deafen();
 // Captura antes de qualquer outro atalho da página
@@ -302,7 +304,7 @@ window.api.getVersion().then((v) => {
   update.myVersion = v;
   $('appVersion').textContent = `Nebula ${v}`;
   showNewsIfNew();
-  checkGithub();
+  checkGithub().then(() => autoAtualizar(true));
 });
 $('showNews').onclick = () => setNewsOpen($('homeNews').hidden);
 $('homeNovoFechar').onclick = () => { fecharNovo(); $('showNews').focus(); };
@@ -314,6 +316,7 @@ $('homeVersaoNova').onclick = () => setVersaoPainelOpen($('homeVersaoPainel').hi
 $('homeVersaoEstado').onclick = () => setVersaoPainelOpen(true);
 $('navUpdate').onclick = () => { show('home'); setVersaoPainelOpen(true); };
 $('hvGo').onclick = runUpdate;
+$('obrigatoriaGo').onclick = runObrigatoria;
 $('hvDepois').onclick = () => {
   update.dismissed = updateMode()?.version || '';
   setVersaoPainelOpen(false);
@@ -345,8 +348,10 @@ const checkGithubSoon = () => {
   lastGithubCheck = Date.now();
   checkGithub();
 };
-setInterval(checkGithubSoon, 60 * 1000);
+setInterval(() => { checkGithubSoon(); autoAtualizar(); }, 60 * 1000);
 window.addEventListener('focus', checkGithubSoon);
+// Parado = sem foco e sem mexer há 10 min (renderer/atualizacao.js)
+for (const ev of ['focus', 'pointerdown', 'keydown']) window.addEventListener(ev, marcarUso, true);
 
 $('goCreate').onclick = () => foraDaSala('criar outra sala', () => show('create-room'));
 setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)
@@ -382,6 +387,13 @@ $('roomAmigosMembros').onchange = () => save('salaAmigosMembros', $('roomAmigosM
 $('roomPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') createRoom(); });
 $('joinBtn').onclick = joinRoom;
 $('roomAddr').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
+// Colar o link de convite (telap2p://sala?d=…, o do QR do palco vazio): entra como o cartão do convite das mensagens
+$('roomAddr').addEventListener('input', () => {
+  const cv = lerConvite($('roomAddr').value.trim());
+  if (!cv) return;
+  $('roomAddr').value = '';
+  void aceitarConvite(cv, 'quem te convidou');
+});
 $('joinPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
 
 // O host, ao sair com mais gente na sala: passa a sala para o mais antigo ou encerra para todos

@@ -15,7 +15,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 
 ## Como o app funciona
 
-- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
+- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat. Também guarda a música de cada canal (`sala-protocolo.js`: o vídeo, o ponto, o título e a duração, `dur`, contados pelo primeiro player de quem ouve com `musica-ctl` `titulo` e `duracao`) e tira sozinho a que acabou ou foi esquecida (`limparMusicas`, a cada 15 s).
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
 - **Rede usada pelo app:** em Configurações, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
@@ -159,6 +159,23 @@ Sobre o `npm run test:e2e` (`tests/e2e/`):
 
 O que os testes automáticos não pegam (eco, ruído, apertar para falar com tecla de verdade, troca de host entre PCs diferentes) está no [roteiro de teste da call](roteiro-de-teste.md).
 
+## Nebula no iPhone (`mobile/`)
+
+Cliente só das salas do modo Internet, instalado por sideload (SideStore, AltStore ou Sideloadly). Spec e fases:
+[`spec/nebula-ios-sideload.md`](spec/nebula-ios-sideload.md). É um pacote à parte (`mobile/package.json`): nada dele entra em
+`PACK_FILES` nem em `build.files`, e o `index.html`, o `preload.js` e o `main.js` do desktop não mudam por causa dele.
+
+- `mobile/scripts/montar-www.mjs` monta `mobile/www` a partir do desktop (cópia: `index.html`, `renderer/`, `vendor/`, `assets/`, estilos,
+  `voice.js`, `encode-once.js`, worklets) e, só na cópia, põe `data-plataforma="ios"`, o `ponte.js` antes do primeiro script,
+  o viewport do aparelho e `https:` no `connect-src` da CSP. Também deixa o projeto Xcode no iOS 16.4 e na versão do desktop.
+- `mobile/ponte/` é o `window.api` do iPhone: `index.js` (o que funciona: `platform: 'ios'`, copiar, abrir link, versão, ruído) e
+  `stubs.js` (o resto, no mesmo formato do Electron, sem lançar). Função nova no `preload.js` precisa de par aqui: o teste falha.
+- `mobile/ios/` é o projeto Xcode do Capacitor (`npx cap add ios`). `.github/workflows/ios.yml` (macOS) compila sem assinar e deixa o `.ipa`
+  como artefato; publicar o `.ipa` é de um humano.
+- Testes: `cd mobile && npm test` (ponte e montador, sem Mac) e `npm run test:webkit` (abre o `www` no WebKit em 390x844;
+  `npx playwright install webkit` uma vez). O WebKit do Playwright no Windows não tem `mediaDevices` nem WebRTC: o teste põe um
+  `mediaDevices` mínimo; voz e telas de verdade só se provam num iPhone.
+
 ## Ajudantes nativos
 
 - **Compilar:** `native\build.cmd`, com o Visual Studio Build Tools (C++ e o SDK do Windows).
@@ -208,6 +225,10 @@ Opções:
 - **Escolher o número:** `npm run publicar -- 1.9.0`
 - **Novidades no app:** o `publicar.js` gera `renderer/novidades.js` com as mensagens dos commits de cada versão (as 10 últimas, sem merge e sem `CI:`). O Início mostra para quem atualizar. Escreva a mensagem do commit pensando em quem usa o app; `Área: a; b` vira a etiqueta "Área" com uma linha para cada parte.
 - **Texto da Release:** `npm run publicar -- --notas "o que mudou"`. Sem isso, o GitHub lista os commits.
+- **Versão mínima:** toda Release leva `obrigatória: X.Y.Z` nas notas, com a versão anterior (no máximo uma versão
+  atrás: publicando a 1.20.10, quem está abaixo da 1.20.9 tem que atualizar). `--obrigatoria` exige a própria versão
+  nova. O `github.js` lê a linha, e quem está abaixo vê no Início uma tela sem "Depois" até atualizar (fora da sala;
+  numa call, só ao voltar). Vale para quem já tem uma versão com esse código.
 - **Sem GitHub:** `npm run publicar -- --sem-github`
 
 Para mandar para o GitHub, o PC precisa do Git e do [GitHub CLI](https://cli.github.com), logado (`gh auth login`) na conta dona do repositório.
