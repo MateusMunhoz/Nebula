@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.9",
+    "date": "2026-10-27",
+    "items": [
+      "Barra da chamada: faixa embaixo das telas só com a música da sala no palco"
+    ]
+  },
+  {
     "version": "1.20.8",
     "date": "2026-10-27",
     "items": [
@@ -88,13 +95,6 @@ const NOVIDADES = [
       "Identificador: pede para escolher o nome a quem ficou com o gerado",
       "App instalado: DevTools desligadas em todas as janelas",
       "Conta: identificador nome#1234, e-mail confirmado e verificação em dois fatores"
-    ]
-  },
-  {
-    "version": "1.19.2",
-    "date": "2026-10-12",
-    "items": [
-      "Seu sinal e lista da voz: monitor de Assistir, pílula Transmitindo tela, botões redondos e canal vazio"
     ]
   }
 ];
