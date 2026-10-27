@@ -345,14 +345,37 @@ function emptyVoiceSlot(join, label) {
 function voiceRow(id) { return id ? memberRow(id, nameOf(id), !!state.members.get(id)?.sharing) : memberRow(null, getName(), state.sharing); }
 
 function renderVoiceChannels(list) {
+  list.append(voiceRolarMarca('cima'));
   for (const [ch, sub] of [['', null], ...state.subsalas.map((s) => [s.id, s])]) {
     list.append(channelHead(ch, sub));
     for (const id of voiceIdsIn(ch)) { const li = voiceRow(id); li.classList.add('in-channel'); makeVoiceDraggable(li, id, ch); list.append(li); }
-    if (!voiceIdsIn(ch).length) list.append(emptyVoiceSlot(() => voice.setChannel(ch), `Entrar na voz, em ${channelName(ch)}`));
+    if (!voiceIdsIn(ch).length) { const vazio = emptyVoiceSlot(() => voice.setChannel(ch), `Entrar na voz, em ${channelName(ch)}`); vazio.dataset.channel = ch; list.append(vazio); }
     if (sub?.modo === 'lider') renderLiderSecoes(list);
   } // a música do canal fica no cabeçalho dele (channelHead › musicHeadButton)
+  list.append(voiceRolarMarca('baixo'));
   setupVoiceDrop(list);
+  list.onscroll = voiceMarcarRolagem;
+  requestAnimationFrame(voiceMarcarRolagem);
 }
+
+// As faixas presas em cima e embaixo da lista (só à vista arrastando alguém): a seta diz que tem mais canais para
+// aquele lado; levar a pessoa até a borda rola a lista (setupVoiceDrop)
+function voiceRolarMarca(lado) {
+  const li = document.createElement('li');
+  li.className = `voz-rolar ${lado}`;
+  li.setAttribute('aria-hidden', 'true');
+  const faixa = document.createElement('span');
+  faixa.innerHTML = ICON.chevronUp;
+  li.append(faixa);
+  return li;
+}
+function voiceMarcarRolagem() {
+  const box = $('voicePaneMembers');
+  box.classList.toggle('mais-acima', box.scrollTop > 2);
+  box.classList.toggle('mais-abaixo', box.scrollTop + box.clientHeight < box.scrollHeight - 2);
+}
+// A roda do mouse durante o arraste (o Windows nem sempre entrega; as bordas sempre rolam)
+function voiceRodaArraste(e) { $('voicePaneMembers').scrollBy(0, e.deltaY); }
 
 // Embaixo da Líder: Com a palavra (todos veem; o líder tira, quem tem devolve) e Pedidos (só o líder: aceitar e recusar)
 function renderLiderSecoes(list) {
@@ -425,7 +448,9 @@ function makeVoiceDraggable(li, id, ch) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData(VOICE_DRAG_TYPE, id || state.myId);
     li.classList.add('dragging');
-    $('voicePaneMembers').classList.add('voice-dragging');
+    // Compacta os canais (cada pessoa vira só a foto) depois que o navegador tirou a imagem do arraste da linha inteira
+    requestAnimationFrame(() => { if (voiceDrag) { $('voicePaneMembers').classList.add('voice-dragging'); voiceMarcarRolagem(); } });
+    window.addEventListener('wheel', voiceRodaArraste, { passive: true });
   };
   li.ondragend = endVoiceDrag;
 }
@@ -437,20 +462,36 @@ function markVoiceDrop(ch) {
 function endVoiceDrag() {
   if (!voiceDrag) return;
   voiceDrag = null;
+  window.removeEventListener('wheel', voiceRodaArraste);
   $('voicePaneMembers').classList.remove('voice-dragging');
   markVoiceDrop(null);
   for (const el of $('voicePaneMembers').querySelectorAll('.dragging')) el.classList.remove('dragging');
   if (voiceDragPending) { voiceDragPending = false; renderVoicePane(); }
 }
 
-// O canal debaixo do ponteiro (cabeçalho do canal ou alguém nele), ou null fora deles
+// O canal debaixo do ponteiro: o cabeçalho, alguém nele, o "Ninguém aqui" ou o espaço vazio da lista (vale o último
+// canal que começa acima do ponteiro); null fora da lista
 function voiceDropChannel(e) {
-  const el = voiceDrag && e.target.closest?.('[data-channel]');
-  return el && $('voicePaneMembers').contains(el) ? el.dataset.channel : null;
+  const box = $('voicePaneMembers');
+  if (!voiceDrag || !box.contains(e.target)) return null;
+  const el = e.target.closest?.('[data-channel]');
+  if (el && box.contains(el)) return el.dataset.channel;
+  let ch = null;
+  for (const head of box.querySelectorAll('.voice-channel[data-channel]')) {
+    if (head.getBoundingClientRect().top > e.clientY) break;
+    ch = head.dataset.channel;
+  }
+  return ch;
 }
 
 function setupVoiceDrop(list) {
   list.ondragover = (e) => {
+    // Perto da borda de cima ou de baixo (56px), a lista rola; mais rápido quanto mais perto
+    if (voiceDrag) {
+      const r = list.getBoundingClientRect(), zona = 56;
+      const d = e.clientY < r.top + zona ? -(r.top + zona - e.clientY) : e.clientY > r.bottom - zona ? e.clientY - (r.bottom - zona) : 0;
+      if (d) list.scrollBy(0, Math.round(d / 3));
+    }
     const ch = voiceDropChannel(e);
     if (ch === null) return markVoiceDrop(null);
     e.preventDefault();

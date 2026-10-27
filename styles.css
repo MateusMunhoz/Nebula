@@ -2130,10 +2130,35 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
 #voicePaneMembers .member.in-voice { padding-right: 6px; }
 #voicePaneMembers .member .mic-off-icon { flex: none; width: 26px; height: 26px; }
 #voicePaneMembers .member .mic-off-icon + .mic-off-icon { margin-left: -8px; }
+/* Quem transmite, em cima da lista da voz: a miniatura da tela (membros.js: voiceLiveCards) */
+#voicePaneMembers .voz-telas-li { display: flex; flex-direction: column; gap: 8px; margin: 0 0 8px; padding: 2px 0 12px; border-bottom: 1px solid var(--line); list-style: none; }
+.voz-telas-tit { padding: 0 4px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.voz-telas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.voz-tela { position: relative; aspect-ratio: 16 / 9; overflow: hidden; padding: 0; border: 0; border-radius: 10px; color: #fff; font: inherit; cursor: pointer;
+  background: color-mix(in srgb, var(--person, var(--accent)) 28%, var(--panel-2)); transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .2s; }
+.voz-tela:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6); }
+.voz-tela:disabled { cursor: not-allowed; opacity: .55; }
+.voz-tela:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.voz-tela.assistindo { box-shadow: inset 0 0 0 2px var(--accent); }
+.voz-tela-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.voz-tela-img[hidden] { display: none; }
+.voz-tela > .avatar { position: absolute; left: 50%; top: 42%; translate: -50% -50%; width: 40px; height: 40px; font-size: 15px; }
+.voz-tela::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, .78)); pointer-events: none; }
+.voz-tela-selo { position: absolute; z-index: 1; top: 6px; left: 6px; display: flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 5px;
+  background: var(--accent); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.voz-tela-selo.vendo { background: rgba(0, 0, 0, .65); color: var(--accent); }
+.voz-tela-selo.pausa { background: rgba(0, 0, 0, .65); color: #ddd; }
+.voz-tela-rot { position: absolute; z-index: 1; left: 8px; right: 8px; bottom: 6px; display: flex; flex-direction: column; min-width: 0; text-align: left; }
+.voz-tela-rot strong { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voz-tela-rot span { font-size: 9.5px; color: rgba(255, 255, 255, .78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voz-tela-play { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .2s; }
+.voz-tela-play svg { width: 38px; height: 38px; padding: 10px; box-sizing: border-box; border-radius: 50%; background: color-mix(in srgb, var(--accent) 92%, transparent);
+  color: var(--accent-ink); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.voz-tela:hover:not(:disabled) .voz-tela-play, .voz-tela:focus-visible .voz-tela-play { opacity: 1; }
 /* Lista enxuta: o volume só aparece com o mouse (ou o foco) na linha, a não ser que você tenha mudado ou silenciado */
 #voicePaneMembers .member .vol-btn:not(.muted):not(.changed):not([aria-expanded="true"]) { border-color: transparent; opacity: 0; transition: opacity .15s; }
 #voicePaneMembers .member:is(:hover, :focus-within) .vol-btn { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { #voicePaneMembers .member .vol-btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .voz-tela, .voz-tela-play, #voicePaneMembers .member .vol-btn { transition: none; } }
 /* Arrastar alguém para outro canal: a linha arrastada fica apagada e o canal de destino (cabeçalho e quem está nele)
    ganha o contorno do tema */
 .voice-draggable { cursor: grab; }
@@ -2141,6 +2166,31 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
 .voice-dragging .voice-channel { outline: 1px dashed var(--line-strong); outline-offset: -1px; }
 .voice-dragging .drop-target.voice-channel { outline: 2px solid var(--accent); background: var(--accent-soft); }
 .voice-dragging .drop-target.member { box-shadow: inset 2px 0 0 var(--accent); }
+/* Durante o arraste, cada canal vira uma linha só de fotos para caberem todos à vista; a lista
+   continua rolando. Soltar em qualquer parte do canal (até no espaço vazio) leva para ele (subsalas.js) */
+#voicePaneMembers.voice-dragging { flex-flow: row wrap; align-items: center; align-content: flex-start; column-gap: 6px; }
+#voicePaneMembers.voice-dragging > li:not(.in-channel) { flex: 0 0 100%; }
+#voicePaneMembers.voice-dragging li.in-channel { padding: 2px 0; background: none; box-shadow: none; }
+#voicePaneMembers.voice-dragging li.in-channel:nth-child(1 of .in-channel), #voicePaneMembers.voice-dragging .voice-channel + li.in-channel { margin-left: 14px; }
+#voicePaneMembers.voice-dragging li.in-channel > :not(:first-child) { display: none; }
+#voicePaneMembers.voice-dragging li.in-channel .avatar { width: 28px; height: 28px; font-size: 12px; transition: box-shadow .15s; }
+#voicePaneMembers.voice-dragging li.in-channel.drop-target .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+#voicePaneMembers.voice-dragging .voice-vazio > * { height: 32px; }
+#voicePaneMembers.voice-dragging .voice-vazio.drop-target > * { outline: 2px dashed var(--accent); outline-offset: -2px; color: var(--accent); }
+#voicePaneMembers.voice-dragging :is(.lider-secao, .lider-linha, .voz-telas-li) { display: none; }
+/* Tem mais canais em cima ou embaixo: uma faixa em degradê presa na borda, com a seta (sem mask-image: em algumas
+   placas de vídeo o Chromium pinta a lista de preto). Levar a pessoa até ela rola a lista */
+#voicePaneMembers > .voz-rolar { display: none; }
+#voicePaneMembers.voice-dragging > .voz-rolar { display: block; position: sticky; z-index: 2; flex: 0 0 100%; height: 0; margin: 0; pointer-events: none; }
+.voz-rolar.cima { top: 0; }
+.voz-rolar.baixo { bottom: 0; }
+.voz-rolar > span { position: absolute; left: 0; right: 0; height: 44px; display: grid; place-items: center; color: var(--accent); opacity: 0; transition: opacity .15s; }
+.voz-rolar.cima > span { top: 0; align-items: start; padding-top: 4px; background: linear-gradient(to bottom, var(--panel) 35%, transparent); }
+.voz-rolar.baixo > span { bottom: 0; align-items: end; padding-bottom: 4px; background: linear-gradient(to top, var(--panel) 35%, transparent); }
+.voz-rolar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.voz-rolar.baixo svg { rotate: 180deg; }
+#voicePaneMembers.mais-acima > .voz-rolar.cima > span, #voicePaneMembers.mais-abaixo > .voz-rolar.baixo > span { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .voz-rolar > span { transition: none; } }
 
 /* Mensagens diretas (renderer/mensagens.js). Barra de conversas: uma faixa fina embaixo, até a barrinha. O envelope
    abre o painel com quem está online e as conversas; Adicionar amigo sobe por cima.
@@ -3521,8 +3571,14 @@ button.home-chip:hover { color: var(--text); }
 .palco-gente svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Os cartões */
-.pg-agora { display: grid; gap: 22px; width: min(900px, 100%); }
+.pg-agora { display: grid; gap: 28px; width: min(900px, 100%); }
 .pg-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 260px)); gap: 14px; justify-content: center; }
+/* Uma seção por atividade: o título discreto em cima dos cartões, com quantos estão nela */
+.pg-grupo { display: grid; gap: 10px; }
+.pg-grupo > .pg-cartoes { justify-content: start; } /* alinhados ao título da seção */
+.pg-grupo-tit { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); }
+.pg-grupo-tit > span { font-weight: 600; letter-spacing: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
 .pg-cartao {
   display: block; padding: 0; overflow: hidden; text-align: left; font: inherit; color: var(--text);
   border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent);

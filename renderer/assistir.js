@@ -612,7 +612,7 @@ function pedirMiniaturas(ids) {
     sendSignal(id, { side: 'mini', want: m.hash || true });
   }
   if (!minisTimer) minisTimer = setInterval(() => {
-    if (!$('emptyGente').offsetParent || document.hidden) return;
+    if ((!$('emptyGente').offsetParent && $('voicePane').hidden) || document.hidden) return; // palco ou painel da voz à vista
     pedirMiniaturas([...state.members].filter(([, x]) => x.sharing).map(([id]) => id));
   }, 15000);
 }
@@ -635,4 +635,7 @@ async function receberMiniatura(from, data) {
   m.url = URL.createObjectURL(blob);
   m.hash = data.hash;
   palcoMiniatura(from, m.url); // troca só a imagem do cartão no palco vazio, sem redesenhar (membros.js)
+  // e a do cartão em cima da lista da voz (navegacao.js: voiceLiveCards)
+  const img = $('voicePaneMembers').querySelector(`.voz-tela[data-person="${CSS.escape(from)}"] img.voz-tela-img`);
+  if (img) { img.src = m.url; img.hidden = false; img.parentElement.querySelector(':scope > .avatar')?.remove(); }
 }

@@ -286,6 +286,8 @@ function renderVoice() {
   if (active || voice.pending) {
     join.className = 'btn icon voice-leave';
     setIcon(join, 'phoneOff', voice.pending ? 'Cancelar entrada na voz' : 'Sair da voz');
+    $('voiceJoinMore').hidden = true; // na voz, troca de canal pela lista; a setinha é só para escolher onde entrar
+    closeVoiceJoinPop();
   } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
   setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');

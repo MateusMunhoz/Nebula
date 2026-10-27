@@ -275,20 +275,43 @@ function renderPalcoGente() {
   clearInterval(palcoTempoTimer);
   palcoTempoTimer = 0;
   box.replaceChildren();
-  // Sozinho e sem música: a decoração do tema. Senão, a música (se tem) e embaixo os cartões
-  const mostra = gente.length > 0;
+  // Cartão só de quem está fazendo algo (transmitindo, jogando, ouvindo); quem só está na sala ou na voz fica de fora
+  const ativos = gente.filter((p) => p.sharing || p.atv?.jogo || p.atv?.artista);
+  // Ninguém fazendo nada e sem música: a decoração do tema. Senão, a música (se tem) e embaixo os cartões
+  const mostra = !!musica || ativos.length > 0;
   $('emptyStage').classList.toggle('com-gente', mostra);
   box.hidden = !mostra;
   if (!mostra) return;
   if (musica) box.append(palcoMusica(musica, gente.filter((p) => p.canal === ch)));
-  // Todo mundo junto, sem separar por canal da voz: você primeiro, depois quem transmite
+  if (!ativos.length) return;
+  // Uma seção por atividade (Jogando Deadlock, Spotify…), das maiores para as menores
   const agora = document.createElement('div');
   agora.className = 'pg-agora';
-  const lista = document.createElement('div');
-  lista.className = 'pg-cartoes';
-  lista.append(...gente.map(palcoCartao));
-  agora.append(lista);
+  for (const [titulo, ps] of palcoGrupos(ativos)) {
+    const sec = document.createElement('section');
+    sec.className = 'pg-grupo';
+    const h = document.createElement('h3');
+    h.className = 'pg-grupo-tit';
+    h.append(titulo, Object.assign(document.createElement('span'), { textContent: String(ps.length) }));
+    const lista = document.createElement('div');
+    lista.className = 'pg-cartoes';
+    lista.append(...ps.map(palcoCartao));
+    sec.append(h, lista);
+    agora.append(sec);
+  }
   box.append(agora);
+}
+
+// [título, pessoas] na ordem do palco. Quem transmite um jogo conhecido fica com quem joga ele (o cartão mostra a tela);
+// "Transmitindo" é só para a transmissão sem jogo conhecido
+function palcoGrupos(ativos) {
+  const grupos = new Map();
+  for (const p of ativos) {
+    const t = p.atv?.jogo ? `Jogando ${p.atv.jogo}` : p.sharing ? 'Transmitindo' : p.atv.spotify ? 'Spotify' : 'Ouvindo música';
+    if (!grupos.has(t)) grupos.set(t, []);
+    grupos.get(t).push(p);
+  }
+  return [...grupos].sort((a, b) => b[1].length - a[1].length);
 }
 
 // A música do seu canal, que você ainda não está ouvindo: a capa, o canal e quem pôs, o título, o canal do YouTube,

@@ -436,6 +436,10 @@ function renderVoicePane() {
   const sharing = (id) => !!state.members.get(id)?.sharing;
   const map = voiceMapOn();
   $('voicePane').classList.toggle('voice-map', map);
+  // Quem transmite vem em cima, em cartões com a miniatura da tela (assistir.js: pedirMiniaturas); na lista embaixo,
+  // a linha dessas pessoas fica enxuta, sem o Assistir e o "Transmitindo" (o cartão já diz)
+  const live = map ? [] : [...state.members.keys()].filter(sharing);
+  if (live.length) { pedirMiniaturas(live); list.append(voiceLiveCards(live)); }
   if (map) { /* no mapa, os canais e as pessoas estão no céu */ }
   else if (channels) renderVoiceChannels(list);
   else {
@@ -453,6 +457,58 @@ function renderVoicePane() {
     list.append(head);
     for (const id of outside) list.append(id ? memberRow(id, nameOf(id), true) : memberRow(null, getName(), true));
   }
+  for (const li of list.querySelectorAll('li.member.live')) {
+    if (!live.includes(li.dataset.person)) continue;
+    li.querySelector('.watch-btn')?.remove();
+    li.querySelector('.mstatus')?.setAttribute('hidden', '');
+  }
+}
+// Os cartões de quem transmite: a miniatura (ou a foto da pessoa na cor dela, enquanto não chega), o selo (Ao vivo,
+// Assistindo, Em pausa), o nome e o jogo. Clicar assiste; assistindo, para; em pausa (outra em destaque), volta para ela
+function voiceLiveCards(ids) {
+  const li = document.createElement('li');
+  li.className = 'voz-telas-li';
+  const head = document.createElement('span');
+  head.className = 'voz-telas-tit';
+  head.textContent = `Transmitindo · ${ids.length}`;
+  const grade = document.createElement('div');
+  grade.className = 'voz-telas';
+  for (const id of ids) {
+    const name = nameOf(id);
+    const watching = state.in.has(id);
+    const paused = watching && state.focus && state.focus !== id;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'voz-tela' + (watching ? ' assistindo' : '');
+    b.dataset.person = id;
+    b.style.setProperty('--person', personColor(id));
+    const m = minis.get(id);
+    if (m?.url) { const img = document.createElement('img'); img.className = 'voz-tela-img'; img.src = m.url; img.alt = ''; b.append(img); }
+    else { const img = document.createElement('img'); img.className = 'voz-tela-img'; img.alt = ''; img.hidden = true; b.append(img, avatar(name, id)); }
+    const selo = document.createElement('span');
+    selo.className = 'voz-tela-selo' + (paused ? ' pausa' : watching ? ' vendo' : '');
+    selo.textContent = paused ? 'Em pausa' : watching ? 'Assistindo' : 'Ao vivo';
+    const rot = document.createElement('span');
+    rot.className = 'voz-tela-rot';
+    const nome = document.createElement('strong');
+    nome.textContent = name;
+    rot.append(nome);
+    const jogo = atvDe(id)?.jogo;
+    if (jogo) { const j = document.createElement('span'); j.textContent = jogo; rot.append(j); }
+    const play = document.createElement('span');
+    play.className = 'voz-tela-play';
+    play.innerHTML = watching && !paused ? ICON.monitorStop : ICON.play;
+    b.append(selo, rot, play);
+    const fechada = !watching && !canWatch(id);
+    const acao = fechada ? closedShareText(id) : paused ? `Voltar para a tela de ${name}` : watching ? `Parar de assistir ${name}` : `Assistir ${name}`;
+    b.title = acao;
+    b.setAttribute('aria-label', acao + (jogo ? `, jogando ${jogo}` : ''));
+    b.disabled = fechada;
+    b.onclick = () => (paused ? setFocus(id) : watching ? stopWatching(id) : watch(id));
+    grade.append(b);
+  }
+  li.append(head, grade);
+  return li;
 }
 // ---------- Divisória entre o chat e a voz ----------
 // Arrastar a linha entre os dois muda quanto da coluna é da voz (o chat fica com o resto). Setas também mexem, e o
