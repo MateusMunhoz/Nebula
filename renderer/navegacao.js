@@ -307,11 +307,16 @@ function callbarAcordar() {
     else setCallbar(false);
   }, TILE_IDLE_MS);
 }
+// Na voz, com a música da sala no palco, as telas terminam acima da barra (styles.css: .callbar-reserva): ela não
+// cobre a barra de play do YouTube. Vendo só a tela de alguém, a barra fica por cima, no pé do vídeo, e some sozinha.
+// Segue a voz e a música, não a barra à vista, para o palco não mudar de tamanho a cada mexida do mouse
+function syncCallbarReserva() {
+  const musica = [...state.in.keys()].some((k) => k.startsWith('musica:'));
+  document.body.classList.toggle('callbar-reserva', !!voice.session && !!state.myId && musica);
+}
 function renderCallbar() {
   if (!callbarPode()) setCallbar(false);
-  // Na voz, as telas terminam acima da barra (styles.css: .callbar-reserva): ela não cobre a barra de play nem a
-  // legenda. Segue a voz, não a barra à vista, para o palco não mudar de tamanho a cada mexida do mouse
-  document.body.classList.toggle('callbar-reserva', !!voice.session && !!state.myId);
+  syncCallbarReserva();
   setIcon($('cbMic'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('cbMic').setAttribute('aria-pressed', String(voice.muted));
   $('cbMic').classList.toggle('off', voice.muted);

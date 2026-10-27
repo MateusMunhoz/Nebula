@@ -198,6 +198,7 @@ function updateStage() {
   // num player pequeno no canto, porque o YouTube pede o player à vista enquanto toca
   $('tiles').hidden = !state.in.size;
   $('tiles').classList.toggle('minimizado', state.minimizado);
+  syncCallbarReserva(); // a faixa da barra da chamada só com a música no palco (navegacao.js)
   $('emptyText').textContent = state.sharing ? 'Você está transmitindo.' : 'Ninguém está transmitindo agora.';
   renderPalcoGente();
   if (!state.in.size) $('downloadInfo').textContent = '';

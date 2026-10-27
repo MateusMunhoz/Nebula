@@ -3781,6 +3781,7 @@ button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
 #mutadoIcone svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* O palco vazio deixa o pé livre para a barra da chamada não cobrir os Assistir */
 .na-sala #room .empty-stage { padding-bottom: 84px; }
-/* Na voz (renderCallbar), as telas também: a barra fica numa faixa só dela, sem cobrir a barra de play nem a legenda.
+/* Na voz com a música da sala no palco (syncCallbarReserva), as telas também: a barra fica numa faixa só dela, sem
+   cobrir a barra de play do YouTube. Vendo só a tela de alguém, a barra fica por cima do vídeo e some sozinha.
    A margem (e não o padding) encolhe o #tiles, e o palco (palco.js) refaz o layout com a altura que sobra */
 .callbar-reserva #room #tiles:not(.minimizado) { margin-bottom: 84px; }
