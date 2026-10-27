@@ -225,6 +225,10 @@ Opções:
 - **Escolher o número:** `npm run publicar -- 1.9.0`
 - **Novidades no app:** o `publicar.js` gera `renderer/novidades.js` com as mensagens dos commits de cada versão (as 10 últimas, sem merge e sem `CI:`). O Início mostra para quem atualizar. Escreva a mensagem do commit pensando em quem usa o app; `Área: a; b` vira a etiqueta "Área" com uma linha para cada parte.
 - **Texto da Release:** `npm run publicar -- --notas "o que mudou"`. Sem isso, o GitHub lista os commits.
+- **Versão mínima:** toda Release leva `obrigatória: X.Y.Z` nas notas, com a versão anterior (no máximo uma versão
+  atrás: publicando a 1.20.10, quem está abaixo da 1.20.9 tem que atualizar). `--obrigatoria` exige a própria versão
+  nova. O `github.js` lê a linha, e quem está abaixo vê no Início uma tela sem "Depois" até atualizar (fora da sala;
+  numa call, só ao voltar). Vale para quem já tem uma versão com esse código.
 - **Sem GitHub:** `npm run publicar -- --sem-github`
 
 Para mandar para o GitHub, o PC precisa do Git e do [GitHub CLI](https://cli.github.com), logado (`gh auth login`) na conta dona do repositório.

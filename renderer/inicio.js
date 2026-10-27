@@ -316,6 +316,7 @@ $('homeVersaoNova').onclick = () => setVersaoPainelOpen($('homeVersaoPainel').hi
 $('homeVersaoEstado').onclick = () => setVersaoPainelOpen(true);
 $('navUpdate').onclick = () => { show('home'); setVersaoPainelOpen(true); };
 $('hvGo').onclick = runUpdate;
+$('obrigatoriaGo').onclick = runObrigatoria;
 $('hvDepois').onclick = () => {
   update.dismissed = updateMode()?.version || '';
   setVersaoPainelOpen(false);

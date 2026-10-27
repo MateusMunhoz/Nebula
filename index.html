@@ -864,6 +864,17 @@
     <button class="btn icon iv-nav iv-next" id="ivNext" type="button"></button>
   </div>
 
+  <!-- Atualização obrigatória (publicar.js --obrigatoria): só no Início, fora da sala; sem "Depois" -->
+  <div id="obrigatoriaDialog" class="modal global" hidden>
+    <div class="dialog narrow" role="alertdialog" aria-modal="true" aria-labelledby="obrigatoriaTitulo" aria-describedby="obrigatoriaTexto">
+      <h2 id="obrigatoriaTitulo"></h2>
+      <p id="obrigatoriaTexto" class="hint"></p>
+      <div class="actions">
+        <button class="btn primary" id="obrigatoriaGo" type="button">Atualizar agora</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Volume de uma pessoa (abre pelo botão de volume na lista ou pela bolinha na barra) -->
   <div id="personCard" class="person-card" role="dialog" aria-label="Perfil da pessoa" hidden></div>
 

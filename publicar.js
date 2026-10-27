@@ -70,7 +70,7 @@ function generateKey() {
 
 // Manda a versão para o GitHub: commit de tudo que mudou, tag vX.Y.Z e uma Release com o .exe
 // (para quem ainda não tem o app) e o pacote assinado (para o botão de atualizar do app)
-function publishGithub(version, productName, notes) {
+function publishGithub(version, productName, notes, marca = '') {
   const ok = (cmd, args) => spawnSync(cmd, args, { cwd: ROOT, stdio: 'inherit' }).status === 0;
   const quiet = (cmd, args) => spawnSync(cmd, args, { cwd: ROOT, stdio: 'ignore' }).status === 0;
   if (!fs.existsSync(path.join(ROOT, '.git')) || !quiet('git', ['--version']) || !quiet('gh', ['--version'])) {
@@ -87,7 +87,8 @@ function publishGithub(version, productName, notes) {
     ['git', ['push', 'origin', 'HEAD']],
     ['git', ['push', 'origin', `v${version}`]],
     ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(instalador) ? [instalador] : []), ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
-      '--title', `${productName} ${version}`, ...(notes ? ['--notes', notes] : ['--generate-notes'])]],
+      // sem --notas, o gh gera as notas e põe a marca (se houver) em cima delas
+      '--title', `${productName} ${version}`, ...(notes || marca ? ['--notes', [notes, marca].filter(Boolean).join('\n\n')] : []), ...(notes ? [] : ['--generate-notes'])]],
   ];
   for (const [cmd, args] of steps) {
     console.log(`> ${cmd} ${args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`);
@@ -163,7 +164,7 @@ function checkPackFiles() {
   if (missing.length) fail(`O index.html usa arquivos que não estão no PACK_FILES do publicar.js: ${missing.join(', ')}. Coloque eles na lista.`);
 }
 
-function publish(requested, { notes = '', github = true } = {}) {
+function publish(requested, { notes = '', github = true, obrigatoria = false } = {}) {
   checkPackFiles();
   if (!fs.existsSync(KEY_FILE)) fail('Nenhuma chave encontrada. Rode uma vez: node publicar.js --gerar-chave');
   const privateKey = fs.readFileSync(KEY_FILE, 'utf8');
@@ -185,6 +186,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   const version = requested || `${maj}.${min}.${pat + 1}`;
   if (!/^\d+\.\d+\.\d+$/.test(version) || !newer(version, pkg.version)) fail(`A versão ${version} precisa ser maior que a atual (${pkg.version}).`);
 
+  const anterior = pkg.version;
   pkg.version = version;
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
@@ -207,16 +209,19 @@ function publish(requested, { notes = '', github = true } = {}) {
   if (r.status !== 0) fail('O .exe e o instalador não foram gerados, mas a atualização pela sala já funciona.');
   buildLinux();
 
-  const onGithub = github && publishGithub(version, pkg.build.productName, notes);
+  // A linha que o github.js lê: quem estiver abaixo é chamado a atualizar no Início. Sempre no máximo uma versão
+  // atrás (a anterior a esta); --obrigatoria exige esta mesma.
+  const marca = `obrigatória: ${obrigatoria ? version : anterior}`;
+  const onGithub = github && publishGithub(version, pkg.build.productName, notes, marca);
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);
 }
 
-// Os argumentos: a versão (X.Y.Z, opcional), --notas "texto" e --sem-github. O texto das notas nunca vira versão.
+// Os argumentos: a versão (X.Y.Z, opcional), --notas "texto", --sem-github e --obrigatoria. O texto das notas nunca vira versão.
 function lerArgs(args) {
   const notesAt = args.indexOf('--notas');
   const notes = notesAt >= 0 ? args[notesAt + 1] || '' : '';
   const version = args.find((a, i) => /^\d+\.\d+\.\d+$/.test(a) && (notesAt < 0 || i !== notesAt + 1));
-  return { version, notes, github: !args.includes('--sem-github') };
+  return { version, notes, github: !args.includes('--sem-github'), obrigatoria: args.includes('--obrigatoria') };
 }
 
 module.exports = { buildPack, sign, newer, novidadesDoLog, gravarNovidades, lerArgs, KEY_FILE, PACK_FILES };
@@ -226,7 +231,7 @@ if (require.main === module) {
   if (args[0] === '--gerar-chave') {
     generateKey();
   } else {
-    const { version, notes, github } = lerArgs(args);
-    publish(version, { notes, github });
+    const { version, notes, github, obrigatoria } = lerArgs(args);
+    publish(version, { notes, github, obrigatoria });
   }
 }

@@ -223,6 +223,7 @@ function renderUpdateBanner() {
   estado.disabled = !m;
   if (!m) setVersaoPainelOpen(false);
   else if (!$('homeVersaoPainel').hidden) renderVersaoPainel();
+  renderObrigatoria();
 }
 
 function renderVersaoPainel() {
@@ -322,5 +323,46 @@ async function autoAtualizar(abrindo = false) {
   }
   // entrou numa sala enquanto baixava: fica pronta, reinicia depois
   if (state.myId || state.sharing) { update.installing = false; return renderUpdateBanner(); }
+  window.api.restartApp();
+}
+
+// ---------- Atualização obrigatória ----------
+// A última versão do GitHub diz "obrigatória: X" e a minha é menor: a tela cobre o Início até atualizar.
+// Só no Início e fora da sala: quem está numa call não é tirado dela; vê ao voltar.
+function obrigatoriaPendente() {
+  const min = update.github?.minima;
+  return !!min && newerVersion(min, update.myVersion) && !(update.ready && !newerVersion(min, update.ready));
+}
+
+function renderObrigatoria() {
+  const d = $('obrigatoriaDialog');
+  const mostrar = obrigatoriaPendente() && !$('home').hidden && !state.myId;
+  if (d.hidden !== mostrar) return;
+  d.hidden = !mostrar;
+  if (!mostrar) return;
+  $('obrigatoriaTitulo').textContent = `Atualize para a ${update.github.version}`;
+  $('obrigatoriaTexto').textContent = `Esta versão é obrigatória. Você está na ${update.myVersion}. O app fecha e abre de novo sozinho.`;
+  setBusy($('obrigatoriaGo'), false, 'Atualizar agora');
+  $('obrigatoriaGo').focus();
+}
+
+async function runObrigatoria() {
+  const go = $('obrigatoriaGo');
+  if (update.exePage) return window.api.openGithub(update.exePage);
+  if (!update.ready) {
+    setBusy(go, true, 'Baixando…');
+    const res = await window.api.githubInstall();
+    if (!res.ok) {
+      if (res.page && /exe novo|pacote de atualização/.test(res.error)) {
+        update.exePage = res.page;
+        $('obrigatoriaTexto').textContent = `Esta versão precisa do ${window.api.platform === 'linux' ? 'AppImage' : '.exe'} novo. Baixe na página do GitHub e abra no lugar do antigo.`;
+        return setBusy(go, false, 'Baixar no GitHub');
+      }
+      toast(`Não deu para atualizar: ${res.error}`, 'error');
+      return setBusy(go, false, 'Tentar de novo');
+    }
+    update.ready = res.version;
+  }
+  setBusy(go, true, 'Reiniciando…');
   window.api.restartApp();
 }
