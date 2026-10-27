@@ -304,7 +304,7 @@ window.api.getVersion().then((v) => {
   update.myVersion = v;
   $('appVersion').textContent = `Nebula ${v}`;
   showNewsIfNew();
-  checkGithub();
+  checkGithub().then(() => autoAtualizar(true));
 });
 $('showNews').onclick = () => setNewsOpen($('homeNews').hidden);
 $('homeNovoFechar').onclick = () => { fecharNovo(); $('showNews').focus(); };
@@ -347,8 +347,10 @@ const checkGithubSoon = () => {
   lastGithubCheck = Date.now();
   checkGithub();
 };
-setInterval(checkGithubSoon, 60 * 1000);
+setInterval(() => { checkGithubSoon(); autoAtualizar(); }, 60 * 1000);
 window.addEventListener('focus', checkGithubSoon);
+// Parado = sem foco e sem mexer há 10 min (renderer/atualizacao.js)
+for (const ev of ['focus', 'pointerdown', 'keydown']) window.addEventListener(ev, marcarUso, true);
 
 $('goCreate').onclick = () => foraDaSala('criar outra sala', () => show('create-room'));
 setupRecorte(); // editor de recorte da foto e do fundo (renderer/recorte.js)

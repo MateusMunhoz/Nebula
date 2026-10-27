@@ -291,3 +291,36 @@ async function runUpdate() {
   $('hvAviso').textContent = 'Abrindo a versão nova…';
   window.api.restartApp();
 }
+
+// ---------- Atualização automática ----------
+// Sozinho só quando ninguém percebe: ao abrir o app, ou parado (janela sem foco há 10 min). Nunca numa sala,
+// transmitindo ou com jogo aberto; "Depois" e versão que precisa de .exe novo ficam só no botão.
+const AUTO_PARADO_MS = 10 * 60 * 1000;
+let ultimoUso = Date.now();
+function marcarUso() { ultimoUso = Date.now(); }
+
+function podeAutoAtualizar(abrindo) {
+  const m = updateMode();
+  if (!m || m.mode === 'exe' || update.installing || update.dismissed === m.version) return false;
+  if (state.myId || state.sharing || (typeof atv !== 'undefined' && atv.jogo)) return false;
+  return abrindo || (!document.hasFocus() && Date.now() - ultimoUso >= AUTO_PARADO_MS);
+}
+
+async function autoAtualizar(abrindo = false) {
+  if (!podeAutoAtualizar(abrindo)) return;
+  const m = updateMode();
+  update.installing = true;
+  $('homeVersaoEstado').textContent = `Atualizando para a ${m.version}…`;
+  if (m.mode === 'github') {
+    const res = await window.api.githubInstall();
+    if (!res.ok) {
+      update.installing = false;
+      if (res.page && /exe novo|pacote de atualização/.test(res.error)) update.exePage = res.page;
+      return renderUpdateBanner();
+    }
+    update.ready = res.version;
+  }
+  // entrou numa sala enquanto baixava: fica pronta, reinicia depois
+  if (state.myId || state.sharing) { update.installing = false; return renderUpdateBanner(); }
+  window.api.restartApp();
+}
