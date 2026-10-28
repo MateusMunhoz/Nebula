@@ -1,0 +1,19 @@
+{
+  "name": "prototipo-sala-nostr",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fase 0 de docs/spec/sala-pelo-nostr.md: relays, tempo até entrar e ponte com travas. Fora do pacote do app.",
+  "type": "module",
+  "scripts": {
+    "teste": "node teste.mjs",
+    "relays": "node relays.mjs",
+    "local": "node cli.mjs local"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "node-datachannel": "0.33.6",
+    "nostr-tools": "2.25.2"
+  }
+}

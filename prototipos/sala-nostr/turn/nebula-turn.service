@@ -1,0 +1,18 @@
+# Emissor de acesso ao TURN como serviço. Copie para /etc/systemd/system/ e ajuste o Environment.
+# O segredo fica em /etc/nebula-turn.env (chmod 600), nunca neste arquivo: TURN_SECRET=<o static-auth-secret do coturn>
+[Unit]
+Description=Nebula: emissor de acesso ao TURN
+After=network-online.target
+
+[Service]
+EnvironmentFile=/etc/nebula-turn.env
+Environment=TURN_HOST=SEU_SUBDOMINIO.duckdns.org
+Environment=TURN_PORT=3479
+Environment=EMISSOR_PORTA=8790
+Environment=TRUST_PROXY=1
+ExecStart=/usr/bin/node /opt/nebula-turn/emissor.mjs
+DynamicUser=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
