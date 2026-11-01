@@ -26,7 +26,7 @@ Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D
 - **Tempo da call** ao lado de cada canal de voz; o **X minimiza** (ou esconde na bandeja, por opção).
 
 **Ainda não começado (conferido):** HTTPS/`wss://` na sala (`INTERNET_URL_PADRAO` segue `ws://`), atraso medido (A2), histórico em
-disco (P2), assistir pelo navegador (D2, só rascunho de spec) e o repasse de vídeo (P3).
+disco (P2), assistir pelo navegador (D2: v1 escrita e testada no Chrome, ainda não publicada nem testada no iPhone) e o repasse de vídeo (P3).
 
 ## Estado em 07/10/2026
 
@@ -51,7 +51,7 @@ disco (P2), assistir pelo navegador (D2, só rascunho de spec) e o repasse de v�
 | 3 | **Conta: excluir pelo painel e mensagem de conta desativada** | Uma conta desativada prendia a pessoa | **Feito** (19/10/2026): excluir no painel do app e mensagem em todos os logins. Falta só o painel web antigo (`razze-api/admin/`), que segue sem excluir usuário |
 | 4 | **HTTPS (wss) na VPS**, Caddy na frente da porta 8765 | Destrava o A1 e o D2 | Não começado (precisa de quem tem SSH) |
 | 5 | **A1 revisado:** o app passa a usar `wss://` no modo Internet | Chat e senha da sala hoje vão em `ws://` puro | Depende do 4 |
-| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | Rascunho de spec em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md); depende do 4 |
+| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | **v1 pronta no código** (servidor + página `/ver`, só `http://` até o item 4; falta teste no iPhone e deploy na VPS). Spec: [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md) |
 | 7 | **A2 Atraso medido** | Dá o número para comparar com o Discord e serve de régua para o B0 e o D1 | Não começado |
 | 8 | **P2 Histórico** | O chat não some quando a sala fecha | Não começado |
 | 9 | **B0 Briefing 50+** (com P3, espectadores repassando) | Meta maior; ainda vai ser testado | Spec pronta; testes pendentes |

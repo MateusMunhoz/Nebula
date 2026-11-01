@@ -106,8 +106,29 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 | `MAX_ROOMS` | 200 | Salas abertas ao mesmo tempo |
 | `CREATE_PER_IP_PER_HOUR` | 20 | Salas criadas por IP por hora |
 | `FAIL_PER_IP` / `FAIL_WINDOW_MS` | 10 / 10 min | Tentativas erradas (código ou senha) antes de bloquear o IP |
+| `MAX_ESPECTADORES` | 5 | Quem assiste pelo navegador (`/ver`), por sala; é separado do limite de 50 pessoas |
 | `RECONNECT_GRACE_MS` | 20000 | Quanto tempo o lugar de quem caiu fica guardado |
 | `TRUST_PROXY` | 0 | 1 só atrás de Caddy/nginx (para o limite por IP usar o IP real) |
+
+## Assistir pelo navegador (`/ver`)
+
+O mesmo servidor entrega a página `http://IP_DA_VPS:8765/ver` (arquivos de `web/`, lidos na subida; atualizou, reinicie o
+serviço). No celular, sem instalar nada: código + senha da sala, e a tela de quem transmite aparece (só vídeo, sem som).
+
+- A página entra com `hello { role: 'espectador', room, password }`. Nunca cria sala e não aceita passe de convite;
+  sala inexistente e senha errada respondem igual, e contam no limite de tentativas por IP.
+- O espectador é **invisível**: não há `member-joined`/`member-left` para a sala, ele não entra na lista de pessoas nem
+  vira host, e não volta com `resume` (caiu, entra de novo). Quem transmite vê "Alguém está assistindo você".
+- O `welcome` dele é enxuto (`id`, `sala`, `iceServers`, `members` só com `id`, `name`, `sharing`, `shareInfo`). Ele só
+  recebe `share-state`, `member-joined` e `member-left`; sem chat, voz, subsalas, música, senha nem passe.
+- Ele só manda `signal` com `side: 'viewer'`, para quem está transmitindo e não fechou a transmissão ao canal
+  (`shareInfo.open !== false`); `once` é sempre `false` (o navegador recebe faixa WebRTC comum, H.264). O
+  `unsubscribe` passa sempre. Se o espectador cai sem avisar (aba fechada, rede), o servidor manda o `unsubscribe`
+  em nome dele, senão o app de quem transmite ficaria com um link fantasma ("Alguém").
+- Cada espectador é mais um upload no PC de quem transmite. Limite por sala: `MAX_ESPECTADORES`. Quando só sobram
+  espectadores na sala, ela fecha.
+- Por `http://` a página funciona (conferido no Chrome do PC; no iPhone ainda não), mas a senha vai em texto puro, como
+  já vai no app com `ws://`. Com o Caddy na frente (abaixo), a página abre por `https://` e fala `wss://` sozinha.
 
 ## Banda da VPS
 
