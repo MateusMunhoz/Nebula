@@ -17,6 +17,11 @@ input {
   background: var(--painel); border: 1px solid var(--borda); border-radius: 10px;
 }
 #codigo { text-transform: uppercase; letter-spacing: .2em; }
+.opcao { display: flex; align-items: center; color: var(--texto); font-size: 1rem; }
+input[type="checkbox"] { display: inline-block; width: 22px; height: 22px; margin: 0 10px 0 0; accent-color: var(--destaque); }
+#vozLista { list-style: none; margin: 0 0 8px; padding: 0; }
+#vozLista li { padding: 6px 0; border-bottom: 1px solid var(--borda); }
+#vozLista .mudo { color: var(--suave); }
 input:focus-visible, button:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
 button {
   padding: 12px 18px; font: inherit; font-weight: 600; color: #15120a; background: var(--destaque);

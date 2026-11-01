@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { WebSocket } = require('ws');
-const { createInternetServer, turnCredentials, cleanCode } = require('../servidor-internet/server');
+const { createInternetServer, turnCredentials, cleanCode, ipReal } = require('../servidor-internet/server');
 
 const SECRET = 'segredo-de-teste-bem-comprido';
 
@@ -539,6 +539,176 @@ test('espectador não entra com passe de convite (na v1 só com a senha)', async
   assert.equal(b.first.type, 'welcome');
 });
 
+// ---- Convidado (entrar na conversa pelo navegador): docs/spec/convidado-web.md ----
+
+const convidado = (t, url, a, extra = {}) => entrar(t, url, a, { role: 'convidado', name: 'Maria', ...extra });
+const VOZ = { channel: '', muted: false, deafened: false };
+
+test('convidado entra visível, com o rótulo imposto pelo servidor e sem se passar por app (versão, líder, foto)', async (t) => {
+  const { url, a } = await sala(t);
+  const c = await convidado(t, url, a, { name: 'X'.repeat(50), version: '99.0.0', lider: true, avatar: 'a'.repeat(64) });
+  assert.equal(c.first.type, 'welcome');
+  const entrou = await a.wait((m) => m.type === 'member-joined' && m.id === c.first.id);
+  assert.equal(entrou.name, `${'X'.repeat(20)} (convidado)`);
+  assert.equal(entrou.name.length, 32);
+  assert.equal(entrou.version, '');
+  assert.equal(entrou.lider, false);
+  assert.equal(entrou.avatar, '');
+  assert.equal(c.first.members.find((m) => m.id === a.first.id).name, 'Ana'); // ele enxerga a sala inteira
+  assert.equal(c.first.passeSala, undefined); // não recebe o passe da sala
+  assert.equal(c.first.amigosMembros, undefined);
+  const sem = await convidado(t, url, a, { name: '   ' });
+  assert.equal(sem.first.type, 'welcome');
+  assert.equal((await a.wait((m) => m.type === 'member-joined' && m.id === sem.first.id)).name, 'Visitante (convidado)');
+  // Controle e caracteres que invertem o texto ou somem não entram no nome
+  const sujo = await convidado(t, url, a, { name: '‮Ana\u0000​⁦' });
+  assert.equal((await a.wait((m) => m.type === 'member-joined' && m.id === sujo.first.id)).name, 'Ana (convidado)');
+});
+
+test('convidado recebe sala e welcome enxutos (sem chat nem dados de perfil) e só pede para assistir a pessoas', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'chat', text: 'conversa antiga da sala' });
+  await a.wait((m) => m.type === 'chat');
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  const b = await entrar(t, url, a, { avatar: 'c'.repeat(64) });
+  const c = await convidado(t, url, a);
+  for (const campo of ['chat', 'subsalas', 'musicas', 'lider', 'sessao', 'passeSala', 'amigosMembros']) assert.equal(c.first[campo], undefined, campo);
+  const noWelcome = c.first.members.find((m) => m.id === b.first.id);
+  assert.deepEqual(Object.keys(noWelcome).sort(), ['deafened', 'id', 'muted', 'name', 'shareInfo', 'sharing', 'voiceChannel', 'voiceIdade', 'voiceSession']);
+
+  a.send({ type: 'chat', text: 'conversa ao vivo' });
+  await b.wait((m) => m.type === 'chat' && m.text === 'conversa ao vivo');
+  const d = await entrar(t, url, a, { name: 'Duda', avatar: 'e'.repeat(64), version: '1.20.7' });
+  const chegou = await c.wait((m) => m.type === 'member-joined' && m.id === d.first.id);
+  assert.equal(chegou.name, 'Duda');
+  for (const campo of ['avatar', 'avatarFull', 'razze', 'version', 'addrs', 'nameFont']) assert.equal(chegou[campo], undefined, campo);
+  assert.equal(c.messages.findIndex((m) => m.type === 'chat'), -1);
+
+  // Assistir só vale para pessoa de verdade: nada para espectador, outro convidado, ele mesmo ou id que não existe
+  const v = await espectador(t, url, a);
+  const c2 = await convidado(t, url, a, { name: 'Outro' });
+  for (const to of [v.first.id, c2.first.id, c.first.id, 'x'.repeat(1000)]) c.send({ type: 'signal', to, data: { side: 'viewer', subscribe: true } });
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } }); // esta passa
+  await a.wait((m) => m.type === 'signal' && m.data.subscribe);
+  c.ws.terminate();
+  await a.wait((m) => m.type === 'signal' && m.data.unsubscribe);
+  await pausa();
+  assert.equal(a.messages.findIndex((m) => m.type === 'signal'), -1); // um unsubscribe só
+  for (const x of [v, c2]) assert.equal(x.messages.findIndex((m) => m.type === 'signal'), -1);
+});
+
+test('IP de quem conectou: o X-Forwarded-For só vale vindo de rede privada (o Caddy), nunca de fora', () => {
+  assert.equal(ipReal('203.0.113.9', '1.2.3.4', true), '203.0.113.9'); // de fora com cabeçalho forjado
+  assert.equal(ipReal('172.18.0.2', '198.51.100.7', true), '198.51.100.7'); // o Caddy no Docker
+  assert.equal(ipReal('::ffff:172.18.0.1', '8.8.8.8, 198.51.100.7', true), '198.51.100.7'); // vale o último
+  assert.equal(ipReal('127.0.0.1', '5.5.5.5', true), '5.5.5.5');
+  assert.equal(ipReal('::1', '6.6.6.6', true), '6.6.6.6');
+  assert.equal(ipReal('10.0.0.5', '', true), '10.0.0.5'); // sem cabeçalho
+  assert.equal(ipReal('172.32.0.1', '1.1.1.1', true), '172.32.0.1'); // fora de 172.16/12
+  assert.equal(ipReal('127.0.0.1', '5.5.5.5', false), '127.0.0.1'); // TRUST_PROXY desligado
+  assert.equal(ipReal(undefined, '5.5.5.5', true), '?');
+});
+
+test('convidado não recebe o passe da sala nem a senha nova, e só a lista branca do que manda vale', async (t) => {
+  const { url, a } = await sala(t);
+  const b = await entrar(t, url, a);
+  const c = await convidado(t, url, a);
+  await a.wait((m) => m.type === 'member-joined' && m.id === c.first.id);
+
+  a.send({ type: 'amigos-membros', on: false });
+  await b.wait((m) => m.type === 'passe-sala');
+  a.send({ type: 'senha', password: 'outra-senha-forte' });
+  await b.wait((m) => m.type === 'senha');
+  await pausa();
+  assert.equal(c.messages.findIndex((m) => m.type === 'passe-sala' || m.type === 'senha'), -1);
+
+  // Fora da lista branca: ignorado, sem resposta de erro
+  c.send({ type: 'share', sharing: true, info: ABERTA });
+  c.send({ type: 'chat', text: 'oi do convidado' });
+  c.send({ type: 'avatar', hash: 'b'.repeat(64) });
+  c.send({ type: 'name-font', font: 'cinzel' });
+  c.send({ type: 'passe', passe: 'p'.repeat(43) });
+  c.send({ type: 'senha', password: 'tomei-a-sala' });
+  c.send({ type: 'amigos-membros', on: true });
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'lider', role: 'ouvir' } });
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'foto', pedir: true } });
+  c.send({ type: 'voice-state', session: 'sc-1', ...VOZ }); // esta passa
+  await a.wait((m) => m.type === 'voice-state' && m.id === c.first.id && m.session === 'sc-1');
+  await pausa();
+  for (const x of [a, b]) assert.equal(x.messages.findIndex((m) => ['share-state', 'chat', 'avatar-state', 'name-font-state', 'signal'].includes(m.type)), -1);
+  assert.equal(c.messages.findIndex((m) => m.type === 'senha-erro' || m.type === 'error'), -1);
+});
+
+test('voz entre convidado e membro: o servidor repassa só com sessão e canal certos', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'voice-state', session: 'sa', ...VOZ });
+  await a.wait((m) => m.type === 'voice-state' && m.id === a.first.id);
+  const c = await convidado(t, url, a);
+  const estado = c.first.members.find((m) => m.id === a.first.id);
+  assert.equal(estado.voiceSession, 'sa');
+  c.send({ type: 'voice-state', session: 'sc', ...VOZ });
+  assert.equal((await a.wait((m) => m.type === 'voice-state' && m.id === c.first.id)).session, 'sc');
+
+  const oferta = { type: 'offer', sdp: 'v=0' };
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'voice', session: 'sc', targetSession: 'errada', call: 'k0', sdp: oferta } }); // descartada
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'voice', session: 'sc', targetSession: 'sa', call: 'k1', sdp: oferta } });
+  const chegou = await a.wait((m) => m.type === 'signal');
+  assert.equal(chegou.from, c.first.id);
+  assert.equal(chegou.data.call, 'k1');
+  a.send({ type: 'signal', to: c.first.id, data: { side: 'voice', session: 'sa', targetSession: 'sc', call: 'k1', sdp: { type: 'answer', sdp: 'v=0' } } });
+  assert.equal((await c.wait((m) => m.type === 'signal')).data.sdp.type, 'answer');
+  await pausa();
+  assert.equal(a.messages.findIndex((m) => m.type === 'signal'), -1); // a da sessão errada não chegou
+});
+
+test('convidado assiste a tela (once vira false) e, se cair sem avisar, quem transmite larga o link e a sala vê que ele saiu', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  await pausa();
+  const c = await convidado(t, url, a);
+  assert.equal(c.first.members.find((m) => m.id === a.first.id).sharing, true);
+  c.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true, once: true } });
+  const pedido = await a.wait((m) => m.type === 'signal' && m.data.subscribe);
+  assert.deepEqual(pedido.data, { side: 'viewer', subscribe: true, once: false });
+  c.ws.terminate();
+  assert.equal((await a.wait((m) => m.type === 'signal' && m.data.unsubscribe)).from, c.first.id);
+  await a.wait((m) => m.type === 'member-left' && m.id === c.first.id);
+});
+
+test('convidado nunca vira host e a sala fecha quando só sobram convidados', async (t) => {
+  const { url, a } = await sala(t);
+  const c = await convidado(t, url, a); // entra antes do b: é mais antigo
+  const b = await entrar(t, url, a);
+  a.send({ type: 'leave' });
+  assert.equal((await b.wait((m) => m.type === 'host')).id, b.first.id);
+  b.send({ type: 'leave' });
+  const deadline = Date.now() + 3000;
+  while (!c.isClosed() && Date.now() < deadline) await pausa(10);
+  assert.ok(c.isClosed());
+  const volta = await connect(url, { room: a.first.sala, password: 'pizza-azul', client: client() });
+  t.after(() => volta.ws.terminate());
+  assert.equal(volta.first.type, 'error');
+});
+
+test('limite de convidados é à parte das pessoas; convidado não cria sala nem entra por passe', async (t) => {
+  const { url, a } = await sala(t, { maxConvidados: 2 });
+  const c1 = await convidado(t, url, a);
+  await convidado(t, url, a);
+  const terceiro = await convidado(t, url, a);
+  assert.equal(terceiro.first.type, 'error');
+  c1.send({ type: 'leave' });
+  await pausa();
+  assert.equal((await convidado(t, url, a)).first.type, 'welcome');
+  assert.equal((await entrar(t, url, a)).first.type, 'welcome'); // pessoa normal não perde vaga
+
+  const sem = [
+    await connect(url, { create: true, password: 'pizza-azul', role: 'convidado', client: client() }),
+    await connect(url, { room: a.first.sala, passe: a.first.passeSala, role: 'convidado', client: client() }),
+    await convidado(t, url, a, { password: 'errada' }),
+  ];
+  for (const x of sem) { t.after(() => x.ws.terminate()); assert.equal(x.first.type, 'error'); }
+});
+
 test('serve a página /ver com CSP e só os arquivos da lista', async (t) => {
   const { url } = await start(t);
   const base = url.replace('ws:', 'http:');
@@ -557,6 +727,10 @@ test('serve a página /ver com CSP e só os arquivos da lista', async (t) => {
   const js = await fetch(`${base}/ver.js`);
   assert.equal(js.status, 200);
   assert.match(js.headers.get('content-type'), /javascript/);
+  const voz = await fetch(`${base}/voz.js`);
+  assert.equal(voz.status, 200);
+  assert.match(voz.headers.get('content-type'), /javascript/);
+  assert.match(voz.headers.get('content-security-policy'), /default-src 'none'/);
   const css = await fetch(`${base}/ver.css`);
   assert.equal(css.status, 200);
   assert.match(css.headers.get('content-type'), /^text\/css/);
