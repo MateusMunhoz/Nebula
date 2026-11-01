@@ -46,7 +46,9 @@ function networkPreferences() {
     }
     const p = JSON.parse(localStorage.getItem(NETWORK_PREF_KEY) || '{}');
     const escolhida = ['razze', 'radmin'].includes(p.provider) ? p.provider : 'internet';
-    const outrasRedes = typeof p.outrasRedes === 'boolean' ? p.outrasRedes : escolhida !== 'internet';
+    // No iPhone só existe a Internet (sem Radmin, rede local nem túnel WireGuard: docs/spec/nebula-ios-sideload.md)
+    const outrasRedes = window.api.platform === 'ios' ? false
+      : typeof p.outrasRedes === 'boolean' ? p.outrasRedes : escolhida !== 'internet';
     return {
       provider: outrasRedes ? escolhida : 'internet',
       outrasRedes,

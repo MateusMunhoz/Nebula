@@ -113,7 +113,8 @@ function newerVersion(a, b) {
 
 // Procura na sala alguém com versão mais nova que a minha (e que a já baixada) e pede o pacote
 function checkUpdates() {
-  if (update.busy || !state.ws || !update.myVersion) return;
+  // O iPhone atualiza pela AltStore/SideStore: pedir o pacote do PC só gastaria a rede de quem manda
+  if (window.api.platform === 'ios' || update.busy || !state.ws || !update.myVersion) return;
   const base = update.ready || update.myVersion;
   let best = null;
   for (const [id, m] of state.members) {

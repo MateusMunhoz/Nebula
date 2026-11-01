@@ -6,6 +6,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
 import { STUBS, criarStub } from './stubs.js';
+import { instalarAudio } from './audio.js';
 
 const api = { platform: 'ios' };
 for (const [nome, definicao] of Object.entries(STUBS)) api[nome] = criarStub(nome, definicao);
@@ -33,6 +34,9 @@ api.noiseWasm = async (simd) => {
 };
 
 window.api = api;
+
+// Microfone na voz: a sessão de áudio do iPhone vai para o alto-falante (audio.js)
+try { instalarAudio(); } catch { /* sem o Capacitor (testes no navegador) */ }
 
 // Link de convite (telap2p://sala?d=...): abre o app (ou o traz para a frente) e entra na sala pelo mesmo caminho do desktop.
 // Espera o renderer carregar (lerConvite e aceitarConvite são globais de renderer/salas-amigos.js).

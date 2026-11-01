@@ -73,6 +73,14 @@ cd ../../build/ipa && zip -qry ../Nebula.ipa Payload
 ```
 O arquivo fica em `mobile/build/Nebula.ipa`. O Sideloadly assina com o Apple ID de quem instala.
 
+## Sem Mac: o `.ipa` do GitHub e a AltStore
+
+1. No GitHub: Actions › **iOS .ipa** › **Run workflow** (ramo `main` ou o ramo do PR). Leva até 40 min.
+2. No fim da execução, baixe o artefato `Nebula-ipa` (um `.zip`) e tire o `Nebula-<versão>.ipa` de dentro.
+3. Mande o `.ipa` para o iPhone (iCloud Drive, AirDrop ou "Salvar em Arquivos").
+4. AltStore › My Apps › `+` › escolha o `.ipa`. O AltServer precisa estar aberto no PC, no mesmo Wi-Fi.
+5. A conta grátis vale 7 dias: renove pela AltStore (com o AltServer aberto) antes de vencer.
+
 ## O que testar depois de abrir o app
 Anote o que funciona e o que não funciona e mande de volta:
 1. O app abre e mostra a tela inicial (sem "Criar sala" e sem as opções de rede).

@@ -8,9 +8,17 @@
   #homeApoio, #navApoio,
   #navGamer, #overlayToggle,                    /* modo gamer e chat por cima do jogo */
   #miniShare, #shareBtn, #cbShare, #stageLayout, /* transmitir */
-  #openStatsRoom
+  #openStatsRoom,
+  #navUpdate, #homeVersaoNova, #homeVersaoPainel, /* atualização é pela AltStore/SideStore */
+  #pipChip                                       /* janela flutuante */
 ) { display: none !important; }
 
+/* Configurações: grupos que não existem no iPhone (transmissão e clipes, atalhos, backup no celular, comando de voz,
+   desempenho do PC). Em Rede fica só o servidor da Internet e o mapa: a escolha de rede e as outras redes somem. */
+:root[data-plataforma="ios"] :is(.settings-nav, .settings-tabs) :is(
+  [data-group="transmissao"], [data-group="atalhos"], [data-group="backup"], [data-group="extras"], [data-group="stats"]
+) { display: none !important; }
+:root[data-plataforma="ios"] #settingsPanel-network :is(section:has(> #networkProviderSeg), #razzeSettings) { display: none !important; }
 /* ---------- Área segura: relógio e Dynamic Island em cima, a barra de voltar ao início embaixo ---------- */
 /* A página vai até as bordas (viewport-fit=cover, contentInset "never" no capacitor.config.json) e se afasta delas aqui.
    A barra de título cresce para baixo do relógio; o body usa --titlebar, então o resto do app desce junto. */
