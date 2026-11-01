@@ -333,3 +333,234 @@ test('passe da sala: só o host liga e desliga; desligar tira na hora, ligar cri
   t.after(() => f.ws.terminate());
   assert.equal(f.first.type, 'welcome');
 });
+
+// ---- Espectador (assistir pelo navegador): docs/spec/assistir-no-navegador.md ----
+
+const pausa = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+const ABERTA = { quality: '1080p60', open: true };
+
+async function sala(t, opts) {
+  const { url } = await start(t, opts);
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  return { url, a };
+}
+async function entrar(t, url, a, extra = {}) {
+  const x = await connect(url, { room: a.first.sala, password: 'pizza-azul', name: 'Beto', client: client(), ...extra });
+  t.after(() => x.ws.terminate());
+  return x;
+}
+const espectador = (t, url, a, extra = {}) => entrar(t, url, a, { role: 'espectador', name: 'Zé', ...extra });
+
+test('espectador entra com a senha, recebe um welcome enxuto e fica invisível para a sala', async (t) => {
+  const { url, a } = await sala(t);
+  const b = await entrar(t, url, a);
+  b.send({ type: 'share', sharing: true, info: ABERTA });
+  await a.wait((m) => m.type === 'share-state' && m.sharing);
+  a.send({ type: 'chat', text: 'conversa da sala' });
+  await b.wait((m) => m.type === 'chat');
+
+  const v = await espectador(t, url, a);
+  assert.equal(v.first.type, 'welcome');
+  assert.equal(v.first.sala, a.first.sala);
+  for (const campo of ['chat', 'subsalas', 'musicas', 'passeSala', 'sessao', 'lider', 'amigosMembros']) assert.equal(v.first[campo], undefined, campo);
+  assert.ok(v.first.iceServers.length > 0);
+  assert.deepEqual(v.first.members, [
+    { id: a.first.id, name: 'Ana', sharing: false, shareInfo: null },
+    { id: b.first.id, name: 'Beto', sharing: true, shareInfo: ABERTA },
+  ]);
+
+  await pausa();
+  for (const x of [a, b]) assert.equal(x.messages.findIndex((m) => m.type === 'member-joined' && m.id === v.first.id), -1);
+  v.send({ type: 'leave' });
+  await pausa();
+  for (const x of [a, b]) assert.equal(x.messages.findIndex((m) => m.type === 'member-left'), -1);
+});
+
+test('espectador só recebe o estado das transmissões: sem chat, e o que ele escreve não vale', async (t) => {
+  const { url, a } = await sala(t);
+  const v = await espectador(t, url, a);
+  a.send({ type: 'chat', text: 'segredo da sala' });
+  await a.wait((m) => m.type === 'chat');
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  const estado = await v.wait((m) => m.type === 'share-state');
+  assert.equal(estado.id, a.first.id);
+  assert.equal(estado.sharing, true);
+  assert.equal(v.messages.findIndex((m) => m.type === 'chat'), -1);
+
+  v.send({ type: 'chat', text: 'spam do espectador' });
+  v.send({ type: 'share', sharing: true, info: ABERTA });
+  v.send({ type: 'voice-state', session: 'abc', channel: '' });
+  await pausa();
+  a.send({ type: 'chat', text: 'fim' });
+  await a.wait((m) => m.type === 'chat' && m.text === 'fim');
+  assert.equal(a.messages.findIndex((m) => (m.type === 'chat' && m.text !== 'fim') || m.type === 'share-state' || m.type === 'voice-state'), -1);
+});
+
+test('espectador pede para assistir (once vira false) e recebe a oferta de quem transmite', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  await pausa();
+  const v = await espectador(t, url, a);
+  assert.equal(v.first.members.find((m) => m.id === a.first.id).sharing, true);
+
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true, once: true } });
+  const pedido = await a.wait((m) => m.type === 'signal');
+  assert.equal(pedido.from, v.first.id);
+  assert.deepEqual(pedido.data, { side: 'viewer', subscribe: true, once: false });
+
+  a.send({ type: 'signal', to: v.first.id, data: { side: 'sharer', sdp: { type: 'offer', sdp: 'v=0' } } });
+  const oferta = await v.wait((m) => m.type === 'signal');
+  assert.equal(oferta.from, a.first.id);
+  assert.equal(oferta.data.side, 'sharer');
+});
+
+test('espectador não fala em voz nem pede a quem não transmite ou fechou a transmissão', async (t) => {
+  const { url, a } = await sala(t);
+  const b = await entrar(t, url, a);
+  const v = await espectador(t, url, a);
+  b.send({ type: 'share', sharing: true, info: { quality: '720p30', open: false } });
+  await v.wait((m) => m.type === 'share-state');
+
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } }); // Ana não transmite
+  v.send({ type: 'signal', to: b.first.id, data: { side: 'viewer', subscribe: true } }); // transmissão fechada ao canal
+  v.send({ type: 'signal', to: v.first.id, data: { side: 'viewer', subscribe: true } }); // ele mesmo
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  await v.wait((m) => m.type === 'share-state' && m.id === a.first.id);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'voice', session: 'x', targetSession: 'y' } });
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'lider', role: 'falar' } });
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'sharer', sdp: { type: 'offer', sdp: 'v=0' } } });
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } }); // esta passa
+  const unico = await a.wait((m) => m.type === 'signal');
+  assert.equal(unico.data.side, 'viewer');
+  await pausa();
+  assert.equal(a.messages.findIndex((m) => m.type === 'signal'), -1);
+  assert.equal(b.messages.findIndex((m) => m.type === 'signal'), -1);
+});
+
+test('limite de espectadores por sala: o sexto recebe erro e sair libera a vaga', async (t) => {
+  const { url, a } = await sala(t);
+  const cinco = [];
+  for (let i = 0; i < 5; i++) cinco.push(await espectador(t, url, a));
+  assert.ok(cinco.every((x) => x.first.type === 'welcome'));
+  const sexto = await espectador(t, url, a);
+  assert.equal(sexto.first.type, 'error');
+  cinco[0].send({ type: 'leave' });
+  await pausa();
+  assert.equal((await espectador(t, url, a)).first.type, 'welcome');
+  // espectador não conta na vaga das pessoas
+  assert.equal((await entrar(t, url, a)).first.type, 'welcome');
+});
+
+test('espectador nunca cria sala; sala inexistente, senha errada e criar respondem igual', async (t) => {
+  const { url, a } = await sala(t);
+  const erradas = [
+    await espectador(t, url, a, { password: 'senha-errada' }),
+    await connect(url, { room: 'ZZZZZZ', password: 'pizza-azul', role: 'espectador', client: client() }),
+    await connect(url, { create: true, password: 'pizza-azul', role: 'espectador', client: client() }),
+  ];
+  for (const x of erradas) assert.equal(x.first.type, 'error');
+  assert.equal(new Set(erradas.map((x) => x.first.message)).size, 1);
+  const saude = await (await fetch(url.replace('ws:', 'http:') + '/health')).json();
+  assert.equal(saude.salas, 1);
+});
+
+test('host sai: o próximo host nunca é espectador, e a sala fecha quando só sobram espectadores', async (t) => {
+  const { url, a } = await sala(t);
+  const b = await entrar(t, url, a);
+  const v = await espectador(t, url, a);
+  a.send({ type: 'leave' });
+  const novo = await b.wait((m) => m.type === 'host');
+  assert.equal(novo.id, b.first.id);
+  await v.wait((m) => m.type === 'member-left' && m.id === a.first.id);
+  assert.equal(v.messages.findIndex((m) => m.type === 'host'), -1);
+
+  b.send({ type: 'leave' });
+  const deadline = Date.now() + 3000;
+  while (!v.isClosed() && Date.now() < deadline) await pausa(10);
+  assert.ok(v.isClosed());
+  const c = await connect(url, { room: a.first.sala, password: 'pizza-azul', client: client() });
+  t.after(() => c.ws.terminate());
+  assert.equal(c.first.type, 'error');
+});
+
+test('espectador que cai sem sair: quem transmite recebe o unsubscribe (uma vez só)', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  await pausa();
+  const v = await espectador(t, url, a);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } });
+  await a.wait((m) => m.type === 'signal' && m.data.subscribe);
+  v.ws.terminate(); // fechou a aba, o iPhone suspendeu o Safari, a rede caiu
+  const fim = await a.wait((m) => m.type === 'signal' && m.data.unsubscribe);
+  assert.equal(fim.from, v.first.id);
+  assert.equal(fim.data.side, 'viewer');
+
+  // Quem já avisou que parou de assistir não gera um segundo aviso ao sair
+  const w = await espectador(t, url, a);
+  w.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } });
+  w.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', unsubscribe: true } });
+  await a.wait((m) => m.type === 'signal' && m.from === w.first.id && m.data.unsubscribe);
+  w.send({ type: 'leave' });
+  await pausa();
+  assert.equal(a.messages.findIndex((m) => m.type === 'signal' && m.from === w.first.id && m.data.unsubscribe), -1);
+});
+
+test('espectador consegue parar de assistir mesmo se a transmissão foi fechada ou parou; pedir de novo continua barrado', async (t) => {
+  const { url, a } = await sala(t);
+  a.send({ type: 'share', sharing: true, info: ABERTA });
+  await pausa();
+  const v = await espectador(t, url, a);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } });
+  await a.wait((m) => m.type === 'signal' && m.data.subscribe);
+
+  a.send({ type: 'share', sharing: true, info: { quality: '1080p60', open: false } }); // fechou ao canal
+  await v.wait((m) => m.type === 'share-state' && m.info?.open === false);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', unsubscribe: true } });
+  assert.equal((await a.wait((m) => m.type === 'signal')).data.unsubscribe, true);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', subscribe: true } });
+
+  a.send({ type: 'share', sharing: false }); // parou
+  await v.wait((m) => m.type === 'share-state' && m.sharing === false);
+  v.send({ type: 'signal', to: a.first.id, data: { side: 'viewer', unsubscribe: true } });
+  assert.equal((await a.wait((m) => m.type === 'signal')).data.unsubscribe, true);
+  await pausa();
+  assert.equal(a.messages.findIndex((m) => m.type === 'signal'), -1); // o subscribe barrado não chegou
+});
+
+test('espectador não entra com passe de convite (na v1 só com a senha)', async (t) => {
+  const { url, a } = await sala(t);
+  assert.match(a.first.passeSala, /^[A-Za-z0-9_-]{43}$/);
+  const v = await connect(url, { room: a.first.sala, passe: a.first.passeSala, role: 'espectador', name: 'Zé', client: client() });
+  t.after(() => v.ws.terminate());
+  assert.equal(v.first.type, 'error');
+  const b = await connect(url, { room: a.first.sala, passe: a.first.passeSala, name: 'Beto', client: client() }); // quem não é espectador entra
+  t.after(() => b.ws.terminate());
+  assert.equal(b.first.type, 'welcome');
+});
+
+test('serve a página /ver com CSP e só os arquivos da lista', async (t) => {
+  const { url } = await start(t);
+  const base = url.replace('ws:', 'http:');
+  const pagina = await fetch(`${base}/ver`);
+  assert.equal(pagina.status, 200);
+  assert.match(pagina.headers.get('content-type'), /^text\/html/);
+  const csp = pagina.headers.get('content-security-policy');
+  assert.match(csp, /default-src 'none'/);
+  assert.match(csp, /script-src 'self'(;|$)/);
+  assert.doesNotMatch(csp, /unsafe-/);
+  assert.equal(pagina.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(pagina.headers.get('referrer-policy'), 'no-referrer');
+  assert.match(await pagina.text(), /<script src="\/ver\.js"/);
+
+  assert.equal((await fetch(`${base}/ver?sala=ABC234`)).status, 200);
+  const js = await fetch(`${base}/ver.js`);
+  assert.equal(js.status, 200);
+  assert.match(js.headers.get('content-type'), /javascript/);
+  const css = await fetch(`${base}/ver.css`);
+  assert.equal(css.status, 200);
+  assert.match(css.headers.get('content-type'), /^text\/css/);
+
+  for (const caminho of ['/server.js', '/ver/', '/ver.html', '/package.json', '/vps/instalar.sh']) assert.equal((await fetch(base + caminho)).status, 404, caminho);
+  assert.equal((await fetch(`${base}/health`)).status, 200);
+});

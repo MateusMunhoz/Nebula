@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Assistir no Nebula</title>
+<link rel="stylesheet" href="/ver.css">
+</head>
+<body>
+<main>
+  <section id="entrar">
+    <h1>Assistir no Nebula</h1>
+    <p class="dica">Entre com o código e a senha da sala. Você só assiste: não aparece na sala e não fala.</p>
+    <form id="form">
+      <label>Código da sala
+        <input id="codigo" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" required>
+      </label>
+      <label>Senha
+        <input id="senha" type="password" autocomplete="off" required>
+      </label>
+      <button id="entrarBtn" type="submit">Entrar</button>
+    </form>
+    <p id="aviso" role="status"></p>
+  </section>
+
+  <section id="sala" hidden>
+    <video id="video" playsinline muted autoplay></video>
+    <p id="estado" role="status"></p>
+    <div id="lista"></div>
+    <div class="barra">
+      <button id="tocar" type="button" hidden>Toque para assistir</button>
+      <button id="telaCheia" type="button" hidden>Tela cheia</button>
+      <button id="sair" type="button" class="secundario">Sair</button>
+    </div>
+  </section>
+</main>
+<script src="/ver.js"></script>
+</body>
+</html>
