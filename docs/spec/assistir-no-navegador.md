@@ -1,6 +1,6 @@
 # Assistir pelo navegador (celular, só assistir)
 
-Issue: #63 · Roadmap: D2 (item 6) · **v1 no código (31/10/2026)**, sem publicar. As decisões da v1 estão em "Decisões"; falta o HTTPS (item 4), o deploy na VPS e o teste no iPhone.
+A v2, com voz, está em [convidado-web.md](convidado-web.md). Issue: #63 · Roadmap: D2 (item 6) · **v1 pronta (31/10/2026) e já aberta na VPS para teste**. As decisões da v1 estão em "Decisões"; falta o HTTPS (item 4) e o teste no iPhone.
 
 ## Objetivo
 Convidar alguém para ver uma transmissão sem pedir que instale o Nebula. A pessoa abre um endereço no celular, entra com o código e a senha da sala (ou por um link com passe) e assiste. Também é a porta de entrada do B0 (briefing para 50+ pessoas).
