@@ -41,9 +41,17 @@ jobs:
   ipa:
     name: Gerar .ipa sem assinar (macOS)
     needs: ponte
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 40
     steps:
+      # O Capacitor 8 não compila no Xcode padrão da máquina (15.4/16): usa o Xcode estável mais novo instalado
+      - name: Escolher o Xcode mais novo
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -iv -e beta -e release_candidate -e '_rc' | sort -V | tail -1)
+          echo "Usando $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
