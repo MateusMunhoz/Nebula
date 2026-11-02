@@ -284,6 +284,30 @@
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
   </div>
+  <!-- Escolher a música no próprio YouTube: o cabeçalho é daqui; a página do YouTube é uma view do processo principal
+       posta em cima de #ytEscolherArea (renderer/youtube-escolher.js, main/youtube-escolher.js) -->
+  <div id="ytEscolher" class="modal global yt-escolher" hidden>
+    <div class="dialog yt-escolher-dialog" role="dialog" aria-modal="true" aria-labelledby="ytEscolherFrase">
+      <div class="yt-escolher-head">
+        <button id="ytEscolherVoltar" type="button" class="btn icon" disabled></button>
+        <span id="ytEscolherModo" class="yt-escolher-modo">Tocar</span>
+        <p id="ytEscolherFrase" class="yt-escolher-frase" role="status"></p>
+        <form id="ytEscolherLink" class="yt-escolher-link" hidden>
+          <input id="ytEscolherUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
+          <button id="ytEscolherIr" type="submit" class="btn small primary">Tocar</button>
+        </form>
+        <button id="ytEscolherColar" type="button" class="btn small">Colar link</button>
+        <button id="ytEscolherFechar" type="button" class="btn icon"></button>
+      </div>
+      <div id="ytEscolherArea" class="yt-escolher-area">
+        <p id="ytEscolherCarregando">Carregando o YouTube…</p>
+        <div id="ytEscolherErro" class="yt-escolher-erro" hidden>
+          <p>Não consegui abrir o YouTube.</p>
+          <div><button id="ytEscolherTentar" type="button" class="btn small primary">Tentar de novo</button> <button id="ytEscolherErroColar" type="button" class="btn small">Colar link</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
     <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens e amigos" aria-label="Mensagens e amigos" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>
@@ -1652,6 +1676,7 @@
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
   <script src="renderer/musica.js"></script>
+  <script src="renderer/youtube-escolher.js"></script>
   <script src="vendor/mp4-muxer/mp4-muxer.js"></script>
   <script src="renderer/clipe-mp4.js"></script>
   <script src="renderer/clipes.js"></script>
