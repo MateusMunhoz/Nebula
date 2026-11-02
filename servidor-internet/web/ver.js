@@ -5,9 +5,11 @@
 const $ = (id) => document.getElementById(id);
 const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
 
-// ws: sala atual; ice: servidores do welcome; membros: id -> { name, sharing, shareInfo }; alvo: id de quem estou assistindo
-// nota: por que parei de assistir (aparece enquanto ninguém mais transmite)
-const S = { ws: null, ice: [], membros: new Map(), alvo: null, pc: null, cadeia: Promise.resolve(), timer: 0, nota: '', conversar: false };
+// ws: sala atual; ice: servidores do welcome; membros: id -> { name, sharing, shareInfo }
+// vistas: id de quem transmite -> { pc, cadeia, timer, fig, video, status, tocar, cheia } (uma conexão por transmissão)
+// destaque: id da tela grande; manual: quem parei à mão (não volta sozinho); nota: por que parei de assistir
+const S = { ws: null, ice: [], membros: new Map(), vistas: new Map(), destaque: null, manual: new Set(), nota: '', conversar: false };
+const nomeDe = (id) => S.membros.get(id)?.name || 'Alguém';
 
 function mostrar(tela) { $('entrar').hidden = tela !== 'entrar'; $('sala').hidden = tela !== 'sala'; }
 function aviso(texto, erro = false) { $('aviso').textContent = texto; $('aviso').classList.toggle('erro', erro); }
@@ -64,13 +66,15 @@ function receber(m) {
     S.membros.set(m.id, { id: m.id, name: m.name, sharing: !!m.sharing, shareInfo: m.shareInfo || null });
     atualizar();
   } else if (m.type === 'member-left') {
+    parar(m.id, `A transmissão de ${nomeDe(m.id)} terminou.`);
     S.membros.delete(m.id);
-    if (m.id === S.alvo) parar('A transmissão terminou.');
+    S.manual.delete(m.id);
     atualizar();
   } else if (m.type === 'share-state') {
     const x = S.membros.get(m.id) || { id: m.id, name: 'Alguém' };
     S.membros.set(m.id, { ...x, sharing: !!m.sharing, shareInfo: m.sharing ? m.info || null : null });
-    if (m.id === S.alvo && (!m.sharing || m.info?.open === false)) parar(m.sharing ? 'A transmissão foi fechada para quem não está na sala.' : 'A transmissão terminou.');
+    if (!m.sharing) S.manual.delete(m.id);
+    if (!m.sharing || m.info?.open === false) parar(m.id, m.sharing ? `A transmissão de ${nomeDe(m.id)} foi fechada para quem não está na sala.` : `A transmissão de ${nomeDe(m.id)} terminou.`);
     atualizar();
   } else if (m.type === 'signal') {
     sinal(m.from, m.data);
@@ -93,101 +97,149 @@ function desenharVoz(info) {
   if (info?.precisaToque) $('ouvir').hidden = false;
 }
 
-// Mostra quem está transmitindo: um só entra direto; vários viram botões
+// Lista quem está transmitindo, cada um com Assistir/Parar. Uma única transmissão aberta entra sozinha (até eu parar)
 function atualizar() {
-  if (S.alvo) return;
   const lista = $('lista');
   lista.replaceChildren();
   const todos = [...S.membros.values()].filter((x) => x.sharing);
   const abertas = todos.filter((x) => x.shareInfo?.open !== false);
-  if (abertas.length === 1) return assistir(abertas[0].id);
+  if (abertas.length === 1 && !S.vistas.size && !S.manual.has(abertas[0].id)) return assistir(abertas[0].id);
   for (const x of abertas) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = `Assistir ${x.name || 'Alguém'}`;
-    b.onclick = () => assistir(x.id);
+    const vendo = S.vistas.has(x.id);
+    const b = botao(`${vendo ? 'Parar' : 'Assistir'} ${x.name || 'Alguém'}`);
+    if (vendo) b.className = 'secundario';
+    b.onclick = () => { if (vendo) parar(x.id, '', true); else assistir(x.id); atualizar(); };
     lista.append(b);
   }
-  if (abertas.length) estado('Mais de uma pessoa está transmitindo. Escolha quem assistir.');
+  if (S.vistas.size || (abertas.length === 1)) estado(S.nota);
+  else if (abertas.length) estado('Mais de uma pessoa está transmitindo. Escolha quem assistir.');
   else if (todos.length) estado('A transmissão está fechada para quem não está na sala.');
   else estado(S.nota || 'Ninguém está transmitindo agora. Quando alguém começar, aparece aqui.');
 }
 
+function botao(texto) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = texto;
+  return b;
+}
+
+// Monta a tela de uma transmissão: vídeo + legenda (nome, estado, botões). Nomes entram só como texto
+function criarTela(id) {
+  const fig = document.createElement('figure');
+  fig.className = 'tela';
+  const video = document.createElement('video');
+  for (const a of ['playsinline', 'muted', 'autoplay']) video.setAttribute(a, '');
+  video.muted = true;
+  const legenda = document.createElement('figcaption');
+  const nome = document.createElement('strong');
+  nome.textContent = nomeDe(id);
+  const status = document.createElement('span');
+  const tocar = botao('Toque para assistir');
+  const cheia = botao('Tela cheia');
+  tocar.hidden = cheia.hidden = true;
+  tocar.onclick = () => { video.play().then(() => { tocar.hidden = true; }).catch(() => {}); };
+  cheia.onclick = () => {
+    const abrir = video.requestFullscreen || video.webkitRequestFullscreen || video.webkitEnterFullscreen; // no iPhone só o último existe
+    try { Promise.resolve(abrir?.call(video)).catch(() => {}); } catch { /* o iPhone recusa antes de o vídeo ter começado */ }
+  };
+  legenda.append(nome, status, tocar, cheia);
+  fig.append(video, legenda);
+  fig.onclick = () => { S.destaque = id; destacar(); }; // tocar numa tela pequena a põe em destaque
+  $('telas').append(fig);
+  return { fig, video, status, tocar, cheia };
+}
+
+// Só uma tela fica grande; se a destacada saiu, a primeira que sobrou assume
+function destacar() {
+  if (!S.vistas.has(S.destaque)) S.destaque = S.vistas.keys().next().value ?? null;
+  for (const [id, v] of S.vistas) v.fig.classList.toggle('destaque', id === S.destaque);
+}
+
 function assistir(id) {
-  parar('');
+  if (S.vistas.has(id)) return;
   S.nota = '';
-  S.alvo = id;
-  $('lista').replaceChildren();
-  estado('Conectando…');
+  S.manual.delete(id);
   const pc = new RTCPeerConnection({ iceServers: S.ice });
-  S.pc = pc;
-  S.cadeia = Promise.resolve();
+  const v = { pc, cadeia: Promise.resolve(), timer: 0, ...criarTela(id) };
+  S.vistas.set(id, v);
+  S.destaque = id; // a que acabei de pedir fica grande
+  destacar();
+  v.status.textContent = 'Conectando…';
   pc.ontrack = (e) => {
-    const video = $('video');
     const fluxo = e.streams[0] || new MediaStream([e.track]);
-    if (video.srcObject !== fluxo) video.srcObject = fluxo;
-    video.classList.add('ligado');
-    $('telaCheia').hidden = false;
-    video.play().then(() => { $('tocar').hidden = true; }).catch(() => { $('tocar').hidden = false; }); // o iPhone pode exigir um toque
+    if (v.video.srcObject !== fluxo) v.video.srcObject = fluxo;
+    v.video.classList.add('ligado');
+    v.cheia.hidden = false;
+    v.video.play().then(() => { v.tocar.hidden = true; }).catch(() => { v.tocar.hidden = false; }); // o iPhone pode exigir um toque
   };
   pc.onicecandidate = (e) => { if (e.candidate) sinalizar(id, { side: 'viewer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
-    if (S.pc !== pc) return;
-    if (pc.connectionState === 'connected') { clearTimeout(S.timer); estado(''); }
+    if (S.vistas.get(id) !== v) return;
+    if (pc.connectionState === 'connected') { clearTimeout(v.timer); v.status.textContent = ''; }
     else if (pc.connectionState === 'failed') {
-      estado('A conexão falhou. Tentando de novo…');
+      v.status.textContent = 'A conexão falhou. Tentando de novo…';
       sinalizar(id, { side: 'viewer', restart: true });
-      clearTimeout(S.timer); // o app desiste de reiniciar o ICE em 3 min: não fico esperando para sempre
-      S.timer = setTimeout(() => { if (S.pc === pc && pc.connectionState !== 'connected') parar('Não consegui conectar. Toque em Sair e entre de novo.'); }, 210000);
+      clearTimeout(v.timer); // o app desiste de reiniciar o ICE em 3 min: não fico esperando para sempre
+      v.timer = setTimeout(() => {
+        if (S.vistas.get(id) !== v || pc.connectionState === 'connected') return;
+        parar(id, `Não consegui conectar com ${nomeDe(id)}. Toque em Assistir para tentar de novo.`, true);
+        atualizar();
+      }, 210000);
     }
-    else if (pc.connectionState === 'disconnected') estado('Conexão instável…');
+    else if (pc.connectionState === 'disconnected') v.status.textContent = 'Conexão instável…';
   };
-  S.timer = setTimeout(() => { if (S.pc === pc && pc.connectionState !== 'connected') estado('Ainda conectando… quem transmite pode estar sem conexão direta com você.'); }, 12000);
+  v.timer = setTimeout(() => { if (S.vistas.get(id) === v && pc.connectionState !== 'connected') v.status.textContent = 'Ainda conectando… quem transmite pode estar sem conexão direta com você.'; }, 12000);
   sinalizar(id, { side: 'viewer', subscribe: true, once: false }); // once:false = vídeo comum, que o navegador entende
+  atualizar();
 }
 
 // Mensagens de quem transmite: a oferta (também as novas, quando ele reinicia a conexão) e os candidatos
 function sinal(from, d) {
-  const pc = S.pc;
-  if (!pc || from !== S.alvo || !d || typeof d !== 'object' || d.side !== 'sharer') return;
+  const v = S.vistas.get(from);
+  if (!v || !d || typeof d !== 'object' || d.side !== 'sharer') return;
   if (d.unavailable) {
     const x = S.membros.get(from);
     if (x) x.sharing = false;
-    parar(d.closed ? 'A transmissão está fechada para quem não está na sala.' : 'Essa pessoa não está transmitindo agora.');
+    parar(from, d.closed ? `A transmissão de ${nomeDe(from)} está fechada para quem não está na sala.` : `${nomeDe(from)} não está transmitindo agora.`);
     return atualizar();
   }
-  S.cadeia = S.cadeia.then(async () => {
-    if (S.pc !== pc) return;
+  v.cadeia = v.cadeia.then(async () => {
+    if (S.vistas.get(from) !== v) return;
     if (typeof d.sdp?.sdp === 'string' && typeof d.sdp.type === 'string') {
-      await pc.setRemoteDescription(d.sdp);
-      await pc.setLocalDescription(await pc.createAnswer());
-      sinalizar(from, { side: 'viewer', sdp: pc.localDescription });
+      await v.pc.setRemoteDescription(d.sdp);
+      await v.pc.setLocalDescription(await v.pc.createAnswer());
+      sinalizar(from, { side: 'viewer', sdp: v.pc.localDescription });
     } else if (d.candidate && typeof d.candidate === 'object') {
-      await pc.addIceCandidate(d.candidate);
+      await v.pc.addIceCandidate(d.candidate);
     }
   }).catch((err) => console.error(err));
 }
 
-// Para de assistir (a sala continua): avisa quem transmite, fecha a conexão e limpa o vídeo
-function parar(texto) {
-  clearTimeout(S.timer);
-  if (S.alvo) sinalizar(S.alvo, { side: 'viewer', unsubscribe: true });
-  S.pc?.close();
-  S.pc = null;
-  S.alvo = null;
+// Para de assistir uma transmissão (a sala continua): avisa quem transmite, fecha a conexão e tira a tela.
+// lembrar: foi escolha minha (ou falha); sozinha ela não volta. Quem chama refaz a lista com atualizar()
+function parar(id, texto = '', lembrar = false) {
+  const v = S.vistas.get(id);
+  if (!v) return;
+  clearTimeout(v.timer);
+  sinalizar(id, { side: 'viewer', unsubscribe: true });
+  v.pc.close();
+  v.video.srcObject = null;
+  v.fig.remove();
+  S.vistas.delete(id);
+  if (lembrar) S.manual.add(id);
   S.nota = texto;
-  const video = $('video');
-  video.srcObject = null;
-  video.classList.remove('ligado');
-  $('tocar').hidden = true;
-  $('telaCheia').hidden = true;
-  estado(texto);
+  destacar();
 }
 
 // Sai da sala. voltar: mostra a tela de entrada de novo
 function sair(voltar = true) {
   const ws = S.ws;
-  parar('');
+  for (const id of [...S.vistas.keys()]) parar(id); // antes de zerar a lista: cada transmissor recebe o unsubscribe
+  S.manual.clear();
+  S.destaque = null;
+  S.nota = '';
+  estado('');
   if (S.conversar) { Voz.sair(); S.conversar = false; } // antes de fechar a conexão: avisa a sala que saí da voz
   for (const id of ['voz', 'mudo', 'ouvir']) $(id).hidden = true;
   $('mudo').textContent = 'Silenciar microfone';
@@ -227,11 +279,5 @@ $('mudo').onclick = () => {
 };
 $('ouvir').onclick = () => { Voz.tocar(); $('ouvir').hidden = true; };
 $('sair').onclick = () => sair();
-$('tocar').onclick = () => { $('video').play().then(() => { $('tocar').hidden = true; }).catch(() => {}); };
-$('telaCheia').onclick = () => {
-  const v = $('video');
-  const abrir = v.requestFullscreen || v.webkitRequestFullscreen || v.webkitEnterFullscreen; // no iPhone só o último existe
-  try { Promise.resolve(abrir?.call(v)).catch(() => {}); } catch { /* o iPhone recusa antes de o vídeo ter começado */ }
-};
 // Fechou a aba ou saiu da página: avisa a sala na hora (senão quem transmite só percebe quando a conexão cai)
 addEventListener('pagehide', () => sair(false));

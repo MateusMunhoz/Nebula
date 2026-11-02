@@ -32,8 +32,15 @@ button:disabled { opacity: .6; }
 #form button { width: 100%; }
 #aviso, #estado { min-height: 1.4em; color: var(--suave); }
 #aviso.erro { color: var(--destaque); }
-#video { display: block; width: 100%; max-height: 70vh; background: #000; border-radius: 10px; }
-#video:not([src]):not(.ligado) { display: none; }
+#telas { display: flex; flex-wrap: wrap; gap: 8px; }
+.tela { flex: 0 1 calc(50% - 4px); min-width: 0; margin: 0; cursor: pointer; }
+.tela.destaque { flex-basis: 100%; order: -1; cursor: default; }
+.tela video { display: block; width: 100%; max-height: 22vh; background: #000; border-radius: 10px; }
+.tela.destaque video { max-height: 70vh; }
+.tela video:not(.ligado) { display: none; }
+.tela figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 4px 0 8px; font-size: .9rem; color: var(--suave); }
+.tela figcaption strong { color: var(--texto); }
+.tela button { padding: 6px 12px; font-size: .9rem; }
 #lista { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
 .barra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 [hidden] { display: none !important; }

@@ -1,7 +1,7 @@
 # Convidado pelo navegador (falar e assistir, sem instalar)
 
 Issue: #63 · Roadmap: D2 (item 6), v2 · Sucede [assistir-no-navegador.md](assistir-no-navegador.md) (v1, só assistir).
-**No ar para teste (01/11/2026)** em `https://2-25-253-140.sslip.io/ver` (HTTPS pelo Caddy da RazzeAPI). O microfone e a voz funcionam no iPhone; faltam as duas pendências do teste, abaixo.
+**No ar para teste (01/11/2026)** em `https://2-25-253-140.sslip.io/ver` (HTTPS pelo Caddy da RazzeAPI). O microfone e a voz funcionam no iPhone; as várias telas estão feitas (01/11/2026, falta só publicar na VPS); faltam o som pelo auricular e a tela cheia, abaixo.
 
 ## Objetivo
 Um amigo sem o Nebula entra numa sala pelo celular (inclusive iPhone), **fala e ouve** os outros e vê a tela de quem transmite.
@@ -26,7 +26,7 @@ Entra como **convidado**: sem conta, só com código e senha da sala.
 - Se cai sem avisar, sai na hora e quem transmite recebe o `unsubscribe` (sem link fantasma).
 
 ## Pendências do teste no iPhone (01/11/2026)
-1. **Várias telas.** Hoje a página assiste a uma transmissão só (`S.alvo` e um `RTCPeerConnection` em `ver.js`): quem entrou numa tela não consegue parar só ela, ver várias ao mesmo tempo nem trocar para a de outra pessoa. O protocolo já permite (um `subscribe` por transmissor, um PC por transmissor; o app host aceita vários espectadores). Falta a página: lista de quem transmite com **Assistir/Parar** em cada uma, um vídeo por transmissão e destaque para trocar.
+1. **Várias telas — feito (01/11/2026), só `ver.js`/`ver.html`/`ver.css`.** `S.vistas` guarda uma vista por transmissor (um `RTCPeerConnection`, um `<video>` e uma legenda com nome, estado e **Tela cheia**). A lista mostra **Assistir/Parar** para cada transmissão aberta; tocar numa tela pequena a põe em destaque (a mais nova pedida já nasce em destaque; se a destacada sai, a primeira que sobra assume). Uma única transmissão aberta entra sozinha, mas, se a pessoa parar à mão (ou a conexão falhar de vez), ela não volta sozinha. Verificado no Chrome com dois transmissores falsos (lista, duas telas tocando, troca de destaque, parar só uma e receber o `unsubscribe` certo, sair). O protocolo e o app não mudaram.
 2. **Som pelo auricular.** No iPhone, depois de abrir o microfone, o Safari manda o áudio para o fone de chamada (auricular) e não para o alto-falante. Candidatos a testar, um de cada vez, no aparelho: `navigator.audioSession.type` (`play-and-record` ou `playback`, Safari 16.4 ou mais novo), tocar a voz por um `<video playsinline>` em vez de `<audio>`, ou passar a voz pelo `AudioContext`. Não foi testado; o `setSinkId` não existe no iOS. Pode valer um botão **Alto-falante** para alternar.
 3. Tela cheia no iPhone (v1): ao sair do player nativo o iOS pode pausar o vídeo e a página parecer travada. Ideia: ouvir `webkitendfullscreen` e retomar o `play()`; sem iPhone para reproduzir. Também ajudaria uma caixinha de diagnóstico em `.../ver#debug` (contexto seguro, microfone, estados da conexão, erros), já que não há Mac para depurar o Safari, e o código da sala vindo na URL (`.../ver#ABC123`).
 
