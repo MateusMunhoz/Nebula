@@ -279,5 +279,17 @@ $('mudo').onclick = () => {
 };
 $('ouvir').onclick = () => { Voz.tocar(); $('ouvir').hidden = true; };
 $('sair').onclick = () => sair();
+// Link de convite: .../ver#ABC234 já traz o código (o # nunca sai do aparelho, não vai para o servidor); falta só a senha
+function codigoDoLink() {
+  const m = !S.ws && /^#([A-HJ-NP-Z2-9]{6})$/i.exec(location.hash); // mesmas letras e números dos códigos do servidor
+  if (!m) return;
+  const dica = $('dicaEntrada');
+  dica.dataset.base ??= dica.textContent;
+  $('codigo').value = m[1].toUpperCase();
+  dica.textContent = `Convite para a sala ${m[1].toUpperCase()}: falta só a senha. ${dica.dataset.base}`;
+  $('senha').focus();
+}
+codigoDoLink();
+addEventListener('hashchange', codigoDoLink);
 // Fechou a aba ou saiu da página: avisa a sala na hora (senão quem transmite só percebe quando a conexão cai)
 addEventListener('pagehide', () => sair(false));

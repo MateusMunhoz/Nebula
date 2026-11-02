@@ -116,6 +116,8 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 O mesmo servidor entrega a página `http://IP_DA_VPS:8765/ver` (arquivos de `web/`, lidos na subida; atualizou, reinicie o
 serviço). No celular, sem instalar nada: código + senha da sala, e a tela de quem transmite aparece (só vídeo, sem som).
 
+- Link de convite: `/ver#ABC234` (o código depois do `#`, 6 caracteres dos códigos da sala) preenche o código e põe o foco na
+  senha. O `#` fica no navegador: não chega ao servidor nem aos logs. A senha nunca vai no link.
 - A página entra com `hello { role: 'espectador', room, password }`. Nunca cria sala e não aceita passe de convite;
   sala inexistente e senha errada respondem igual, e contam no limite de tentativas por IP.
 - O espectador é **invisível**: não há `member-joined`/`member-left` para a sala, ele não entra na lista de pessoas nem
