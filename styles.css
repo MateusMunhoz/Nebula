@@ -2650,6 +2650,23 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-pop .hint { margin: 0; font-size: 12px; }
 .music-pop-error { margin: 0; font-size: 12px; color: var(--warn); }
 .music-pop-error:empty { display: none; }
+/* Escolher a música no YouTube (youtube-escolher.js): o quadro quase do tamanho da janela; a página do YouTube é uma
+   view do processo principal por cima de .yt-escolher-area (o que ficar ali embaixo só aparece sem ela: carregando, erro) */
+.modal.yt-escolher { padding: 8px; }
+@media (min-height: 900px) { .modal.yt-escolher { padding: 16px; } }
+.yt-escolher-dialog { width: min(1280px, 100%); height: 100%; max-height: none; padding: 0; gap: 0; overflow: hidden; }
+.yt-escolher-head { flex: none; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 8px; box-sizing: border-box; border-bottom: 1px solid var(--line); }
+.yt-escolher-head .btn.icon { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; flex: none; }
+.yt-escolher-modo { flex: none; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.yt-escolher-frase { flex: 1; min-width: 0; margin: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yt-escolher-frase.aviso { color: var(--warn); }
+.yt-escolher-link { flex: 2; min-width: 0; display: flex; gap: 8px; } /* colar o link: divide a linha com a frase (os avisos seguem nela) */
+.yt-escolher-link input { flex: 1; min-width: 0; padding: 6px 10px; font: inherit; font-size: 13px; color: var(--text); background: var(--sunken);
+  border: 1px solid var(--field-line); border-radius: 8px; }
+.yt-escolher-link input:focus, .yt-escolher-link input:focus-visible { border-color: var(--accent); outline: none; }
+.yt-escolher-area { flex: 1; min-height: 0; display: grid; place-items: center; background: var(--sunken); color: var(--muted); font-size: 13px; }
+.yt-escolher-erro { display: grid; justify-items: center; gap: 10px; }
+.yt-escolher-erro p { margin: 0; color: var(--text); }
 .music-pop-actions { display: flex; justify-content: flex-end; gap: 6px; }
 
 /* Configurações › Celular (renderer/celular.js): os dois botões, depois um passo de cada vez (senha, QR, resumo) */

@@ -913,7 +913,7 @@ function skyCard(ch, sub) {
     const put = button('voice-music sky-card-nomusic', () => {
       if (musicPopFor?.ch === ch) return closeMusicPop();
       if (!mine) voice.setChannel(ch);
-      openMusicPop(ch, put, 'por');
+      escolherMusica(ch, put, 'por'); // o YouTube dentro do app; sem ele, o balão de colar o link
     });
     put.disabled = !canGo;
     put.title = mine ? `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`

@@ -535,5 +535,6 @@ setupWorkspace();
 startClips();
 setupGeneralSettings();
 setupComandoVoz();
+setupYtEscolher(); // escolher a música no YouTube dentro do app (renderer/youtube-escolher.js)
 setupPhone();
 show('home');

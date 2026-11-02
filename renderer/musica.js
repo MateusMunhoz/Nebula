@@ -63,6 +63,7 @@ function setMusicas(list, serverNow, quiet = false) {
   for (const ch of before.keys()) if (!next.has(ch) && state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
   renderVoice();
   renderNavMusic(); // tocando ou pausada: o botão e o menu da barrinha acompanham
+  if (typeof ytEscRender === 'function') ytEscRender(); // o escolhedor do YouTube aberto diz se alguém pôs música (youtube-escolher.js)
 }
 // Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora
 function musicSeed() {
@@ -74,6 +75,7 @@ function clearMusicas() {
   state.musicas = new Map();
   musica.wantOpen = null;
   closeMusicPop();
+  if (typeof fecharEscolhedor === 'function') fecharEscolhedor(false);
 }
 // Ao entrar (ou o servidor da sala trocar), conta de novo que você está ouvindo
 function resendListening() { const l = listenedMusic(); if (l) send({ type: 'musica-ouvindo', ch: l.ch, on: true }); }
@@ -374,7 +376,7 @@ function createMusicTile(ch, entry) {
   };
   seek.oninput = () => { mu.seeking = true; time.textContent = `${clock(Number(seek.value))} / ${clock(mu.duration)}`; };
   seek.onchange = () => { mu.seeking = false; if (canControlMusic(mu.entry)) musicCtl(mu.entry, 'seek', { pos: Number(seek.value) }); };
-  swap.onclick = () => openMusicPop(ch, swap, 'trocar');
+  swap.onclick = () => escolherMusica(ch, swap, 'trocar'); // o YouTube dentro do app (youtube-escolher.js)
   stopAll.onclick = async () => {
     if (!(await appConfirm(`Parar a música de ${channelName(ch)} para todo mundo?`, { title: 'Parar a música', ok: 'Parar', danger: true }))) return;
     musicCtl(mu.entry, 'stop');
@@ -442,7 +444,7 @@ function createMusicTile(ch, entry) {
   return tile;
 }
 // A voz mudou (você entrou, saiu ou trocou de canal): quem controla cada música pode ter mudado
-function renderMusicTiles() { for (const link of state.in.values()) link.music?.render(); }
+function renderMusicTiles() { for (const link of state.in.values()) link.music?.render(); if (typeof ytEscRender === 'function') ytEscRender(); }
 // As mensagens dos players chegam todas aqui: cada uma vai para o quadro do iframe que mandou
 window.addEventListener('message', (e) => {
   if (e.origin !== YT_ORIGIN) return;
@@ -521,7 +523,7 @@ function musicHeadButton(ch) {
   b.innerHTML = ICON.music;
   b.append('Pôr música');
   b.title = `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`;
-  b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : openMusicPop(ch, b, 'por'); };
+  b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : escolherMusica(ch, b, 'por'); };
   return b;
 }
 
