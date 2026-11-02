@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.10",
+    "date": "2026-11-02",
+    "items": [
+      "commit",
+      "Teste de configurações: servidor sem configuração aparece em cinza no mapa",
+      "Sala pelo Nostr: spec e protótipo da fase 0"
+    ]
+  },
+  {
     "version": "1.20.9",
     "date": "2026-10-27",
     "items": [
@@ -79,22 +88,6 @@ const NOVIDADES = [
     "date": "2026-10-12",
     "items": [
       "Passo a passo: docs da fase 3 (oferta na primeira entrada e Configurações › Ajuda)"
-    ]
-  },
-  {
-    "version": "1.19.3",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: roteiros da lista de amigos e do convite (fase 2)",
-      "Passo a passo guiado no Início (fase 1)",
-      "Rede: só a Internet por padrão; Radmin, rede local e Razze em \"Outras redes\"",
-      "Perfil › Conta: Trocar de conta",
-      "Perfil: partes Perfil e Conta na barra da esquerda, como em Configurações",
-      "butao sair da conta",
-      "Create protecoes-por-padrao.md",
-      "Identificador: pede para escolher o nome a quem ficou com o gerado",
-      "App instalado: DevTools desligadas em todas as janelas",
-      "Conta: identificador nome#1234, e-mail confirmado e verificação em dois fatores"
     ]
   }
 ];
