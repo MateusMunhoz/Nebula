@@ -57,6 +57,7 @@ function receber(m) {
       });
       $('voz').hidden = false;
       $('mudo').hidden = false;
+      $('saida').hidden = false;
       desenharVoz();
     }
     atualizar();
@@ -143,6 +144,7 @@ function criarTela(id) {
     const abrir = video.requestFullscreen || video.webkitRequestFullscreen || video.webkitEnterFullscreen; // no iPhone só o último existe
     try { Promise.resolve(abrir?.call(video)).catch(() => {}); } catch { /* o iPhone recusa antes de o vídeo ter começado */ }
   };
+  video.addEventListener('webkitendfullscreen', () => { video.play().catch(() => { tocar.hidden = false; }); }); // iPhone: ao sair do player nativo o vídeo pode ficar pausado
   legenda.append(nome, status, tocar, cheia);
   fig.append(video, legenda);
   fig.onclick = () => { S.destaque = id; destacar(); }; // tocar numa tela pequena a põe em destaque
@@ -241,8 +243,9 @@ function sair(voltar = true) {
   S.nota = '';
   estado('');
   if (S.conversar) { Voz.sair(); S.conversar = false; } // antes de fechar a conexão: avisa a sala que saí da voz
-  for (const id of ['voz', 'mudo', 'ouvir']) $(id).hidden = true;
+  for (const id of ['voz', 'mudo', 'ouvir', 'saida']) $(id).hidden = true;
   $('mudo').textContent = 'Silenciar microfone';
+  $('saida').textContent = 'Som: padrão (toque para trocar)';
   S.ws = null;
   S.membros = new Map();
   if (ws) { try { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'leave' })); ws.close(); } catch {} }
@@ -278,6 +281,7 @@ $('mudo').onclick = () => {
   $('mudo').textContent = mudo ? 'Ativar microfone' : 'Silenciar microfone';
 };
 $('ouvir').onclick = () => { Voz.tocar(); $('ouvir').hidden = true; };
+$('saida').onclick = () => { $('saida').textContent = `Som: ${Voz.proximaSaida()} (toque para trocar)`; };
 $('sair').onclick = () => sair();
 // Link de convite: .../ver#ABC234 já traz o código (o # nunca sai do aparelho, não vai para o servidor); falta só a senha
 function codigoDoLink() {

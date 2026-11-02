@@ -8,8 +8,60 @@ const Voz = (() => {
     .join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5'); // iOS antigo não tem randomUUID
   const S = {
     enviar: null, aoMudar: () => {}, perdeuMic: () => {}, ice: [], meuId: '', sessao: '', canal: '', mudo: false, eco: false,
-    stream: null, membros: new Map(), pares: new Map(),
+    stream: null, membros: new Map(), pares: new Map(), saida: 0, ctx: null,
   };
+
+  // Por onde a voz dos outros sai. No iPhone, com o microfone aberto, o som pode ir para o auricular e não para o
+  // alto-falante; sem como saber qual técnica resolve em cada iOS, o botão da página alterna entre elas (spec: som pelo auricular).
+  // sessao: valor de navigator.audioSession.type (Safari 16.4+); como: onde tocar ('video' ou 'webaudio'; sem isso, <audio>)
+  const MODOS = [
+    { nome: 'padrão' },
+    { nome: 'chamada', sessao: 'play-and-record' },
+    { nome: 'vídeo', como: 'video' },
+    { nome: 'AudioContext', como: 'webaudio' },
+    { nome: 'reprodução (pode calar o microfone)', sessao: 'playback' },
+  ];
+  const modoOk = (m) => !m.sessao || !!navigator.audioSession;
+
+  function desligarSaida(par) {
+    par.audio?.remove();
+    par.audio = null;
+    try { par.fonte?.disconnect(); } catch { /* já solta */ }
+    par.fonte = null;
+  }
+
+  function ligarSaida(par) {
+    desligarSaida(par);
+    if (!par.fluxo) return;
+    if (MODOS[S.saida].como === 'webaudio' && S.ctx) {
+      par.fonte = S.ctx.createMediaStreamSource(par.fluxo);
+      par.fonte.connect(S.ctx.destination);
+      return;
+    }
+    const el = document.createElement(MODOS[S.saida].como === 'video' ? 'video' : 'audio');
+    el.autoplay = true;
+    el.playsInline = true;
+    el.className = 'saida-voz';
+    el.srcObject = par.fluxo;
+    document.body.append(el);
+    par.audio = el;
+    el.play().catch(() => S.aoMudar({ precisaToque: true })); // o iPhone pode exigir um toque
+  }
+
+  // Passa para a próxima técnica (chamado direto no toque: o AudioContext e o iPhone só liberam assim). Devolve o nome
+  function proximaSaida() {
+    do { S.saida = (S.saida + 1) % MODOS.length; } while (!modoOk(MODOS[S.saida]));
+    aplicarSaida();
+    return MODOS[S.saida].nome;
+  }
+
+  function aplicarSaida() {
+    const m = MODOS[S.saida];
+    try { if (navigator.audioSession) navigator.audioSession.type = m.sessao || 'auto'; } catch { /* sem suporte */ }
+    if (m.como === 'webaudio' && !S.ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) S.ctx = new C(); }
+    S.ctx?.resume?.().catch(() => {});
+    for (const par of S.pares.values()) ligarSaida(par);
+  }
 
   // Pede o microfone. Tem que ser chamado direto no toque do usuário (o iPhone só libera assim)
   function pedirMic() {
@@ -55,18 +107,13 @@ const Voz = (() => {
 
   function criar(id, alvo, oferecer, call) {
     const pc = new RTCPeerConnection({ iceServers: S.ice });
-    const par = { id, pc, alvo, call: call || uuid(), fila: [], cadeia: Promise.resolve(), timer: 0, timerDesc: 0, audio: null };
+    const par = { id, pc, alvo, call: call || uuid(), fila: [], cadeia: Promise.resolve(), timer: 0, timerDesc: 0, audio: null, fonte: null, fluxo: null };
     S.pares.set(id, par);
     for (const t of S.stream.getTracks()) pc.addTrack(t, S.stream);
     pc.ontrack = (e) => {
-      if (par.audio) return;
-      const audio = document.createElement('audio');
-      audio.autoplay = true;
-      audio.playsInline = true;
-      audio.srcObject = e.streams[0] || new MediaStream([e.track]);
-      document.body.append(audio);
-      par.audio = audio;
-      audio.play().catch(() => S.aoMudar({ precisaToque: true })); // o iPhone pode exigir um toque
+      if (par.fluxo) return;
+      par.fluxo = e.streams[0] || new MediaStream([e.track]);
+      ligarSaida(par);
     };
     pc.onicecandidate = (e) => { if (e.candidate) sinalizar(id, par, { candidate: e.candidate }); };
     pc.onconnectionstatechange = () => {
@@ -101,7 +148,7 @@ const Voz = (() => {
     clearTimeout(par.timer);
     clearTimeout(par.timerDesc);
     try { par.pc.close(); } catch { /* já fechada */ }
-    par.audio?.remove();
+    desligarSaida(par);
   }
   function fecharTodos() { for (const id of [...S.pares.keys()]) fechar(id); }
 
@@ -178,7 +225,10 @@ const Voz = (() => {
       .map(([id, m]) => ({ id, name: m.name, mudo: m.muted, conectado: S.pares.get(id)?.pc.connectionState === 'connected' }));
   }
 
-  function tocar() { for (const p of S.pares.values()) p.audio?.play().catch(() => {}); }
+  function tocar() {
+    S.ctx?.resume?.().catch(() => {});
+    for (const p of S.pares.values()) p.audio?.play().catch(() => {});
+  }
 
   function sair() {
     if (S.sessao && S.enviar) { try { S.enviar({ type: 'voice-state', session: '', channel: '', muted: false, deafened: false }); } catch { /* sem conexão */ } }
@@ -188,7 +238,11 @@ const Voz = (() => {
     S.sessao = '';
     S.eco = false;
     S.membros = new Map();
+    S.saida = 0; // a próxima entrada volta ao padrão
+    try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch { /* sem suporte */ }
+    S.ctx?.close?.().catch(() => {});
+    S.ctx = null;
   }
 
-  return { pedirMic, entrar, receber, mudo, lista, tocar, sair, ativo: () => !!S.sessao };
+  return { pedirMic, entrar, receber, mudo, lista, tocar, proximaSaida, sair, ativo: () => !!S.sessao };
 })();

@@ -19,6 +19,7 @@ input {
 #codigo { text-transform: uppercase; letter-spacing: .2em; }
 .opcao { display: flex; align-items: center; color: var(--texto); font-size: 1rem; }
 input[type="checkbox"] { display: inline-block; width: 22px; height: 22px; margin: 0 10px 0 0; accent-color: var(--destaque); }
+.saida-voz { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; } /* a voz dos outros: toca, mas não aparece */
 #vozLista { list-style: none; margin: 0 0 8px; padding: 0; }
 #vozLista li { padding: 6px 0; border-bottom: 1px solid var(--borda); }
 #vozLista .mudo { color: var(--suave); }
