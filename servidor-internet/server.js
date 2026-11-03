@@ -335,7 +335,7 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'passe', 'senha', 'passe-sala', 'ping'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping'],
         passeSala: room.passes.sala(),
         amigosMembros: room.amigosMembros,
         chat: room.chat.log,
@@ -368,10 +368,10 @@ function createInternetServer(options = {}) {
       try { ws.ping(); } catch {}
     }
   }, 15000);
-  // Tira as músicas esquecidas (pausadas há muito tempo, ou sem ninguém no canal nem ouvindo)
+  // Tira as músicas esquecidas (pausadas há muito tempo, ou sem ninguém no canal nem ouvindo) e passa a que acabou para a próxima da fila
   const musicTimer = setInterval(() => {
     for (const r of rooms.values()) if (limparMusicas(r.musicas, r.members)) r.broadcast(r.musicas.msg());
-  }, 15000);
+  }, 5000); // 5 s: a próxima da fila não espera
 
   return {
     httpServer, wss, rooms, cfg,

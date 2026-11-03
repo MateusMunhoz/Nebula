@@ -1,6 +1,6 @@
 # Música: escolher pelo YouTube e fila
 
-Issue: (abrir) · Roadmap: — · Status: fase 1 (escolher pelo YouTube) implementada; a fila (fases 2 e 3) é proposta.
+Issue: (abrir) · Roadmap: — · Status: fases 1, 2 e 3 implementadas (escolher pelo YouTube e a fila); falta o deploy da VPS e o teste numa call.
 
 Decisões propostas (confirmar em [Decisões em aberto](#decisões-em-aberto)): o escolhedor é uma `WebContentsView` numa
 sessão só dele, sem `preload`, sem login no Google e sem mudar o CSP; o app só lê o endereço para onde a página foi
@@ -489,6 +489,20 @@ fila vazia, cheia e com um vídeo que não toca.
   comando de voz continuam como estavam.
 - IPC: `ytEscolherAbrir`, `ytEscolherPosicao`, `ytEscolherAcao`, `ytEscolherFocar`, `ytEscolherFechar` e
   `onYtEscolher`, como na tabela.
+
+### Como ficou a fila (fases 2 e 3)
+- Protocolo como na tabela: `fila-por`, `fila-mover`, `fila-tirar`, `pular` e `stop` com `tudo`, no `musica-ctl`; os
+  limites (`FILA_MAX`, `FILA_POR_PESSOA`, `FILA_SALA_MAX`) estão em `sala-protocolo.js`. O `id` do item é um número
+  crescente da sala (`musicas.seq()`), renumerado no seed. O intervalo de `limparMusicas` caiu para 5 s nos dois servidores.
+- Interface em `renderer/musica-fila.js` (o painel `#filaPop` e `porNaFila`). **Próxima** e **Fila** (com o número) entram
+  nos controles da tela da música; o menu da pílula ganhou "A seguir" e **Fila**.
+- As decisões em aberto ficaram com as propostas: 1, 2 (repetida pode), 4 (parar limpa a fila), 5 (chat põe na fila; o
+  comando de voz continua trocando), 6, 9 e 10.
+- Diferenças da proposta: o escolhedor no modo fila fica aberto e confirma a cada escolha, mas sem o botão **Pronto · N**
+  (fecha com o X ou Esc); os itens não têm a capa pequena; link colado sem título pede o título à prévia
+  (`youtubePrevia`, com a prévia de links ligada em Privacidade).
+- Testes: `tests/musica.test.js` (fila, limites, pular, stop antigo e novo, seed, `features`) e `tests/sala-fuzz.test.js`
+  (as ações novas com lixo). O e2e `tests/e2e/musica.js` (Windows) não ganhou a fila.
 
 ## Decisões em aberto
 1. **Quem mexe na fila.** Proposta: quem pode controlar a música (no canal, ou quem pôs a atual), e quem pôs um item

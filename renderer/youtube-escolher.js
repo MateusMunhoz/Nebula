@@ -6,7 +6,7 @@
 // O que a página desenhar por cima da área fica atrás do YouTube: os avisos do quadro vão na frase do cabeçalho.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, estado, subsalas, musica.
 
-let ytEsc = null; // { ch, modo: 'por' | 'trocar', anchor }: o quadro aberto
+let ytEsc = null; // { ch, modo: 'por' | 'trocar' | 'fila', anchor }: o quadro aberto (na fila, fica aberto a cada escolha)
 let ytEscAviso = null;  // timer que devolve a frase depois de um aviso
 let ytEscQuadro = 0;    // requestAnimationFrame da posição
 const ytEscObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(() => ytEscPosicionar()) : null;
@@ -19,34 +19,40 @@ function ytEscPosicionar() {
     if (ytEsc && !ytEsc.erro) window.api.ytEscolherPosicao(ytEscRect());
   });
 }
+// Pôr música com música no canal (alguém pôs enquanto você procurava): vai para a fila, se a sala tiver
+const ytEscVaiPraFila = () => ytEsc?.modo === 'fila' || (ytEsc?.modo === 'por' && state.filaOn && state.musicas.has(myVoiceChannel()));
 function ytEscFrase() {
   if (!ytEsc) return '';
   if (ytEsc.modo === 'trocar') return `Clique num vídeo para trocar a música de ${channelName(ytEsc.ch)}`;
+  if (ytEsc.modo === 'fila') return `Clique num vídeo para pôr na fila de ${channelName(ytEsc.ch)}`;
   // Alguém pôs música no seu canal enquanto você procurava: a frase diz antes do clique
   const ch = myVoiceChannel(), e = state.musicas.get(ch);
+  if (e && ytEscVaiPraFila()) return `${e.by === state.myId ? 'Você pôs' : `${nameOf(e.by)} pôs`} uma música em ${channelName(ch)}. O que você escolher vai para a fila.`;
   if (e && e.by !== state.myId) return `${nameOf(e.by)} pôs uma música em ${channelName(ch)}. Para mudar, use Trocar na tela da música.`;
   return `Clique num vídeo para tocar em ${channelName(ch)}`;
 }
 function ytEscRender() {
   if (!ytEsc) return;
-  $('ytEscolherModo').textContent = ytEsc.modo === 'trocar' ? 'Trocar' : 'Tocar';
-  $('ytEscolherIr').textContent = ytEsc.modo === 'trocar' ? 'Trocar' : 'Tocar';
+  const rotulo = ytEsc.modo === 'trocar' ? 'Trocar' : ytEscVaiPraFila() ? 'Fila' : 'Tocar';
+  $('ytEscolherModo').textContent = rotulo;
+  $('ytEscolherIr').textContent = rotulo === 'Fila' ? 'Pôr na fila' : rotulo;
   if (!ytEscAviso) $('ytEscolherFrase').textContent = ytEscFrase();
 }
-// Um aviso no lugar da frase, por alguns segundos
-function ytEscAvisar(texto, ms = 4000) {
+// Um aviso no lugar da frase, por alguns segundos (ok: a confirmação de que entrou na fila, sem a cor de cuidado)
+function ytEscAvisar(texto, ms = 4000, ok = false) {
   clearTimeout(ytEscAviso);
   $('ytEscolherFrase').textContent = $('ytEscolherFrase').title = texto; // a dica tem o texto inteiro (janela estreita corta)
-  $('ytEscolherFrase').classList.add('aviso');
+  $('ytEscolherFrase').classList.toggle('aviso', !ok);
   ytEscAviso = setTimeout(() => { ytEscAviso = null; $('ytEscolherFrase').classList.remove('aviso'); $('ytEscolherFrase').title = ''; ytEscRender(); }, ms);
 }
 
-// Pôr música (mode 'por') e Trocar (mode 'trocar'): o escolhedor; sem ele, o balão de colar o link
+// Pôr música (mode 'por'), Trocar ('trocar') e Procurar da fila ('fila'): o escolhedor; sem ele, o balão de colar o link
 async function escolherMusica(ch, anchor, mode) {
   if (!window.api?.ytEscolherAbrir) return openMusicPop(ch, anchor, mode);
   if (ytEsc) return;
   closeMusicPop();
-  ytEsc = { ch, modo: mode === 'trocar' ? 'trocar' : 'por', anchor, erro: false };
+  if (typeof fecharFila === 'function') fecharFila(false); // o painel da fila ficaria por cima do cabeçalho do quadro
+  ytEsc = { ch, modo: ['trocar', 'fila'].includes(mode) ? mode : 'por', anchor, erro: false };
   $('ytEscolherLink').hidden = true;
   $('ytEscolherColar').hidden = false;
   $('ytEscolherErro').hidden = true;
@@ -73,8 +79,16 @@ function fecharEscolhedor(focar = true) {
 }
 
 // Escolheu (clique no YouTube ou link colado): entra como o balão faria. O canal é o da hora do clique
-function ytEscEscolheu(videoId, title = '') {
+async function ytEscEscolheu(videoId, title = '') {
   if (!ytEsc || !/^[\w-]{11}$/.test(String(videoId))) return;
+  // Na fila: o quadro fica aberto para escolher mais, com "Na fila: … (3ª)" no lugar da frase
+  if (ytEscVaiPraFila()) {
+    const atual = ytEsc, r = await porNaFila(ytEsc.modo === 'fila' ? ytEsc.ch : myVoiceChannel(), videoId, title);
+    if (ytEsc !== atual) return;
+    if (r.erro) ytEscAvisar(r.erro, 6000);
+    else { ytEscAvisar(`✓ ${r.texto}`, 4000, true); $('ytEscolherUrl').value = ''; }
+    return;
+  }
   if (ytEsc.modo === 'trocar') {
     const e = state.musicas.get(ytEsc.ch);
     if (!e) return ytEscAvisar(`A música de ${channelName(ytEsc.ch)} acabou. Feche e use Pôr música.`, 6000);

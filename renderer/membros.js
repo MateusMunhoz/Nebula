@@ -253,7 +253,7 @@ function renderPalcoGente() {
   if (musica && palcoMusicaAcabou(musica)) {
     if (canControlMusic(musica) && palcoFimEnviado !== `${musica.videoId}:${musica.at}`) {
       palcoFimEnviado = `${musica.videoId}:${musica.at}`;
-      musicCtl(musica, 'stop');
+      musicCtl(musica, ...musicaFim(musica.videoId));
     }
     musica = null;
   }

@@ -273,7 +273,7 @@
       </div>
     </section>
   </aside>
-  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Sair; renderer/musica.js) -->
+  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Fila, Sair; renderer/musica.js) -->
   <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
@@ -283,6 +283,20 @@
       <p id="musicPopError" class="music-pop-error" role="status"></p>
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
+  </div>
+  <!-- A fila de músicas do canal (renderer/musica-fila.js): preso ao botão Fila da tela da música ou à pílula do canal -->
+  <div id="filaPop" class="music-fila-pop" role="dialog" aria-labelledby="filaPopTitulo" hidden>
+    <div class="fila-head"><strong id="filaPopTitulo">Fila</strong><button id="filaPopFechar" type="button" class="btn icon"></button></div>
+    <p id="filaPopTocando" class="fila-tocando"><span class="song-eq" aria-hidden="true"><span></span><span></span><span></span></span><span></span></p>
+    <p id="filaPopSeguir" class="fila-seguir">A seguir</p>
+    <ol id="filaPopLista" class="fila-lista" role="list"></ol>
+    <p id="filaPopVazio" class="fila-vazio">Nada na fila. Quando esta música acabar, o canal fica livre.</p>
+    <div class="fila-rodape">
+      <button id="filaPopProcurar" type="button" class="btn small">Procurar no YouTube</button>
+      <button id="filaPopColar" type="button" class="btn small">Colar link</button>
+      <p id="filaPopAviso" class="fila-aviso"></p>
+    </div>
+    <p id="filaPopStatus" class="fila-status" role="status"></p>
   </div>
   <!-- Escolher a música no próprio YouTube: o cabeçalho é daqui; a página do YouTube é uma view do processo principal
        posta em cima de #ytEscolherArea (renderer/youtube-escolher.js, main/youtube-escolher.js) -->
@@ -1676,6 +1690,7 @@
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
   <script src="renderer/musica.js"></script>
+  <script src="renderer/musica-fila.js"></script>
   <script src="renderer/youtube-escolher.js"></script>
   <script src="vendor/mp4-muxer/mp4-muxer.js"></script>
   <script src="renderer/clipe-mp4.js"></script>

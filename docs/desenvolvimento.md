@@ -15,7 +15,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 
 ## Como o app funciona
 
-- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat. Também guarda a música de cada canal (`sala-protocolo.js`: o vídeo, o ponto, o título e a duração, `dur`, contados pelo primeiro player de quem ouve com `musica-ctl` `titulo` e `duracao`) e tira sozinho a que acabou ou foi esquecida (`limparMusicas`, a cada 15 s).
+- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat. Também guarda a música de cada canal (`sala-protocolo.js`: o vídeo, o ponto, o título e a duração, `dur`, contados pelo primeiro player de quem ouve com `musica-ctl` `titulo` e `duracao`) e a fila de cada canal (`fila`, com `fila-por`, `fila-mover`, `fila-tirar` e `pular`; limites `FILA_MAX`, `FILA_POR_PESSOA` e `FILA_SALA_MAX`; anunciada como `fila` em `features`). Tira sozinho a esquecida e passa a que acabou para a próxima da fila (`limparMusicas`, a cada 5 s).
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
 - **Rede usada pelo app:** em Configurações, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
@@ -76,6 +76,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 21 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, grupos Voz e Atalhos das Configurações |
 | 22 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 23 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| — | `musica.js`, `musica-fila.js`, `youtube-escolher.js` | Música junto (YouTube): a tela da música, a pílula do canal e o balão de colar; o painel da fila (`#filaPop`, `porNaFila`); o escolhedor do YouTube dentro do app (modos pôr, trocar e fila) ([spec](spec/musica-youtube-e-fila.md)) |
 | 24 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |
 | 25 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 26 | `palco.js` | Como as telas assistidas se arrumam no palco |

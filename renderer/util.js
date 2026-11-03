@@ -144,6 +144,9 @@ const ICON = {
   moveTo: svg('M5 12h14M13 6l6 6-6 6'),
   pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
+  proxima: svg('M5 4v16l11-8zM17 4h3v16h-3z'),                                       // pular para a próxima da fila (cheio, como o play)
+  fila: svg('M3 5h13v2.5H3zM3 10.5h13V13H3zM3 16h8v2.5H3zM15 14v7l6-3.5z'),             // a fila de músicas (cheio)
+  chevronDown: svg('M6 9l6 6 6-6'),
   swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
   stop: svg('M7 7h10v10H7z'),
   scissors: svg('M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12'), // tesoura: salvar clipe

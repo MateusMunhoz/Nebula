@@ -536,5 +536,6 @@ startClips();
 setupGeneralSettings();
 setupComandoVoz();
 setupYtEscolher(); // escolher a música no YouTube dentro do app (renderer/youtube-escolher.js)
+setupFila(); // a fila de músicas de cada canal (renderer/musica-fila.js)
 setupPhone();
 show('home');
