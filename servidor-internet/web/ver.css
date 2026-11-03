@@ -43,5 +43,7 @@ button:disabled { opacity: .6; }
 .tela figcaption strong { color: var(--texto); }
 .tela button { padding: 6px 12px; font-size: .9rem; }
 #lista { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
-.barra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* Controles sempre à mão, mesmo com várias telas e a lista da conversa ocupando a página */
+.barra { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); background: var(--fundo); border-top: 1px solid var(--borda); }
+#debug { margin: 16px 0 0; font-size: .75rem; color: var(--suave); white-space: pre-wrap; word-break: break-all; }
 [hidden] { display: none !important; }

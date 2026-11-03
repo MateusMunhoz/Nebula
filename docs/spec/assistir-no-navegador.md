@@ -30,7 +30,7 @@ Convidar alguém para ver uma transmissão sem pedir que instale o Nebula. A pes
 - Quem assiste é **invisível**: não entra na lista da sala nem vira host. Quem transmite vê "Alguém está assistindo você".
 - Limite de **5 espectadores por sala** (`MAX_ESPECTADORES`), separado das 50 pessoas, enquanto não existe o P3.
 - Sem link com passe na v1. Quando vier, ele vale enquanto a sala existir e fechar a sala revoga (segue o passe de `docs/spec/salas-dos-amigos.md`).
-- **Sem áudio** na primeira versão: o vídeo fica mudo na página.
+- **Áudio:** a v1 deixava o vídeo mudo; desde 03/11/2026 a página toca o som da transmissão (ou oferece o botão **Ligar o som da tela** quando o navegador recusa; detalhes em `convidado-web.md`).
 - Só vê a transmissão aberta a toda a sala (`shareInfo.open !== false`); o servidor barra o pedido nas fechadas ao canal.
 - Quem entra pelo navegador não volta com `resume`: se a conexão cair, entra de novo.
 - O servidor muda só em `servidor-internet/server.js` (como o passe); `sala-protocolo.js`, `signaling.js` e o app não mudam.

@@ -8,59 +8,44 @@ const Voz = (() => {
     .join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5'); // iOS antigo não tem randomUUID
   const S = {
     enviar: null, aoMudar: () => {}, perdeuMic: () => {}, ice: [], meuId: '', sessao: '', canal: '', mudo: false, eco: false,
-    stream: null, membros: new Map(), pares: new Map(), saida: 0, ctx: null,
+    stream: null, membros: new Map(), pares: new Map(), alto: true,
   };
 
-  // Por onde a voz dos outros sai. No iPhone, com o microfone aberto, o som pode ir para o auricular e não para o
-  // alto-falante; sem como saber qual técnica resolve em cada iOS, o botão da página alterna entre elas (spec: som pelo auricular).
-  // sessao: valor de navigator.audioSession.type (Safari 16.4+); como: onde tocar ('video' ou 'webaudio'; sem isso, <audio>)
-  const MODOS = [
-    { nome: 'padrão' },
-    { nome: 'chamada', sessao: 'play-and-record' },
-    { nome: 'vídeo', como: 'video' },
-    { nome: 'AudioContext', como: 'webaudio' },
-    { nome: 'reprodução (pode calar o microfone)', sessao: 'playback' },
-  ];
-  const modoOk = (m) => !m.sessao || !!navigator.audioSession;
+  // Por onde a voz dos outros sai. No iPhone, com o microfone aberto, o som vai para o auricular (o de chamada, perto
+  // da tela). navigator.audioSession (Safari 16.4+) com 'play-and-record' o leva para o alto-falante: validado no iPhone
+  // em 03/11/2026. As outras técnicas testadas (vídeo escondido, AudioContext, 'playback') saíram. Sem essa API
+  // (Chrome, Android) não há o que trocar: temSaida() é falso e a página não mostra o botão.
+  const temSaida = () => !!navigator.audioSession;
+
+  function aplicarSaida() {
+    try { if (temSaida()) navigator.audioSession.type = S.alto ? 'play-and-record' : 'auto'; } catch { /* sem suporte */ }
+  }
 
   function desligarSaida(par) {
     par.audio?.remove();
     par.audio = null;
-    try { par.fonte?.disconnect(); } catch { /* já solta */ }
-    par.fonte = null;
   }
 
   function ligarSaida(par) {
     desligarSaida(par);
     if (!par.fluxo) return;
-    if (MODOS[S.saida].como === 'webaudio' && S.ctx) {
-      par.fonte = S.ctx.createMediaStreamSource(par.fluxo);
-      par.fonte.connect(S.ctx.destination);
-      return;
-    }
-    const el = document.createElement(MODOS[S.saida].como === 'video' ? 'video' : 'audio');
+    const el = document.createElement('audio');
     el.autoplay = true;
     el.playsInline = true;
     el.className = 'saida-voz';
     el.srcObject = par.fluxo;
+    // O iPhone pausa a voz quando outra mídia começa a tocar (a tela transmitida): enquanto estou na conversa, retoma
+    el.addEventListener('pause', () => { if (par.audio === el && S.sessao) el.play().catch(() => {}); });
     document.body.append(el);
     par.audio = el;
     el.play().catch(() => S.aoMudar({ precisaToque: true })); // o iPhone pode exigir um toque
   }
 
-  // Passa para a próxima técnica (chamado direto no toque: o AudioContext e o iPhone só liberam assim). Devolve o nome
-  function proximaSaida() {
-    do { S.saida = (S.saida + 1) % MODOS.length; } while (!modoOk(MODOS[S.saida]));
-    aplicarSaida();
-    return MODOS[S.saida].nome;
-  }
-
-  function aplicarSaida() {
-    const m = MODOS[S.saida];
-    try { if (navigator.audioSession) navigator.audioSession.type = m.sessao || 'auto'; } catch { /* sem suporte */ }
-    if (m.como === 'webaudio' && !S.ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) S.ctx = new C(); }
-    S.ctx?.resume?.().catch(() => {});
-    for (const par of S.pares.values()) ligarSaida(par);
+  // Alterna entre alto-falante e auricular (direto no toque). Devolve true se agora é o alto-falante
+  function trocarSaida() {
+    S.alto = !S.alto;
+    tocar();
+    return S.alto;
   }
 
   // Pede o microfone. Tem que ser chamado direto no toque do usuário (o iPhone só libera assim)
@@ -77,7 +62,8 @@ const Voz = (() => {
   function entrar({ enviar, meuId, membros, ice, aoMudar, aoPerderMic }) {
     S.enviar = enviar; S.meuId = String(meuId); S.ice = Array.isArray(ice) ? ice : []; S.aoMudar = aoMudar || (() => {});
     S.perdeuMic = aoPerderMic || (() => {});
-    S.sessao = uuid(); S.canal = ''; S.eco = false; S.mudo = false;
+    S.sessao = uuid(); S.canal = ''; S.eco = false; S.mudo = false; S.alto = true;
+    aplicarSaida();
     S.membros = new Map();
     for (const x of Array.isArray(membros) ? membros : []) guardar(x.id, x.name, x.voiceSession, x.voiceChannel, x.muted);
     anunciar();
@@ -107,7 +93,7 @@ const Voz = (() => {
 
   function criar(id, alvo, oferecer, call) {
     const pc = new RTCPeerConnection({ iceServers: S.ice });
-    const par = { id, pc, alvo, call: call || uuid(), fila: [], cadeia: Promise.resolve(), timer: 0, timerDesc: 0, audio: null, fonte: null, fluxo: null };
+    const par = { id, pc, alvo, call: call || uuid(), fila: [], cadeia: Promise.resolve(), timer: 0, timerDesc: 0, audio: null, fluxo: null };
     S.pares.set(id, par);
     for (const t of S.stream.getTracks()) pc.addTrack(t, S.stream);
     pc.ontrack = (e) => {
@@ -225,9 +211,23 @@ const Voz = (() => {
       .map(([id, m]) => ({ id, name: m.name, mudo: m.muted, conectado: S.pares.get(id)?.pc.connectionState === 'connected' }));
   }
 
+  // Reaplica a saída e manda a voz tocar de novo (toque do usuário, ou outra mídia da página começou a tocar)
   function tocar() {
-    S.ctx?.resume?.().catch(() => {});
+    if (!S.sessao) return;
+    aplicarSaida();
     for (const p of S.pares.values()) p.audio?.play().catch(() => {});
+  }
+
+  // Estado real do áudio, para o painel /ver#debug (o iPhone não deixa ver o console)
+  function diagnostico() {
+    return {
+      sessaoDeAudio: navigator.audioSession ? navigator.audioSession.type : 'sem suporte',
+      altoFalante: S.alto,
+      vozes: [...S.pares].map(([id, p]) => ({
+        id, conexao: p.pc.connectionState, faixaRecebida: !!p.fluxo,
+        audio: p.audio ? { pausado: p.audio.paused, mudo: p.audio.muted, volume: p.audio.volume, pronto: p.audio.readyState } : null,
+      })),
+    };
   }
 
   function sair() {
@@ -238,11 +238,9 @@ const Voz = (() => {
     S.sessao = '';
     S.eco = false;
     S.membros = new Map();
-    S.saida = 0; // a próxima entrada volta ao padrão
-    try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch { /* sem suporte */ }
-    S.ctx?.close?.().catch(() => {});
-    S.ctx = null;
+    S.alto = true; // a próxima entrada volta ao alto-falante
+    try { if (temSaida()) navigator.audioSession.type = 'auto'; } catch { /* sem suporte */ }
   }
 
-  return { pedirMic, entrar, receber, mudo, lista, tocar, proximaSaida, sair, ativo: () => !!S.sessao };
+  return { pedirMic, entrar, receber, mudo, lista, tocar, temSaida, trocarSaida, diagnostico, sair, ativo: () => !!S.sessao };
 })();

@@ -57,7 +57,7 @@ function receber(m) {
       });
       $('voz').hidden = false;
       $('mudo').hidden = false;
-      $('saida').hidden = false;
+      $('saida').hidden = !Voz.temSaida(); // só o Safari do iPhone tem como escolher a saída
       desenharVoz();
     }
     atualizar();
@@ -130,26 +130,52 @@ function criarTela(id) {
   const fig = document.createElement('figure');
   fig.className = 'tela';
   const video = document.createElement('video');
-  for (const a of ['playsinline', 'muted', 'autoplay']) video.setAttribute(a, '');
-  video.muted = true;
+  for (const a of ['playsinline', 'autoplay']) video.setAttribute(a, '');
   const legenda = document.createElement('figcaption');
   const nome = document.createElement('strong');
   nome.textContent = nomeDe(id);
   const status = document.createElement('span');
   const tocar = botao('Toque para assistir');
   const cheia = botao('Tela cheia');
-  tocar.hidden = cheia.hidden = true;
-  tocar.onclick = () => { video.play().then(() => { tocar.hidden = true; }).catch(() => {}); };
+  const som = botao('Ligar o som da tela');
+  tocar.hidden = cheia.hidden = som.hidden = true;
+  const t = { fig, video, status, tocar, cheia, som };
+  tocar.onclick = () => iniciar(t); // o toque libera o som que o iPhone recusou sozinho
+  som.onclick = () => {
+    video.muted = !video.muted;
+    video.dataset.silenciada = video.muted ? '1' : ''; // se eu silenciei, uma reconexão não liga o som sozinha
+    video.play().then(() => { tocar.hidden = true; }).catch(() => {});
+    rotuloSom(t);
+    Voz.tocar();
+  };
+  video.addEventListener('volumechange', () => rotuloSom(t)); // o player nativo do iPhone (tela cheia) também liga e desliga o som
   cheia.onclick = () => {
     const abrir = video.requestFullscreen || video.webkitRequestFullscreen || video.webkitEnterFullscreen; // no iPhone só o último existe
     try { Promise.resolve(abrir?.call(video)).catch(() => {}); } catch { /* o iPhone recusa antes de o vídeo ter começado */ }
   };
   video.addEventListener('webkitendfullscreen', () => { video.play().catch(() => { tocar.hidden = false; }); }); // iPhone: ao sair do player nativo o vídeo pode ficar pausado
-  legenda.append(nome, status, tocar, cheia);
+  legenda.append(nome, status, tocar, som, cheia);
   fig.append(video, legenda);
   fig.onclick = () => { S.destaque = id; destacar(); }; // tocar numa tela pequena a põe em destaque
   $('telas').append(fig);
-  return { fig, video, status, tocar, cheia };
+  return t;
+}
+
+// Toca a tela com o som da transmissão, se ela tem áudio. O iPhone só libera o som depois de um toque: se recusar,
+// toca muda e o botão "Ligar o som da tela" faz o resto
+function iniciar(t) {
+  const { video } = t;
+  const fluxo = video.srcObject;
+  const atual = () => video.srcObject === fluxo; // outra transmissão pode ter entrado na mesma tela enquanto o play() esperava
+  video.muted = !temAudio(video) || video.dataset.silenciada === '1';
+  video.play().catch(() => { if (!atual()) return; video.muted = true; return video.play(); })
+    .then(() => { if (atual()) t.tocar.hidden = true; }, () => { if (atual()) t.tocar.hidden = false; })
+    .finally(() => { if (!atual()) return; rotuloSom(t); Voz.tocar(); }); // a voz da conversa pode ter sido pausada pelo iPhone
+}
+function temAudio(video) { return !!video.srcObject?.getAudioTracks().length; }
+function rotuloSom(t) {
+  t.som.hidden = !temAudio(t.video);
+  t.som.textContent = t.video.muted ? 'Ligar o som da tela' : 'Desligar o som da tela';
 }
 
 // Só uma tela fica grande; se a destacada saiu, a primeira que sobrou assume
@@ -170,10 +196,10 @@ function assistir(id) {
   v.status.textContent = 'Conectando…';
   pc.ontrack = (e) => {
     const fluxo = e.streams[0] || new MediaStream([e.track]);
-    if (v.video.srcObject !== fluxo) v.video.srcObject = fluxo;
     v.video.classList.add('ligado');
     v.cheia.hidden = false;
-    v.video.play().then(() => { v.tocar.hidden = true; }).catch(() => { v.tocar.hidden = false; }); // o iPhone pode exigir um toque
+    if (v.video.srcObject !== fluxo) { v.video.srcObject = fluxo; iniciar(v); } // a faixa de áudio chega em outro evento da mesma tela
+    else rotuloSom(v);
   };
   pc.onicecandidate = (e) => { if (e.candidate) sinalizar(id, { side: 'viewer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
@@ -245,7 +271,7 @@ function sair(voltar = true) {
   if (S.conversar) { Voz.sair(); S.conversar = false; } // antes de fechar a conexão: avisa a sala que saí da voz
   for (const id of ['voz', 'mudo', 'ouvir', 'saida']) $(id).hidden = true;
   $('mudo').textContent = 'Silenciar microfone';
-  $('saida').textContent = 'Som: padrão (toque para trocar)';
+  $('saida').textContent = 'Trocar para o auricular';
   S.ws = null;
   S.membros = new Map();
   if (ws) { try { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'leave' })); ws.close(); } catch {} }
@@ -281,7 +307,23 @@ $('mudo').onclick = () => {
   $('mudo').textContent = mudo ? 'Ativar microfone' : 'Silenciar microfone';
 };
 $('ouvir').onclick = () => { Voz.tocar(); $('ouvir').hidden = true; };
-$('saida').onclick = () => { $('saida').textContent = `Som: ${Voz.proximaSaida()} (toque para trocar)`; };
+$('saida').onclick = () => { $('saida').textContent = Voz.trocarSaida() ? 'Trocar para o auricular' : 'Trocar para o alto-falante'; };
+// /ver#debug: mostra o estado real do áudio e da tela (o iPhone não deixa ver o console)
+let timerDebug = 0;
+function debug() {
+  const ligado = location.hash === '#debug';
+  $('debug').hidden = !ligado;
+  clearInterval(timerDebug);
+  if (!ligado) return;
+  const desenhar = () => {
+    const telas = [...S.vistas].map(([id, v]) => ({ id, conexao: v.pc.connectionState, pausada: v.video.paused, muda: v.video.muted, comAudio: temAudio(v.video) }));
+    $('debug').textContent = JSON.stringify({ voz: Voz.diagnostico(), telas }, null, 1);
+  };
+  desenhar();
+  timerDebug = setInterval(desenhar, 1000);
+}
+debug();
+addEventListener('hashchange', debug);
 $('sair').onclick = () => sair();
 // Link de convite: .../ver#ABC234 já traz o código (o # nunca sai do aparelho, não vai para o servidor); falta só a senha
 function codigoDoLink() {
