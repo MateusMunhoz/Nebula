@@ -3,6 +3,13 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.11",
+    "date": "2026-11-03",
+    "items": [
+      "Música: fila por canal; Próxima, painel da fila, pôr na fila pelo YouTube, chat e colar link"
+    ]
+  },
+  {
     "version": "1.20.10",
     "date": "2026-11-02",
     "items": [
@@ -81,13 +88,6 @@ const NOVIDADES = [
     "date": "2026-10-12",
     "items": [
       "Apoio com Pix e spec do plano premium"
-    ]
-  },
-  {
-    "version": "1.19.4",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: docs da fase 3 (oferta na primeira entrada e Configurações › Ajuda)"
     ]
   }
 ];
