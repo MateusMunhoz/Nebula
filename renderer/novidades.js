@@ -3,12 +3,55 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.11",
+    "date": "2026-11-03",
+    "items": [
+      "Música: fila por canal; Próxima, painel da fila, pôr na fila pelo YouTube, chat e colar link"
+    ]
+  },
+  {
+    "version": "1.20.10",
+    "date": "2026-11-02",
+    "items": [
+      "commit",
+      "Teste de configurações: servidor sem configuração aparece em cinza no mapa",
+      "Sala pelo Nostr: spec e protótipo da fase 0"
+    ]
+  },
+  {
+    "version": "1.20.9",
+    "date": "2026-10-27",
+    "items": [
+      "Barra da chamada: faixa embaixo das telas só com a música da sala no palco"
+    ]
+  },
+  {
+    "version": "1.20.8",
+    "date": "2026-10-27",
+    "items": [
+      "Palco e voz: cartões só de quem faz algo, em seções por atividade; prévia de quem transmite na voz; arrastar entre canais compacto e com rolagem",
+      "Atualização obrigatória: no máximo uma versão atrás; abaixo disso, tela no Início sem Depois",
+      "Atualização: instala sozinho ao abrir e com o app parado; nunca na sala, transmitindo ou jogando",
+      "Atividade: vídeo no Media Player não aparece mais no perfil",
+      "iOS: versão 1.20.7, a mesma do desktop",
+      "iOS: barra de título abaixo do relógio e guia para compilar no Mac",
+      "Desktop: palco com música e cartões, convite com QR, minimizar, duração da música",
+      "iOS: app Nebula para iPhone via sideload (Capacitor), ponte window.api, CSS do iPhone e CI do .ipa"
+    ]
+  },
+  {
     "version": "1.20.7",
     "date": "2026-10-20",
     "items": [
       "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
       "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
-      "README: apresentação do app com imagens das telas",
+      "README: apresentação do app com imagens das telas"
+    ]
+  },
+  {
+    "version": "1.20.5",
+    "date": "2026-10-19",
+    "items": [
       "Voz: atraso de cada pessoa no Mapa de conexões; conexão lenta é refeita sozinha",
       "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
       "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
@@ -45,56 +88,6 @@ const NOVIDADES = [
     "date": "2026-10-12",
     "items": [
       "Apoio com Pix e spec do plano premium"
-    ]
-  },
-  {
-    "version": "1.19.4",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: docs da fase 3 (oferta na primeira entrada e Configurações › Ajuda)"
-    ]
-  },
-  {
-    "version": "1.19.3",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: roteiros da lista de amigos e do convite (fase 2)",
-      "Passo a passo guiado no Início (fase 1)",
-      "Rede: só a Internet por padrão; Radmin, rede local e Razze em \"Outras redes\"",
-      "Perfil › Conta: Trocar de conta",
-      "Perfil: partes Perfil e Conta na barra da esquerda, como em Configurações",
-      "butao sair da conta",
-      "Create protecoes-por-padrao.md",
-      "Identificador: pede para escolher o nome a quem ficou com o gerado",
-      "App instalado: DevTools desligadas em todas as janelas",
-      "Conta: identificador nome#1234, e-mail confirmado e verificação em dois fatores"
-    ]
-  },
-  {
-    "version": "1.19.2",
-    "date": "2026-10-12",
-    "items": [
-      "Seu sinal e lista da voz: monitor de Assistir, pílula Transmitindo tela, botões redondos e canal vazio"
-    ]
-  },
-  {
-    "version": "1.19.1",
-    "date": "2026-10-10",
-    "items": [
-      "Tema Cloud: noite preta com nuvens vermelhas e enfeites em japonês"
-    ]
-  },
-  {
-    "version": "1.19.0",
-    "date": "2026-10-10",
-    "items": [
-      "Modo Líder, fase 3: sons próprios, aviso de app antigo e acabamento",
-      "Modo Líder, fase 2: pedir para falar",
-      "Modo Líder, fase 1: subsala que fala para a sala toda",
-      "Spec do Modo Líder: subsala que fala para a sala toda, com pedidos para falar",
-      "Sala nova: cabeçalho da sala, abas Voz/Chat/Pessoas e o cartão Seu sinal",
-      "Spec da sala nova: cabeçalho da sala, abas no painel e o cartão Seu sinal",
-      "Início novo: rede sempre à vista, criar e entrar lado a lado, amigos ao lado"
     ]
   }
 ];

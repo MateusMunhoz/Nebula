@@ -24,7 +24,7 @@ const DATA_DIR = 'Tela P2P';
 // Os .exe da pasta dist com o nome de agora e o de antes (Tela P2P.exe), para limpar e conferir
 const EXE_PREFIXOS = (pkg) => [pkg.build.productName, 'Tela P2P'];
 // O que viaja pela sala. boot.js fica de fora: ele confere as assinaturas e só muda com um .exe novo.
-const PACK_FILES = ['renderer/navegacao.js', 'renderer/primeira-entrada.js', 'renderer/conta.js', 'renderer/conta-seguranca.js', 'renderer/admin.js', 'renderer/feedback.js', 'renderer/apoio.js', 'renderer/recorte.js', 'renderer/mensagens-direto.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/modo-gamer.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.flatMap(s => s.files || (s.file ? [s.file] : [])).map(f => 'assets/audio/' + f), 'main.js', 'main/razze-api-client.js', 'main/atividade.js', 'main/google-login.js', 'main/razze-service.js', 'main/razze-presence.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'main/fontes.js', 'main/linux.js', 'main/bandeja.js', 'main/youtube-previa.js', 'main/clipes.js', 'renderer/clipe-mp4.js', 'renderer/clipes.js', 'vendor/mp4-muxer/mp4-muxer.js', 'vendor/mp4-muxer/LICENSE', 'assets/icone/tela-p2p.ico', ...require('./renderer/preferencias-modelo').fonts.flatMap(f => f.files || []), 'assets/icone/tela-p2p.png', 'preload.js', 'signaling.js', 'sala-protocolo.js', 'github.js', 'index.html', 'styles.css', 'styles-estelar.css', 'styles-arasaka.css', 'styles-eva.css', 'styles-dusol.css', 'assets/temas/dusol-sol.webp', 'styles-diluna.css', 'assets/temas/diluna-lua.webp', 'styles-renascenca.css', 'assets/temas/renascenca-atenas.webp', 'assets/temas/renascenca-anunciacao.webp', 'assets/temas/renascenca-ceia.webp', 'assets/temas/renascenca-adao.webp', 'assets/temas/renascenca-venus.webp', 'assets/temas/renascenca-primavera.webp', 'assets/temas/renascenca-jardim.webp', 'assets/temas/topgun-bp-f22.webp', 'assets/temas/topgun-bp-f18.webp', 'assets/temas/topgun-bp-a10.webp', 'assets/temas/topgun-bp-f16.webp', 'assets/temas/topgun-bp-f15.webp', 'assets/temas/topgun-bp-p38.webp', 'assets/temas/topgun-bp-hurricane.webp', 'assets/temas/topgun-bp-mustang.webp', 'assets/temas/topgun-bp-lancaster.webp', 'assets/fontes/cinzel-600.woff2', 'assets/fontes/cinzel-700.woff2', 'assets/fontes/eb-garamond-400-italic.woff2', 'assets/fontes/eb-garamond-500.woff2', 'styles-topgun.css', 'styles-cloud.css', 'assets/fontes/shippori-mincho-b1-800.woff2', 'assets/fontes/sora-variavel.woff2', 'assets/fontes/OFL-sora.txt', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/fundo-perfil.js', 'renderer/icone-app.js', 'renderer/sala.js', 'renderer/voz.js',  'renderer/ceu-voz.js', 'renderer/musica.js', 'renderer/porta-microfone.js', 'renderer/rnnoise-vad-worklet.js', 'main/comando-voz.js', 'renderer/comando-voz-regras.js', 'renderer/comando-voz.js', 'main/comando-voz-ia.js', 'renderer/comando-voz-acoes.js', 'renderer/chamada.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/novidades.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/salas-amigos.js', 'renderer/lista.js', 'renderer/palco.js', 'renderer/transmitir.js', 'renderer/mapa-conexoes.js', 'renderer/qr.js', 'renderer/celular-modelo.js', 'renderer/celular.js', 'main/celular.js', 'renderer/hub.js', 'renderer/mensagens.js', 'main/mensagens.js', 'main/mensagens-cripto.js', 'renderer/subsalas.js', 'renderer/tour.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/midia.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
+const PACK_FILES = ['renderer/navegacao.js', 'renderer/primeira-entrada.js', 'renderer/conta.js', 'renderer/conta-seguranca.js', 'renderer/admin.js', 'renderer/feedback.js', 'renderer/apoio.js', 'renderer/recorte.js', 'renderer/mensagens-direto.js', 'renderer/preferencias-modelo.js', 'renderer/configuracoes.js', 'renderer/modo-gamer.js', 'renderer/conectividade.js', ...require('./renderer/preferencias-modelo').sounds.flatMap(s => s.files || (s.file ? [s.file] : [])).map(f => 'assets/audio/' + f), 'main.js', 'main/razze-api-client.js', 'main/atividade.js', 'main/google-login.js', 'main/razze-service.js', 'main/razze-presence.js', 'main/razze-wireguard.js', 'main/nativos.js', 'main/contexto.js', 'main/janela-flutuante.js', 'main/chat-jogo.js', 'main/atalhos.js', 'main/sessoes.js', 'main/fontes.js', 'main/linux.js', 'main/bandeja.js', 'main/youtube-previa.js', 'main/youtube-escolher.js', 'main/clipes.js', 'renderer/clipe-mp4.js', 'renderer/clipes.js', 'vendor/mp4-muxer/mp4-muxer.js', 'vendor/mp4-muxer/LICENSE', 'assets/icone/tela-p2p.ico', ...require('./renderer/preferencias-modelo').fonts.flatMap(f => f.files || []), 'assets/icone/tela-p2p.png', 'preload.js', 'signaling.js', 'sala-protocolo.js', 'github.js', 'index.html', 'styles.css', 'styles-estelar.css', 'styles-arasaka.css', 'styles-eva.css', 'styles-dusol.css', 'assets/temas/dusol-sol.webp', 'styles-diluna.css', 'assets/temas/diluna-lua.webp', 'styles-renascenca.css', 'assets/temas/renascenca-atenas.webp', 'assets/temas/renascenca-anunciacao.webp', 'assets/temas/renascenca-ceia.webp', 'assets/temas/renascenca-adao.webp', 'assets/temas/renascenca-venus.webp', 'assets/temas/renascenca-primavera.webp', 'assets/temas/renascenca-jardim.webp', 'assets/temas/topgun-bp-f22.webp', 'assets/temas/topgun-bp-f18.webp', 'assets/temas/topgun-bp-a10.webp', 'assets/temas/topgun-bp-f16.webp', 'assets/temas/topgun-bp-f15.webp', 'assets/temas/topgun-bp-p38.webp', 'assets/temas/topgun-bp-hurricane.webp', 'assets/temas/topgun-bp-mustang.webp', 'assets/temas/topgun-bp-lancaster.webp', 'assets/fontes/cinzel-600.woff2', 'assets/fontes/cinzel-700.woff2', 'assets/fontes/eb-garamond-400-italic.woff2', 'assets/fontes/eb-garamond-500.woff2', 'styles-topgun.css', 'styles-cloud.css', 'assets/fontes/shippori-mincho-b1-800.woff2', 'assets/fontes/sora-variavel.woff2', 'assets/fontes/OFL-sora.txt', 'renderer/util.js', 'renderer/estado.js', 'renderer/rtc.js', 'renderer/tema.js', 'renderer/fotos.js', 'renderer/fundo-perfil.js', 'renderer/icone-app.js', 'renderer/sala.js', 'renderer/voz.js',  'renderer/ceu-voz.js', 'renderer/musica.js', 'renderer/musica-fila.js', 'renderer/youtube-escolher.js', 'renderer/porta-microfone.js', 'renderer/rnnoise-vad-worklet.js', 'main/comando-voz.js', 'renderer/comando-voz-regras.js', 'renderer/comando-voz.js', 'main/comando-voz-ia.js', 'renderer/comando-voz-acoes.js', 'renderer/chamada.js', 'renderer/microfone.js', 'renderer/membros.js', 'renderer/assistir.js', 'renderer/pip.js', 'renderer/overlay.js', 'renderer/metadados.js', 'renderer/chat.js', 'renderer/estatisticas.js', 'renderer/novidades.js', 'renderer/atualizacao.js', 'renderer/sessoes.js', 'renderer/salas-amigos.js', 'renderer/lista.js', 'renderer/palco.js', 'renderer/transmitir.js', 'renderer/mapa-conexoes.js', 'renderer/qr.js', 'renderer/celular-modelo.js', 'renderer/celular.js', 'main/celular.js', 'renderer/hub.js', 'renderer/mensagens.js', 'main/mensagens.js', 'main/mensagens-cripto.js', 'renderer/subsalas.js', 'renderer/tour.js', 'renderer/inicio.js', 'voice.js', 'encode-once.js', 'pcm-worklet.js', 'bin/audiocap.exe', 'bin/videocap.exe', 'bin/teclas.exe', 'bin/midia.exe', 'bin/selfvpn/wireguard.exe', 'bin/selfvpn/wg.exe', 'bin/selfvpn/COPYING', 'bin/selfvpn/NOTICE.md', 'main/razze-elevacao.js', 'main/razze-privilegiado.js', 'main/razze-ajudante.js',
   'vendor/noise/rnnoiseWorklet.js', 'vendor/noise/rnnoise.wasm', 'vendor/noise/rnnoise_simd.wasm', 'vendor/noise/LICENSE', 'vendor/noise/NOTICE.md'];
 
 function fail(msg) {
@@ -70,7 +70,7 @@ function generateKey() {
 
 // Manda a versão para o GitHub: commit de tudo que mudou, tag vX.Y.Z e uma Release com o .exe
 // (para quem ainda não tem o app) e o pacote assinado (para o botão de atualizar do app)
-function publishGithub(version, productName, notes) {
+function publishGithub(version, productName, notes, marca = '') {
   const ok = (cmd, args) => spawnSync(cmd, args, { cwd: ROOT, stdio: 'inherit' }).status === 0;
   const quiet = (cmd, args) => spawnSync(cmd, args, { cwd: ROOT, stdio: 'ignore' }).status === 0;
   if (!fs.existsSync(path.join(ROOT, '.git')) || !quiet('git', ['--version']) || !quiet('gh', ['--version'])) {
@@ -87,7 +87,8 @@ function publishGithub(version, productName, notes) {
     ['git', ['push', 'origin', 'HEAD']],
     ['git', ['push', 'origin', `v${version}`]],
     ['gh', ['release', 'create', `v${version}`, exe, ...(fs.existsSync(instalador) ? [instalador] : []), ...(fs.existsSync(appImage) ? [appImage] : []), path.join(ROOT, 'pack', 'pack.json'), path.join(ROOT, 'pack', 'pack.sig'),
-      '--title', `${productName} ${version}`, ...(notes ? ['--notes', notes] : ['--generate-notes'])]],
+      // sem --notas, o gh gera as notas e põe a marca (se houver) em cima delas
+      '--title', `${productName} ${version}`, ...(notes || marca ? ['--notes', [notes, marca].filter(Boolean).join('\n\n')] : []), ...(notes ? [] : ['--generate-notes'])]],
   ];
   for (const [cmd, args] of steps) {
     console.log(`> ${cmd} ${args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`);
@@ -163,7 +164,7 @@ function checkPackFiles() {
   if (missing.length) fail(`O index.html usa arquivos que não estão no PACK_FILES do publicar.js: ${missing.join(', ')}. Coloque eles na lista.`);
 }
 
-function publish(requested, { notes = '', github = true } = {}) {
+function publish(requested, { notes = '', github = true, obrigatoria = false } = {}) {
   checkPackFiles();
   if (!fs.existsSync(KEY_FILE)) fail('Nenhuma chave encontrada. Rode uma vez: node publicar.js --gerar-chave');
   const privateKey = fs.readFileSync(KEY_FILE, 'utf8');
@@ -185,6 +186,7 @@ function publish(requested, { notes = '', github = true } = {}) {
   const version = requested || `${maj}.${min}.${pat + 1}`;
   if (!/^\d+\.\d+\.\d+$/.test(version) || !newer(version, pkg.version)) fail(`A versão ${version} precisa ser maior que a atual (${pkg.version}).`);
 
+  const anterior = pkg.version;
   pkg.version = version;
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
@@ -207,16 +209,19 @@ function publish(requested, { notes = '', github = true } = {}) {
   if (r.status !== 0) fail('O .exe e o instalador não foram gerados, mas a atualização pela sala já funciona.');
   buildLinux();
 
-  const onGithub = github && publishGithub(version, pkg.build.productName, notes);
+  // A linha que o github.js lê: quem estiver abaixo é chamado a atualizar no Início. Sempre no máximo uma versão
+  // atrás (a anterior a esta); --obrigatoria exige esta mesma.
+  const marca = `obrigatória: ${obrigatoria ? version : anterior}`;
+  const onGithub = github && publishGithub(version, pkg.build.productName, notes, marca);
   console.log(`\nPronto. Os amigos recebem a ${version} ${onGithub ? 'pelo botão "Baixar atualização" do app ou ' : ''}pela sala, entrando numa sala com você.`);
 }
 
-// Os argumentos: a versão (X.Y.Z, opcional), --notas "texto" e --sem-github. O texto das notas nunca vira versão.
+// Os argumentos: a versão (X.Y.Z, opcional), --notas "texto", --sem-github e --obrigatoria. O texto das notas nunca vira versão.
 function lerArgs(args) {
   const notesAt = args.indexOf('--notas');
   const notes = notesAt >= 0 ? args[notesAt + 1] || '' : '';
   const version = args.find((a, i) => /^\d+\.\d+\.\d+$/.test(a) && (notesAt < 0 || i !== notesAt + 1));
-  return { version, notes, github: !args.includes('--sem-github') };
+  return { version, notes, github: !args.includes('--sem-github'), obrigatoria: args.includes('--obrigatoria') };
 }
 
 module.exports = { buildPack, sign, newer, novidadesDoLog, gravarNovidades, lerArgs, KEY_FILE, PACK_FILES };
@@ -226,7 +231,7 @@ if (require.main === module) {
   if (args[0] === '--gerar-chave') {
     generateKey();
   } else {
-    const { version, notes, github } = lerArgs(args);
-    publish(version, { notes, github });
+    const { version, notes, github, obrigatoria } = lerArgs(args);
+    publish(version, { notes, github, obrigatoria });
   }
 }

@@ -62,7 +62,7 @@
       <button id="navApoio" type="button" class="workspace-tab rail-apoio" aria-label="Apoiar o Nebula" title="Apoiar o Nebula" aria-haspopup="dialog" aria-expanded="false" aria-controls="apoioDialog" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
       <!-- Feedback e bugs (renderer/feedback.js): abre a janela de perguntas, que vai para a RazzeAPI -->
       <button id="navFeedback" type="button" class="workspace-tab" aria-label="Feedback e bugs" title="Feedback e bugs" aria-haspopup="dialog" aria-expanded="false" aria-controls="feedbackDialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/></svg></button>
-      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span></button>
+      <button id="navSettings" type="button" class="workspace-tab settings-tab" aria-label="Configurações" title="Configurações" aria-haspopup="dialog" aria-expanded="false" aria-controls="generalSettingsDialog"><span class="nav-icon" aria-hidden="true"></span><span id="navSettingsNovos" class="unread" role="img" hidden></span></button>
       <!-- Sair da sala: por último, separado do resto, em vermelho -->
       <span class="nav-sep rail-leave-sep" aria-hidden="true"></span>
       <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
@@ -200,7 +200,7 @@
     <!-- Mapa em foco (renderer/ceu-voz.js): o chat encolhe e fica só esta faixa; clicar traz o chat de volta -->
     <button id="mapChatStrip" class="map-chat-strip" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat escondido enquanto você olha o mapa</span><span id="mapChatUnread" class="map-chat-unread" hidden></span></button>
     <section id="voicePane" class="workspace-pane" aria-labelledby="voicePaneTitle" hidden>
-      <div class="pane-head"><h2 id="voicePaneTitle">Chat de voz</h2><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
+      <div class="pane-head"><h2 id="voicePaneTitle">Voz</h2><button id="mapPin" class="map-pin" type="button" aria-pressed="false" hidden><span class="map-pin-chave" aria-hidden="true"><span></span></span>Fixar</button></div>
       <p id="voicePaneStatus" class="hint"></p>
       <!-- Céu da voz: cada canal é um sol e quem está nele orbita como planeta. Na visão Mapa, fica grande no lugar da lista (renderer/ceu-voz.js) -->
       <div id="voiceSkyBox" class="voice-sky-box" hidden>
@@ -273,7 +273,7 @@
       </div>
     </section>
   </aside>
-  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Sair; renderer/musica.js) -->
+  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Fila, Sair; renderer/musica.js) -->
   <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
@@ -281,9 +281,46 @@
       <strong id="musicPopTitle">Música</strong>
       <input id="musicUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
       <p id="musicPopError" class="music-pop-error" role="status"></p>
-      <p class="hint">Quem clicar em Ouvir escuta junto, no mesmo ponto. Cada um toca no próprio player do YouTube.</p>
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
+  </div>
+  <!-- A fila de músicas do canal (renderer/musica-fila.js): preso ao botão Fila da tela da música ou à pílula do canal -->
+  <div id="filaPop" class="music-fila-pop" role="dialog" aria-labelledby="filaPopTitulo" hidden>
+    <div class="fila-head"><strong id="filaPopTitulo">Fila</strong><button id="filaPopFechar" type="button" class="btn icon"></button></div>
+    <p id="filaPopTocando" class="fila-tocando"><span class="song-eq" aria-hidden="true"><span></span><span></span><span></span></span><span></span></p>
+    <p id="filaPopSeguir" class="fila-seguir">A seguir</p>
+    <ol id="filaPopLista" class="fila-lista" role="list"></ol>
+    <p id="filaPopVazio" class="fila-vazio">Nada na fila. Quando esta música acabar, o canal fica livre.</p>
+    <div class="fila-rodape">
+      <button id="filaPopProcurar" type="button" class="btn small">Procurar no YouTube</button>
+      <button id="filaPopColar" type="button" class="btn small">Colar link</button>
+      <p id="filaPopAviso" class="fila-aviso"></p>
+    </div>
+    <p id="filaPopStatus" class="fila-status" role="status"></p>
+  </div>
+  <!-- Escolher a música no próprio YouTube: o cabeçalho é daqui; a página do YouTube é uma view do processo principal
+       posta em cima de #ytEscolherArea (renderer/youtube-escolher.js, main/youtube-escolher.js) -->
+  <div id="ytEscolher" class="modal global yt-escolher" hidden>
+    <div class="dialog yt-escolher-dialog" role="dialog" aria-modal="true" aria-labelledby="ytEscolherFrase">
+      <div class="yt-escolher-head">
+        <button id="ytEscolherVoltar" type="button" class="btn icon" disabled></button>
+        <span id="ytEscolherModo" class="yt-escolher-modo">Tocar</span>
+        <p id="ytEscolherFrase" class="yt-escolher-frase" role="status"></p>
+        <form id="ytEscolherLink" class="yt-escolher-link" hidden>
+          <input id="ytEscolherUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
+          <button id="ytEscolherIr" type="submit" class="btn small primary">Tocar</button>
+        </form>
+        <button id="ytEscolherColar" type="button" class="btn small">Colar link</button>
+        <button id="ytEscolherFechar" type="button" class="btn icon"></button>
+      </div>
+      <div id="ytEscolherArea" class="yt-escolher-area">
+        <p id="ytEscolherCarregando">Carregando o YouTube…</p>
+        <div id="ytEscolherErro" class="yt-escolher-erro" hidden>
+          <p>Não consegui abrir o YouTube.</p>
+          <div><button id="ytEscolherTentar" type="button" class="btn small primary">Tentar de novo</button> <button id="ytEscolherErroColar" type="button" class="btn small">Colar link</button></div>
+        </div>
+      </div>
+    </div>
   </div>
   <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
@@ -614,8 +651,18 @@
                   <span class="eva-plate-foot"><span>-PROJECT EVA-</span><span>TOKYO-3</span></span>
                 </span>
               </div>
+              <!-- Sozinho na sala: o convite (renderer/membros.js: renderConvitePalco) -->
+              <div id="emptyConvite" class="palco-convite" hidden>
+                <span id="emptyConviteQr" class="pc-qr"></span>
+                <div class="pc-dados">
+                  <span id="emptyConviteRotulo" class="pc-rotulo"></span>
+                  <span id="emptyConviteCodigo" class="pc-codigo"></span>
+                  <button id="emptyConvidar" class="btn primary" type="button"></button>
+                </div>
+              </div>
               <p id="emptyText"></p>
-              <div id="emptyLive" class="empty-live" hidden></div>
+              <!-- Com mais gente na sala: a música do seu canal ou um cartão por pessoa (renderer/membros.js: renderPalcoGente) -->
+              <div id="emptyGente" class="palco-gente" hidden></div>
             </div>
             <div id="tiles" class="tiles" hidden></div>
             <div id="stageSplitter" class="stage-splitter" role="separator" aria-orientation="vertical" aria-label="Largura da coluna de telas pequenas" aria-valuemin="15" aria-valuemax="50" tabindex="0" hidden></div>
@@ -638,8 +685,9 @@
             </div>
             <!-- Falando com o microfone desligado (avisoMutado em renderer/microfone.js) -->
             <div id="mutadoAviso" class="mutado-aviso" role="status" hidden>
-              <span id="mutadoIcone" aria-hidden="true"></span><span>Você está falando com o microfone desligado</span>
-              <button id="mutadoLigar" class="btn small" type="button">Ligar</button>
+              <span id="mutadoIcone" aria-hidden="true"></span><span>Você está falando no mudo</span>
+              <button id="mutadoLigar" class="btn small" type="button">Ligar microfone</button>
+              <button id="mutadoFechar" class="btn icon" type="button" title="Esconder até desligar o microfone de novo" aria-label="Esconder aviso"></button>
             </div>
             <div id="shareDialog" class="modal" hidden>
               <div class="dialog share" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -854,6 +902,17 @@
     <button class="btn icon iv-nav iv-next" id="ivNext" type="button"></button>
   </div>
 
+  <!-- Atualização obrigatória (publicar.js --obrigatoria): só no Início, fora da sala; sem "Depois" -->
+  <div id="obrigatoriaDialog" class="modal global" hidden>
+    <div class="dialog narrow" role="alertdialog" aria-modal="true" aria-labelledby="obrigatoriaTitulo" aria-describedby="obrigatoriaTexto">
+      <h2 id="obrigatoriaTitulo"></h2>
+      <p id="obrigatoriaTexto" class="hint"></p>
+      <div class="actions">
+        <button class="btn primary" id="obrigatoriaGo" type="button">Atualizar agora</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Volume de uma pessoa (abre pelo botão de volume na lista ou pela bolinha na barra) -->
   <div id="personCard" class="person-card" role="dialog" aria-label="Perfil da pessoa" hidden></div>
 
@@ -888,7 +947,7 @@
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-transmissao" type="button" role="tab" data-group="transmissao" data-tab="transmissao" aria-controls="settingsPanel-transmissao">Transmissão</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
-          <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade</button>
+          <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade<span id="settingsActivityNovos" class="unread settings-tab-novos" role="img" hidden></span></button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="backup" data-tab="phone" aria-controls="settingsPanel-phone">Backup no celular</button>
           <button id="settingsTab-network" type="button" role="tab" data-group="rede" data-tab="network" aria-controls="settingsPanel-network">Rede</button>
           <button id="settingsTab-extras" type="button" role="tab" data-group="extras" data-tab="extras" aria-controls="settingsPanel-extras">Recursos extras</button>
@@ -1358,7 +1417,11 @@
     </div>
   </div>
 
-  <div id="toast" class="toast" role="status"></div>
+  <!-- Avisos no canto de baixo à esquerda: o com botões em cima, o simples embaixo; um não apaga o outro (util.js: toast) -->
+  <div class="toasts">
+    <div id="toastAcao" class="toast" role="status"></div>
+    <div id="toast" class="toast" role="status"></div>
+  </div>
   <!-- Comando de voz: "Ouvindo…" enquanto a tecla está apertada, "Entendendo…" depois (renderer/comando-voz.js) -->
   <div id="voiceCmdBadge" class="voice-cmd-badge" role="status" hidden></div>
   <!-- Lente do modo Líquido: o fundo atrás das barras e botões ondula de leve, como vidro grosso -->
@@ -1627,6 +1690,8 @@
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
   <script src="renderer/musica.js"></script>
+  <script src="renderer/musica-fila.js"></script>
+  <script src="renderer/youtube-escolher.js"></script>
   <script src="vendor/mp4-muxer/mp4-muxer.js"></script>
   <script src="renderer/clipe-mp4.js"></script>
   <script src="renderer/clipes.js"></script>

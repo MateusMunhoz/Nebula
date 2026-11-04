@@ -358,7 +358,7 @@ async function executarComandoVoz(c, texto) {
       const e = musicaDoComando();
       if (!e) return avisoComandoVoz('Não tem música tocando no seu canal.', 'recusa');
       if (!canControlMusic(e)) return avisoComandoVoz(`Só quem está em ${channelName(e.ch)} controla essa música.`, true);
-      if (c.acao === 'musica-parar') { musicCtl(e, 'stop'); return avisoComandoVoz('Música parada.'); }
+      if (c.acao === 'musica-parar') { musicCtl(e, 'stop', { tudo: true }); return avisoComandoVoz('Música parada.'); }
       const tocar = c.acao === 'musica-continuar';
       if (e.playing === tocar) return avisoComandoVoz(tocar ? 'A música já está tocando.' : 'A música já está pausada.', 'recusa');
       musicCtl(e, tocar ? 'play' : 'pause', { pos: musicPos(e) });

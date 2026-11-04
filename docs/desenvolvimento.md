@@ -15,7 +15,7 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 
 ## Como o app funciona
 
-- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat.
+- **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat. Também guarda a música de cada canal (`sala-protocolo.js`: o vídeo, o ponto, o título e a duração, `dur`, contados pelo primeiro player de quem ouve com `musica-ctl` `titulo` e `duracao`) e a fila de cada canal (`fila`, com `fila-por`, `fila-mover`, `fila-tirar` e `pular`; limites `FILA_MAX`, `FILA_POR_PESSOA` e `FILA_SALA_MAX`; anunciada como `fila` em `features`). Tira sozinho a esquecida e passa a que acabou para a próxima da fila (`limparMusicas`, a cada 5 s).
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
 - **Rede usada pelo app:** em Configurações, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.
@@ -78,6 +78,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 21 | `microfone.js` | Microfone escolhido, RNNoise, eco, sensibilidade, ouvir a própria voz, apertar para falar, grupos Voz e Atalhos das Configurações |
 | 22 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 23 | `membros.js` | Painel da sala: endereço e lista de pessoas |
+| — | `musica.js`, `musica-fila.js`, `youtube-escolher.js` | Música junto (YouTube): a tela da música, a pílula do canal e o balão de colar; o painel da fila (`#filaPop`, `porNaFila`); o escolhedor do YouTube dentro do app (modos pôr, trocar e fila) ([spec](spec/musica-youtube-e-fila.md)) |
 | 24 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |
 | 25 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 26 | `palco.js` | Como as telas assistidas se arrumam no palco |
@@ -117,6 +118,7 @@ Arquivo novo na página: entra no `index.html` (na posição certa), em `PACK_FI
 | `comando-voz.js` | Comando de voz: baixa o whisper.cpp e o modelo para `%APPDATA%\Tela P2P\comando-voz` só para quem liga, confere cada arquivo por SHA-256 fixo no código e transcreve o WAV que chega pela memória (stdin), com prioridade baixa. A tecla de segurar fica em `atalhos.js` (outro `teclas.exe`). Só módulos do Node ([spec](spec/comando-de-voz.md)) |
 | `comando-voz-ia.js` | Pedidos livres do comando de voz: manda o texto e o estado da sala com a lista de ações para a nuvem (`@anthropic-ai/sdk`, chave cifrada com o safeStorage, nunca volta para a página) ou para um servidor local compatível com a API da OpenAI (só `localhost`). Só módulos do Node ([spec](spec/comando-de-voz.md)) |
 | `clipes.js` | Grava os clipes em `Vídeos\Tela P2P\Clipes` (nome limpo, até 300 MB) e mostra na pasta só os que ele salvou. Só módulos do Node ([spec](spec/clipes.md)) |
+| `youtube-escolher.js` | Escolher a música no YouTube dentro do app (`renderer/youtube-escolher.js`): uma `WebContentsView` na janela principal, na sessão `yt-escolher` (só na memória), sem preload, muda, sem janelas novas, downloads nem permissões, presa ao YouTube. Só lê o endereço para onde a página vai (`videoDaUrl`) e manda à página o id; antes, o oEmbed diz se o vídeo deixa incorporar. Fechar destrói a view e o service worker do YouTube. O CSP do `index.html` não muda. Spec: `docs/spec/musica-youtube-e-fila.md` |
 | `youtube-previa.js` | Prévia dos links do YouTube no chat: título e canal pelo oEmbed e a capa `mqdefault` como `data:` (a CSP da página não abre a internet). Só o id do vídeo sai, com limite de tamanho, 8 s e cache dos últimos 200 |
 | `bandeja.js` | Ícone na bandeja e o menu dele; o X minimiza (padrão) ou esconde na bandeja se a pessoa escolheu, por `acaoDoFechar` e `setFecharNaBandeja` (sair de verdade marca `setQuitting`). Mute e ensurdecer mandam as mesmas mensagens dos atalhos; "Procurar atualização" manda `tray-update` |
 | `sessoes.js` | Anúncio e busca das sessões abertas (UDP na rede da Radmin) |
@@ -160,6 +162,23 @@ Sobre o `npm run test:e2e` (`tests/e2e/`):
 - **Para escrever um teste novo,** use `tests/e2e/ajuda.js`: `openApp`, `createRoom`, `joinRoom`, `share`, `check`, `winStyle` e `run`.
 
 O que os testes automáticos não pegam (eco, ruído, apertar para falar com tecla de verdade, troca de host entre PCs diferentes) está no [roteiro de teste da call](roteiro-de-teste.md).
+
+## Nebula no iPhone (`mobile/`)
+
+Cliente só das salas do modo Internet, instalado por sideload (SideStore, AltStore ou Sideloadly). Spec e fases:
+[`spec/nebula-ios-sideload.md`](spec/nebula-ios-sideload.md). É um pacote à parte (`mobile/package.json`): nada dele entra em
+`PACK_FILES` nem em `build.files`, e o `index.html`, o `preload.js` e o `main.js` do desktop não mudam por causa dele.
+
+- `mobile/scripts/montar-www.mjs` monta `mobile/www` a partir do desktop (cópia: `index.html`, `renderer/`, `vendor/`, `assets/`, estilos,
+  `voice.js`, `encode-once.js`, worklets) e, só na cópia, põe `data-plataforma="ios"`, o `ponte.js` antes do primeiro script,
+  o viewport do aparelho e `https:` no `connect-src` da CSP. Também deixa o projeto Xcode no iOS 16.4 e na versão do desktop.
+- `mobile/ponte/` é o `window.api` do iPhone: `index.js` (o que funciona: `platform: 'ios'`, copiar, abrir link, versão, ruído) e
+  `stubs.js` (o resto, no mesmo formato do Electron, sem lançar). Função nova no `preload.js` precisa de par aqui: o teste falha.
+- `mobile/ios/` é o projeto Xcode do Capacitor (`npx cap add ios`). `.github/workflows/ios.yml` (macOS) compila sem assinar e deixa o `.ipa`
+  como artefato; publicar o `.ipa` é de um humano.
+- Testes: `cd mobile && npm test` (ponte e montador, sem Mac) e `npm run test:webkit` (abre o `www` no WebKit em 390x844;
+  `npx playwright install webkit` uma vez). O WebKit do Playwright no Windows não tem `mediaDevices` nem WebRTC: o teste põe um
+  `mediaDevices` mínimo; voz e telas de verdade só se provam num iPhone.
 
 ## Ajudantes nativos
 
@@ -210,6 +229,10 @@ Opções:
 - **Escolher o número:** `npm run publicar -- 1.9.0`
 - **Novidades no app:** o `publicar.js` gera `renderer/novidades.js` com as mensagens dos commits de cada versão (as 10 últimas, sem merge e sem `CI:`). O Início mostra para quem atualizar. Escreva a mensagem do commit pensando em quem usa o app; `Área: a; b` vira a etiqueta "Área" com uma linha para cada parte.
 - **Texto da Release:** `npm run publicar -- --notas "o que mudou"`. Sem isso, o GitHub lista os commits.
+- **Versão mínima:** toda Release leva `obrigatória: X.Y.Z` nas notas, com a versão anterior (no máximo uma versão
+  atrás: publicando a 1.20.10, quem está abaixo da 1.20.9 tem que atualizar). `--obrigatoria` exige a própria versão
+  nova. O `github.js` lê a linha, e quem está abaixo vê no Início uma tela sem "Depois" até atualizar (fora da sala;
+  numa call, só ao voltar). Vale para quem já tem uma versão com esse código.
 - **Sem GitHub:** `npm run publicar -- --sem-github`
 
 Para mandar para o GitHub, o PC precisa do Git e do [GitHub CLI](https://cli.github.com), logado (`gh auth login`) na conta dona do repositório.

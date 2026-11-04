@@ -38,7 +38,8 @@ test('mensagem muito longa é cortada', () => {
 test('publicar: a versão escolhida vale com ou sem --notas, e o texto das notas nunca vira versão', () => {
   assert.equal(lerArgs(['1.17.0']).version, '1.17.0');
   assert.equal(lerArgs([]).version, undefined);
-  assert.deepEqual(lerArgs(['1.17.0', '--notas', 'texto', '--sem-github']), { version: '1.17.0', notes: 'texto', github: false });
+  assert.deepEqual(lerArgs(['1.17.0', '--notas', 'texto', '--sem-github']), { version: '1.17.0', notes: 'texto', github: false, obrigatoria: false });
   assert.equal(lerArgs(['--notas', '2.0.0']).version, undefined);
   assert.equal(lerArgs(['--notas', '2.0.0', '1.17.0']).version, '1.17.0');
+  assert.equal(lerArgs(['1.20.8', '--obrigatoria']).obrigatoria, true);
 });

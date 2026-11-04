@@ -1,0 +1,5 @@
+# https para o emissor com certificado do Let's Encrypt. EMISSOR_DOMINIO: o subdomínio do DuckDNS (ex.: nebula-turn.duckdns.org)
+# O Caddy ignora o X-Forwarded-For que vem do cliente e põe o IP de verdade: o limite por IP do emissor depende disso
+{$EMISSOR_DOMINIO} {
+	reverse_proxy 127.0.0.1:8790
+}

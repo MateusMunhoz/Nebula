@@ -15,7 +15,14 @@ async function latestRelease() {
   const version = String(rel.tag_name || '').replace(/^v/i, '');
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('a última versão no GitHub não tem número');
   const asset = (name) => (rel.assets || []).find((a) => a.name === name)?.browser_download_url;
-  return { version, pack: asset('pack.json'), sig: asset('pack.sig'), page: rel.html_url };
+  return { version, pack: asset('pack.json'), sig: asset('pack.sig'), page: rel.html_url, minima: minimaDasNotas(rel.body) };
+}
+
+// "obrigatória: 1.20.8" nas notas (publicar.js --obrigatoria): abaixo disso o app pede para atualizar no Início.
+// Só muda quando a pessoa atualiza; o pacote continua precisando da assinatura.
+function minimaDasNotas(body) {
+  const m = /^obrigat[óo]ria:\s*(\d{1,4}\.\d{1,4}\.\d{1,4})\s*$/im.exec(String(body || '').slice(0, 20000));
+  return m ? m[1] : '';
 }
 
 async function downloadText(url) {
@@ -27,6 +34,7 @@ async function downloadText(url) {
 
 module.exports = {
   REPO,
+  minimaDasNotas,
 
   async check() {
     try {

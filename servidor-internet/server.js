@@ -176,7 +176,7 @@ function createInternetServer(options = {}) {
     createPerIpPerHour: options.createPerIpPerHour ?? envInt('CREATE_PER_IP_PER_HOUR', 20),
     failPerIp: options.failPerIp ?? envInt('FAIL_PER_IP', 10),
     failWindowMs: options.failWindowMs ?? envInt('FAIL_WINDOW_MS', 10 * 60 * 1000),
-    graceMs: options.graceMs ?? envInt('RECONNECT_GRACE_MS', 20000),
+    graceMs: options.graceMs ?? envInt('RECONNECT_GRACE_MS', 30000),
     denyDelayMs: options.denyDelayMs ?? envInt('DENY_DELAY_MS', 400),
     minPassword: options.minPassword ?? envInt('MIN_PASSWORD', 4),
     maxEspectadores: options.maxEspectadores ?? envInt('MAX_ESPECTADORES', 5), // quem assiste pelo navegador, por sala
@@ -463,7 +463,7 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid, m]) => mid !== id && !m.espectador).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'passe', 'senha', 'passe-sala'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping'],
         passeSala: room.passes.sala(),
         amigosMembros: room.amigosMembros,
         chat: room.chat.log,
@@ -497,10 +497,10 @@ function createInternetServer(options = {}) {
       try { ws.ping(); } catch {}
     }
   }, 15000);
-  // Tira as músicas esquecidas (pausadas há muito tempo, ou sem ninguém no canal nem ouvindo)
+  // Tira as músicas esquecidas (pausadas há muito tempo, ou sem ninguém no canal nem ouvindo) e passa a que acabou para a próxima da fila
   const musicTimer = setInterval(() => {
     for (const r of rooms.values()) if (limparMusicas(r.musicas, r.members)) r.broadcast(r.musicas.msg());
-  }, 15000);
+  }, 5000); // 5 s: a próxima da fila não espera
 
   return {
     httpServer, wss, rooms, cfg,

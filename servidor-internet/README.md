@@ -87,7 +87,7 @@ Rode o `instalar.sh` de novo (o mesmo comando do começo). Ou, à mão:
 cd /opt/tela-p2p && git pull && cd servidor-internet && npm ci --omit=dev && systemctl restart tela-p2p-internet
 ```
 
-As salas abertas caem na reinicialização; os apps tentam voltar sozinhos por uns 18 s.
+As salas abertas caem na reinicialização; os apps tentam voltar sozinhos por uns 30 s.
 
 Servidor de antes do **passe de convite** (salas dos amigos, app 1.13.0): continua funcionando, mas os amigos que
 clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem com um clique.
@@ -108,7 +108,7 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 | `FAIL_PER_IP` / `FAIL_WINDOW_MS` | 10 / 10 min | Tentativas erradas (código ou senha) antes de bloquear o IP |
 | `MAX_ESPECTADORES` | 5 | Quem assiste pelo navegador (`/ver`), por sala; é separado do limite de 50 pessoas |
 | `MAX_CONVIDADOS` | 5 | Quem entra na conversa (voz) pelo navegador, por sala; também separado das 50 pessoas |
-| `RECONNECT_GRACE_MS` | 20000 | Quanto tempo o lugar de quem caiu fica guardado |
+| `RECONNECT_GRACE_MS` | 30000 | Quanto tempo o lugar de quem caiu fica guardado |
 | `TRUST_PROXY` | 0 | 1 só atrás de Caddy/nginx (para o limite por IP usar o IP real). Só vale para conexões vindas de rede privada (127.x, 10.x, 172.16-31.x, 192.168.x: o proxy na mesma máquina ou no Docker); de fora, o X-Forwarded-For é ignorado, então manter a 8765 aberta para os apps não deixa forjar o IP |
 
 ## Assistir pelo navegador (`/ver`)
