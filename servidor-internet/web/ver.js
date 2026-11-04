@@ -10,6 +10,7 @@ const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.t
 // destaque: id da tela grande; manual: quem parei à mão (não volta sozinho); nota: por que parei de assistir
 const S = { ws: null, ice: [], membros: new Map(), vistas: new Map(), destaque: null, manual: new Set(), nota: '', conversar: false };
 const nomeDe = (id) => S.membros.get(id)?.name || 'Alguém';
+let meuMudo = false;
 
 function mostrar(tela) { $('entrar').hidden = tela !== 'entrar'; $('sala').hidden = tela !== 'sala'; }
 function aviso(texto, erro = false) { $('aviso').textContent = texto; $('aviso').classList.toggle('erro', erro); }
@@ -50,6 +51,7 @@ function receber(m) {
     S.ice = Array.isArray(m.iceServers) ? m.iceServers : [];
     S.membros = new Map((Array.isArray(m.members) ? m.members : []).map((x) => [x.id, x]));
     mostrar('sala');
+    lembrarSala(); // só depois de entrar: senha errada nunca é guardada
     if (S.conversar) {
       Voz.entrar({
         enviar, meuId: m.id, membros: m.members, ice: S.ice, aoMudar: desenharVoz,
@@ -57,8 +59,8 @@ function receber(m) {
       });
       $('voz').hidden = false;
       $('mudo').hidden = false;
-      $('saida').hidden = !Voz.temSaida(); // só o Safari do iPhone tem como escolher a saída
-      desenharVoz();
+      montarSaida();
+      rotuloMudo();
     }
     atualizar();
   } else if (m.type === 'error') {
@@ -87,6 +89,10 @@ function desenharVoz(info) {
   if (!S.conversar) return;
   const ul = $('vozLista');
   ul.replaceChildren();
+  const eu = document.createElement('li'); // eu também apareço, com o estado do meu microfone
+  eu.textContent = `Você${meuMudo ? ' (mudo)' : ''}`;
+  if (meuMudo) eu.className = 'mudo';
+  ul.append(eu);
   const gente = Voz.lista();
   for (const p of gente) {
     const li = document.createElement('li');
@@ -168,6 +174,7 @@ function iniciar(t) {
   const fluxo = video.srcObject;
   const atual = () => video.srcObject === fluxo; // outra transmissão pode ter entrado na mesma tela enquanto o play() esperava
   video.muted = !temAudio(video) || video.dataset.silenciada === '1';
+  if (Voz.sinkAtual()) video.setSinkId?.(Voz.sinkAtual()).catch(() => {}); // a tela sai pela mesma caixa de som que a voz
   video.play().catch(() => { if (!atual()) return; video.muted = true; return video.play(); })
     .then(() => { if (atual()) t.tocar.hidden = true; }, () => { if (atual()) t.tocar.hidden = false; })
     .finally(() => { if (!atual()) return; rotuloSom(t); Voz.tocar(); }); // a voz da conversa pode ter sido pausada pelo iPhone
@@ -269,9 +276,9 @@ function sair(voltar = true) {
   S.nota = '';
   estado('');
   if (S.conversar) { Voz.sair(); S.conversar = false; } // antes de fechar a conexão: avisa a sala que saí da voz
-  for (const id of ['voz', 'mudo', 'ouvir', 'saida']) $(id).hidden = true;
-  $('mudo').textContent = 'Silenciar microfone';
-  $('saida').textContent = 'Trocar para o auricular';
+  for (const id of ['voz', 'mudo', 'ouvir', 'saidaLabel']) $(id).hidden = true;
+  meuMudo = false;
+  rotuloMudo();
   S.ws = null;
   S.membros = new Map();
   if (ws) { try { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'leave' })); ws.close(); } catch {} }
@@ -301,13 +308,24 @@ if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) { // micro
   $('avisoHttps').hidden = false;
   if (window.isSecureContext) $('avisoHttps').textContent = 'Este navegador não libera o microfone. Abra o endereço no Safari ou no Chrome, e não dentro de outro aplicativo.';
 }
-$('mudo').onclick = () => {
-  const mudo = $('mudo').textContent === 'Silenciar microfone';
-  Voz.mudo(mudo);
-  $('mudo').textContent = mudo ? 'Ativar microfone' : 'Silenciar microfone';
-};
+// A tela muda na hora do toque; o aviso para a sala e o corte do som vêm logo atrás
+function rotuloMudo() {
+  const b = $('mudo');
+  b.textContent = meuMudo ? 'Microfone mudo' : 'Microfone ligado';
+  b.classList.toggle('secundario', meuMudo);
+  b.setAttribute('aria-pressed', String(meuMudo));
+  desenharVoz();
+}
+$('mudo').onclick = () => { meuMudo = !meuMudo; rotuloMudo(); Voz.mudo(meuMudo); };
 $('ouvir').onclick = () => { Voz.tocar(); $('ouvir').hidden = true; };
-$('saida').onclick = () => { $('saida').textContent = Voz.trocarSaida() ? 'Trocar para o auricular' : 'Trocar para o alto-falante'; };
+// Saída de som: no iPhone, alto-falante ou auricular; onde o navegador deixa, os dispositivos de áudio do aparelho
+async function montarSaida() {
+  const opcoes = await Voz.opcoesSaida();
+  const sel = $('saida');
+  sel.replaceChildren(...opcoes.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.nome; return op; }));
+  $('saidaLabel').hidden = opcoes.length < 2; // sem escolha de verdade, nem mostra
+}
+$('saida').onchange = () => Voz.escolherSaida($('saida').value, [...S.vistas.values()].map((v) => v.video));
 // /ver#debug: mostra o estado real do áudio e da tela (o iPhone não deixa ver o console)
 let timerDebug = 0;
 function debug() {
@@ -331,10 +349,35 @@ function codigoDoLink() {
   if (!m) return;
   const dica = $('dicaEntrada');
   dica.dataset.base ??= dica.textContent;
+  if ($('codigo').value && $('codigo').value !== m[1].toUpperCase()) $('senha').value = ''; // senha lembrada é de outra sala
   $('codigo').value = m[1].toUpperCase();
   dica.textContent = `Convite para a sala ${m[1].toUpperCase()}: falta só a senha. ${dica.dataset.base}`;
   $('senha').focus();
 }
+// Entrar sem digitar tudo: "Mostrar a senha" ajuda a conferir o que digitou; "Lembrar a sala neste aparelho" (opcional)
+// guarda código, senha e nome só neste navegador (localStorage) e preenche tudo da próxima vez
+const CHAVE_SALA = 'nebula-ver-sala';
+function lerSala() { try { return JSON.parse(localStorage.getItem(CHAVE_SALA)) || null; } catch { return null; } }
+function lembrarSala() {
+  try {
+    if (!$('lembrar').checked) return localStorage.removeItem(CHAVE_SALA);
+    localStorage.setItem(CHAVE_SALA, JSON.stringify({ codigo: $('codigo').value.trim().toUpperCase(), senha: $('senha').value, nome: $('nome').value.trim(), conversar: S.conversar }));
+  } catch { /* navegador sem armazenamento (aba privada): só não lembra */ }
+}
+function restaurarSala() {
+  const s = lerSala();
+  if (!s || typeof s.codigo !== 'string' || typeof s.senha !== 'string') return;
+  $('lembrar').checked = true;
+  $('codigo').value = s.codigo.slice(0, 6);
+  $('senha').value = s.senha;
+  $('nome').value = typeof s.nome === 'string' ? s.nome.slice(0, 20) : '';
+  if (s.conversar === true && !$('conversar').disabled) { $('conversar').checked = true; $('nomeLabel').hidden = false; }
+  $('dicaEntrada').textContent = `Sala ${$('codigo').value} lembrada neste aparelho: é só tocar em Entrar.`;
+  $('dicaLembrar').hidden = false;
+}
+$('lembrar').onchange = () => { $('dicaLembrar').hidden = !$('lembrar').checked; if (!$('lembrar').checked) { try { localStorage.removeItem(CHAVE_SALA); } catch { /* sem armazenamento */ } } };
+$('verSenha').onchange = () => { $('senha').type = $('verSenha').checked ? 'text' : 'password'; };
+restaurarSala();
 codigoDoLink();
 addEventListener('hashchange', codigoDoLink);
 // Fechou a aba ou saiu da página: avisa a sala na hora (senão quem transmite só percebe quando a conexão cai)

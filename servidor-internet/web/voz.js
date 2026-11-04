@@ -8,13 +8,13 @@ const Voz = (() => {
     .join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5'); // iOS antigo não tem randomUUID
   const S = {
     enviar: null, aoMudar: () => {}, perdeuMic: () => {}, ice: [], meuId: '', sessao: '', canal: '', mudo: false, eco: false,
-    stream: null, membros: new Map(), pares: new Map(), alto: true,
+    stream: null, membros: new Map(), pares: new Map(), alto: true, sink: '',
   };
 
   // Por onde a voz dos outros sai. No iPhone, com o microfone aberto, o som vai para o auricular (o de chamada, perto
   // da tela). navigator.audioSession (Safari 16.4+) com 'play-and-record' o leva para o alto-falante: validado no iPhone
   // em 03/11/2026. As outras técnicas testadas (vídeo escondido, AudioContext, 'playback') saíram. Sem essa API
-  // (Chrome, Android) não há o que trocar: temSaida() é falso e a página não mostra o botão.
+  // (Chrome, Android) temSaida() é falso e a página oferece os dispositivos de áudio (setSinkId), se houver mais de um.
   const temSaida = () => !!navigator.audioSession;
 
   function aplicarSaida() {
@@ -36,16 +36,28 @@ const Voz = (() => {
     el.srcObject = par.fluxo;
     // O iPhone pausa a voz quando outra mídia começa a tocar (a tela transmitida): enquanto estou na conversa, retoma
     el.addEventListener('pause', () => { if (par.audio === el && S.sessao) el.play().catch(() => {}); });
+    if (S.sink) el.setSinkId?.(S.sink).catch(() => {});
     document.body.append(el);
     par.audio = el;
     el.play().catch(() => S.aoMudar({ precisaToque: true })); // o iPhone pode exigir um toque
   }
 
-  // Alterna entre alto-falante e auricular (direto no toque). Devolve true se agora é o alto-falante
-  function trocarSaida() {
-    S.alto = !S.alto;
-    tocar();
-    return S.alto;
+  // Saídas que a página consegue escolher: no iPhone só existem alto-falante e auricular (fone Bluetooth o iOS escolhe
+  // sozinho); onde o navegador tem setSinkId (Chrome, Edge, Android) vêm os dispositivos de áudio de verdade
+  async function opcoesSaida() {
+    if (temSaida()) return [{ id: 'alto', nome: 'Alto-falante' }, { id: 'auricular', nome: 'Auricular (fone de chamada)' }];
+    if (!HTMLMediaElement.prototype.setSinkId || !navigator.mediaDevices?.enumerateDevices) return [];
+    try {
+      const todos = await navigator.mediaDevices.enumerateDevices();
+      return todos.filter((d) => d.kind === 'audiooutput').map((d, i) => ({ id: d.deviceId, nome: d.label || `Saída ${i + 1}` }));
+    } catch { return []; }
+  }
+
+  // Muda a saída da voz (direto no toque). extras: outros elementos da página que também tocam (as telas)
+  function escolherSaida(id, extras = []) {
+    if (temSaida()) { S.alto = id !== 'auricular'; return tocar(); }
+    S.sink = id;
+    for (const el of [...[...S.pares.values()].map((p) => p.audio), ...extras]) el?.setSinkId?.(id).catch(() => {});
   }
 
   // Pede o microfone. Tem que ser chamado direto no toque do usuário (o iPhone só libera assim)
@@ -62,7 +74,7 @@ const Voz = (() => {
   function entrar({ enviar, meuId, membros, ice, aoMudar, aoPerderMic }) {
     S.enviar = enviar; S.meuId = String(meuId); S.ice = Array.isArray(ice) ? ice : []; S.aoMudar = aoMudar || (() => {});
     S.perdeuMic = aoPerderMic || (() => {});
-    S.sessao = uuid(); S.canal = ''; S.eco = false; S.mudo = false; S.alto = true;
+    S.sessao = uuid(); S.canal = ''; S.eco = false; S.mudo = false; S.alto = true; S.sink = '';
     aplicarSaida();
     S.membros = new Map();
     for (const x of Array.isArray(membros) ? membros : []) guardar(x.id, x.name, x.voiceSession, x.voiceChannel, x.muted);
@@ -238,9 +250,9 @@ const Voz = (() => {
     S.sessao = '';
     S.eco = false;
     S.membros = new Map();
-    S.alto = true; // a próxima entrada volta ao alto-falante
+    S.alto = true; S.sink = ''; // a próxima entrada volta ao alto-falante / saída padrão
     try { if (temSaida()) navigator.audioSession.type = 'auto'; } catch { /* sem suporte */ }
   }
 
-  return { pedirMic, entrar, receber, mudo, lista, tocar, temSaida, trocarSaida, diagnostico, sair, ativo: () => !!S.sessao };
+  return { pedirMic, entrar, receber, mudo, lista, tocar, opcoesSaida, escolherSaida, sinkAtual: () => S.sink, diagnostico, sair, ativo: () => !!S.sessao };
 })();
