@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Assistir no Nebula</title>
+<link rel="stylesheet" href="/ver.css">
+</head>
+<body>
+<main>
+  <section id="entrar">
+    <h1>Assistir no Nebula</h1>
+    <p class="dica" id="dicaEntrada">Entre com o código e a senha da sala. Só assistindo, você não aparece na sala e não fala.</p>
+    <form id="form">
+      <label>Código da sala
+        <input id="codigo" name="codigo" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" required>
+      </label>
+      <label>Senha
+        <input id="senha" name="senha" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      </label>
+      <label class="opcao"><input id="verSenha" type="checkbox">Mostrar a senha</label>
+      <label class="opcao"><input id="conversar" type="checkbox">Entrar na conversa (usa o microfone)</label>
+      <label id="nomeLabel" hidden>Seu nome
+        <input id="nome" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+      </label>
+      <label class="opcao"><input id="lembrar" type="checkbox">Lembrar a sala neste aparelho</label>
+      <p class="dica" id="dicaLembrar" hidden>A senha fica guardada só neste aparelho, até você desmarcar.</p>
+      <p id="avisoHttps" class="dica" hidden>Para falar, abra o endereço que começa com https://. O navegador só libera o microfone em página segura.</p>
+      <button id="entrarBtn" type="submit">Entrar</button>
+    </form>
+    <p id="aviso" role="status"></p>
+  </section>
+
+  <section id="sala" hidden>
+    <div id="telas"></div>
+    <p id="estado" role="status"></p>
+    <div id="lista"></div>
+    <div id="voz" hidden>
+      <p class="dica">Na conversa</p>
+      <ul id="vozLista"></ul>
+    </div>
+    <div class="barra">
+      <button id="mudo" type="button" aria-pressed="false" hidden>Microfone ligado</button>
+      <label id="saidaLabel" hidden>Saída de som
+        <select id="saida"></select>
+      </label>
+      <button id="ouvir" type="button" hidden>Toque para ouvir</button>
+      <button id="sair" type="button" class="secundario">Sair</button>
+    </div>
+  </section>
+  <pre id="debug" hidden></pre>
+</main>
+<script src="/voz.js"></script>
+<script src="/ver.js"></script>
+</body>
+</html>

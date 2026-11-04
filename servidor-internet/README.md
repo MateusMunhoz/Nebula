@@ -106,8 +106,61 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 | `MAX_ROOMS` | 200 | Salas abertas ao mesmo tempo |
 | `CREATE_PER_IP_PER_HOUR` | 20 | Salas criadas por IP por hora |
 | `FAIL_PER_IP` / `FAIL_WINDOW_MS` | 10 / 10 min | Tentativas erradas (código ou senha) antes de bloquear o IP |
+| `MAX_ESPECTADORES` | 5 | Quem assiste pelo navegador (`/ver`), por sala; é separado do limite de 50 pessoas |
+| `MAX_CONVIDADOS` | 5 | Quem entra na conversa (voz) pelo navegador, por sala; também separado das 50 pessoas |
 | `RECONNECT_GRACE_MS` | 30000 | Quanto tempo o lugar de quem caiu fica guardado |
-| `TRUST_PROXY` | 0 | 1 só atrás de Caddy/nginx (para o limite por IP usar o IP real) |
+| `TRUST_PROXY` | 0 | 1 só atrás de Caddy/nginx (para o limite por IP usar o IP real). Só vale para conexões vindas de rede privada (127.x, 10.x, 172.16-31.x, 192.168.x: o proxy na mesma máquina ou no Docker); de fora, o X-Forwarded-For é ignorado, então manter a 8765 aberta para os apps não deixa forjar o IP |
+
+## Assistir pelo navegador (`/ver`)
+
+O mesmo servidor entrega a página `http://IP_DA_VPS:8765/ver` (arquivos de `web/`, lidos na subida; atualizou, reinicie o
+serviço). No celular, sem instalar nada: código + senha da sala, e a tela de quem transmite aparece (só vídeo, sem som).
+
+- Link de convite: `/ver#ABC234` (o código depois do `#`, 6 caracteres dos códigos da sala) preenche o código e põe o foco na
+  senha. O `#` fica no navegador: não chega ao servidor nem aos logs. A senha nunca vai no link.
+- A página entra com `hello { role: 'espectador', room, password }`. Nunca cria sala e não aceita passe de convite;
+  sala inexistente e senha errada respondem igual, e contam no limite de tentativas por IP.
+- O espectador é **invisível**: não há `member-joined`/`member-left` para a sala, ele não entra na lista de pessoas nem
+  vira host, e não volta com `resume` (caiu, entra de novo). Quem transmite vê "Alguém está assistindo você".
+- O `welcome` dele é enxuto (`id`, `sala`, `iceServers`, `members` só com `id`, `name`, `sharing`, `shareInfo`). Ele só
+  recebe `share-state`, `member-joined` e `member-left`; sem chat, voz, subsalas, música, senha nem passe.
+- Ele só manda `signal` com `side: 'viewer'`, para quem está transmitindo e não fechou a transmissão ao canal
+  (`shareInfo.open !== false`); `once` é sempre `false` (o navegador recebe faixa WebRTC comum, H.264). O
+  `unsubscribe` passa sempre. Se o espectador cai sem avisar (aba fechada, rede), o servidor manda o `unsubscribe`
+  em nome dele, senão o app de quem transmite ficaria com um link fantasma ("Alguém").
+- Cada espectador é mais um upload no PC de quem transmite. Limite por sala: `MAX_ESPECTADORES`. Quando só sobram
+  espectadores na sala, ela fecha.
+- Por `http://` a página funciona (conferido no Chrome do PC; no iPhone ainda não), mas a senha vai em texto puro, como
+  já vai no app com `ws://`. Com o Caddy na frente (abaixo), a página abre por `https://` e fala `wss://` sozinha.
+
+## Entrar na conversa pelo navegador (convidado)
+
+A mesma página `/ver` tem o interruptor **Entrar na conversa (usa o microfone)**: ligado, a pessoa entra com
+`hello { role: 'convidado', room, password, name, client }`, fica **visível** como "Nome (convidado)" e fala e ouve na Voz geral
+com o protocolo de voz dos apps (`voz.js`). Spec: `docs/spec/convidado-web.md`.
+
+- Só `name` e `client` do hello valem. Só manda `voice-state`, `leave` e `signal` de voz ou de assistir (`viewer`, `once` sempre `false`);
+  o resto é ignorado. Não recebe o passe da sala nem a senha nova, nunca vira host, nunca cria sala, sem passe nem `resume`.
+- Limite `MAX_CONVIDADOS` por sala, à parte das 50 pessoas. A sala fecha quando só sobram convidados e espectadores.
+- **O microfone exige HTTPS.** Sem HTTPS a página só deixa assistir. Atrás do Caddy, `TRUST_PROXY=1` (senão todos parecem ter o IP do
+  Caddy e o limite de tentativas errada vale para todos juntos).
+
+### HTTPS quando a VPS já tem o Caddy da RazzeAPI (Docker, portas 80 e 443)
+Não suba outro Caddy: acrescente um site ao Caddyfile da RazzeAPI (`/opt/tela-p2p/razze-api/Caddyfile`, montado no container
+`razze-api-caddy-1`). Sem domínio, use `<IP com hífens>.sslip.io` (ex.: `2-25-253-140.sslip.io` aponta para `2.25.253.140`):
+
+```
+2-25-253-140.sslip.io {
+        reverse_proxy <endereço que o container alcança>:8765 {
+                header_up X-Forwarded-For {remote_host}
+        }
+}
+```
+
+O endereço da porta 8765 vista de dentro do container é o do IP público ou o do gateway da rede do Compose (teste com
+`docker exec razze-api-caddy-1 wget -qO- http://<endereço>:8765/health`). Anexe ao arquivo (não troque o arquivo: ele é montado como
+arquivo único), faça backup, `docker exec razze-api-caddy-1 caddy validate --config /etc/caddy/Caddyfile` e só então `caddy reload`.
+Depois ligue `TRUST_PROXY=1` em `/etc/tela-p2p-internet.env` e reinicie o serviço. O app dos hosts continua em `ws://IP:8765`.
 
 ## Banda da VPS
 

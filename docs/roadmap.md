@@ -26,7 +26,7 @@ Discord mudando preço e verificação de idade). Os códigos dos itens (A, P, D
 - **Tempo da call** ao lado de cada canal de voz; o **X minimiza** (ou esconde na bandeja, por opção).
 
 **Ainda não começado (conferido):** HTTPS/`wss://` na sala (`INTERNET_URL_PADRAO` segue `ws://`), atraso medido (A2), histórico em
-disco (P2), assistir pelo navegador (D2, só rascunho de spec) e o repasse de vídeo (P3).
+disco (P2), assistir e conversar pelo navegador (D2: v1 e v2 no ar e testadas no iPhone; falta o som pelo alto-falante; as várias telas estão feitas) e o repasse de vídeo (P3).
 
 ## Estado em 07/10/2026
 
@@ -51,7 +51,7 @@ disco (P2), assistir pelo navegador (D2, só rascunho de spec) e o repasse de v�
 | 3 | **Conta: excluir pelo painel e mensagem de conta desativada** | Uma conta desativada prendia a pessoa | **Feito** (19/10/2026): excluir no painel do app e mensagem em todos os logins. Falta só o painel web antigo (`razze-api/admin/`), que segue sem excluir usuário |
 | 4 | **HTTPS (wss) na VPS**, Caddy na frente da porta 8765 | Destrava o A1 e o D2 | Não começado (precisa de quem tem SSH) |
 | 5 | **A1 revisado:** o app passa a usar `wss://` no modo Internet | Chat e senha da sala hoje vão em `ws://` puro | Depende do 4 |
-| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | Rascunho de spec em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md); depende do 4 |
+| 6 | **D2 Assistir pelo navegador** (celular, só assistir) | Convidar sem pedir download; porta de entrada do B0 | **v1 (assistir) e v2 (falar como convidado) no ar em `https://2-25-253-140.sslip.io/ver`**, com a voz funcionando no iPhone. O item 4 (HTTPS) está feito só para esse endereço (Caddy da RazzeAPI). Várias telas feitas (falta publicar na VPS). Pendência: o som pelo alto-falante do iPhone. Specs: [assistir-no-navegador](spec/assistir-no-navegador.md) e [convidado-web](spec/convidado-web.md) |
 | 7 | **A2 Atraso medido** | Dá o número para comparar com o Discord e serve de régua para o B0 e o D1 | Não começado |
 | 8 | **P2 Histórico** | O chat não some quando a sala fecha | Não começado |
 | 9 | **B0 Briefing 50+** (com P3, espectadores repassando) | Meta maior; ainda vai ser testado | Spec pronta; testes pendentes |
@@ -216,7 +216,7 @@ listar jogos testados); segurança (a permissão e o pânico têm que ser à pro
 
 Spec completa em [spec/assistir-no-navegador.md](spec/assistir-no-navegador.md). Resumo: página estática na VPS, por
 HTTPS, onde o celular entra por código e senha (ou link com passe) e assiste a uma transmissão em WebRTC comum (H.264).
-Sem voz, sem chat e sem login na primeira versão. Depende do item 4 (HTTPS na VPS).
+Sem voz, sem chat e sem login na primeira versão; a v2 acrescenta a voz como convidado ([convidado-web](spec/convidado-web.md)). A voz depende do item 4 (HTTPS na VPS).
 
 ## D3. Linux
 

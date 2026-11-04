@@ -9,6 +9,10 @@
 //   hello { room: 'ABC234', password } -> entra
 //   hello { room, resume: id, client }  -> volta depois de a conexão cair (dentro do tempo de espera)
 //   hello { room, passe }              -> entra com o passe de convite de alguém da sala, no lugar da senha
+//   hello { room, password, role: 'espectador' } -> assiste pelo navegador (página /ver): invisível, só vê as transmissões
+//                                         abertas (nunca cria sala, sem passe nem resume); veja o README, "Assistir pelo navegador"
+//   hello { room, password, role: 'convidado', name } -> conversa pelo navegador (página /ver + voz.js): visível como
+//                                         "Nome (convidado)", voz e assistir; veja o README, "Entrar na conversa pelo navegador"
 //   passe { passe }                     -> quem entrou com a senha registra o próprio passe de convite (null tira);
 //                                          o app anuncia o passe só para os amigos, pela RazzeAPI
 //   senha { password }                  -> o host muda a senha; quem entrou com a senha recebe a nova, os passes caem
@@ -23,6 +27,8 @@
 //                                          também serve à conexão direta das mensagens privadas)
 'use strict';
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
@@ -120,6 +126,48 @@ function createLimiter({ max, windowMs, now }) {
   };
 }
 
+// Assistir pelo navegador (docs/spec/assistir-no-navegador.md): hello { role: 'espectador', room, password }.
+// O espectador só recebe o estado das transmissões e conversa de sinal com quem transmite; é invisível para a sala.
+const WEB_FILES = {
+  '/ver': ['ver.html', 'text/html; charset=utf-8'],
+  '/ver.js': ['ver.js', 'text/javascript; charset=utf-8'],
+  '/ver.css': ['ver.css', 'text/css; charset=utf-8'],
+  '/voz.js': ['voz.js', 'text/javascript; charset=utf-8'],
+};
+// Convidado (docs/spec/convidado-web.md): hello { role: 'convidado' } entra pelo navegador como membro VISÍVEL ("Nome (convidado)"),
+// ouve e fala na voz e assiste à tela, mas não transmite, não escreve, não mexe na sala e nunca vira host.
+const ehPessoa = (m) => !m.espectador && !m.convidado; // quem conta para o host, para o limite de 50 e para manter a sala aberta
+
+// O que a sala espalha e o convidado recebe (lista branca: chat, perfis, música, passe e o resto não chegam) e em versão enxuta
+const PARA_CONVIDADO = new Set(['member-joined', 'member-left', 'voice-state', 'share-state']);
+const enxutoConvidado = (m) => ({
+  id: m.id, name: m.name, sharing: !!m.sharing, shareInfo: m.shareInfo ?? null, voiceSession: m.voiceSession || '',
+  voiceChannel: m.voiceChannel || '', muted: !!m.muted, deafened: !!m.deafened, voiceIdade: m.voiceIdade,
+});
+function paraConvidado(msg) {
+  if (!PARA_CONVIDADO.has(msg.type)) return null;
+  return msg.type === 'member-joined' ? { type: 'member-joined', ...enxutoConvidado(msg) } : msg;
+}
+
+// IP de quem conectou. Atrás do Caddy (TRUST_PROXY=1) vale o último do X-Forwarded-For, mas só se a conexão vem de rede privada
+// (o Caddy, na mesma máquina ou no Docker): de fora, o cabeçalho é forjável e deixaria fugir do limite de tentativas erradas
+const REDE_PRIVADA = /^(::ffff:)?(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|^::1$|^f[cd][0-9a-f]{2}:/i;
+function ipReal(remoto, xff, trustProxy) {
+  const direto = remoto || '?';
+  if (trustProxy && REDE_PRIVADA.test(direto)) {
+    const real = String(xff || '').split(',').pop().trim();
+    if (real) return real;
+  }
+  return direto;
+}
+const WEB_CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' ws: wss:; media-src blob: mediastream:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+// O que um espectador recebe do que a sala espalha (e em versão enxuta); o resto não chega a ele
+function paraEspectador(msg) {
+  if (msg.type === 'member-joined') return { type: 'member-joined', id: msg.id, name: msg.name, sharing: msg.sharing, shareInfo: msg.shareInfo };
+  return msg.type === 'share-state' || msg.type === 'member-left' ? msg : null;
+}
+
 function createInternetServer(options = {}) {
   const cfg = {
     host: options.host ?? process.env.HOST ?? '0.0.0.0',
@@ -131,6 +179,8 @@ function createInternetServer(options = {}) {
     graceMs: options.graceMs ?? envInt('RECONNECT_GRACE_MS', 30000),
     denyDelayMs: options.denyDelayMs ?? envInt('DENY_DELAY_MS', 400),
     minPassword: options.minPassword ?? envInt('MIN_PASSWORD', 4),
+    maxEspectadores: options.maxEspectadores ?? envInt('MAX_ESPECTADORES', 5), // quem assiste pelo navegador, por sala
+    maxConvidados: options.maxConvidados ?? envInt('MAX_CONVIDADOS', 5), // quem entra na conversa pelo navegador, por sala
     trustProxy: options.trustProxy ?? process.env.TRUST_PROXY === '1',
     stunUrls: options.stunUrls ?? (process.env.STUN_URLS || 'stun:stun.l.google.com:19302').split(',').map((s) => s.trim()).filter(Boolean),
     turnHost: options.turnHost ?? process.env.TURN_HOST ?? '',
@@ -142,6 +192,12 @@ function createInternetServer(options = {}) {
     now: options.now ?? Date.now,
   };
   if (cfg.turnHost && cfg.turnSecret.length < 16) throw new Error('TURN_SECRET precisa ter pelo menos 16 caracteres.');
+
+  // Página de quem assiste pelo navegador (celular): lista fixa, lida na subida; o que não está aqui dá 404
+  const web = new Map();
+  for (const [rota, [arquivo, tipo]] of Object.entries(WEB_FILES)) {
+    try { web.set(rota, { tipo, corpo: fs.readFileSync(path.join(__dirname, 'web', arquivo)) }); } catch { /* sem a página: 404 */ }
+  }
 
   const rooms = new Map(); // código -> sala
   const fails = createLimiter({ max: cfg.failPerIp, windowMs: cfg.failWindowMs, now: cfg.now });
@@ -171,7 +227,11 @@ function createInternetServer(options = {}) {
     // O passe da sala mudou ou caiu: avisa todos (quem está fora no tempo de espera recebe no welcome ao voltar)
     room.avisarPasseSala = () => room.broadcast({ type: 'passe-sala', passe: room.passes.sala(), amigosMembros: room.amigosMembros });
     room.broadcast = (msg, exceptId) => {
-      for (const [mid, m] of room.members) if (mid !== exceptId && !room.away.has(mid)) send(m.ws, msg);
+      for (const [mid, m] of room.members) {
+        if (mid === exceptId || room.away.has(mid)) continue;
+        const out = m.espectador ? paraEspectador(msg) : m.convidado ? paraConvidado(msg) : msg;
+        if (out) send(m.ws, out);
+      }
     };
     rooms.set(code, room);
     return room;
@@ -181,10 +241,22 @@ function createInternetServer(options = {}) {
     clearTimeout(room.away.get(id));
     room.away.delete(id);
     room.passes.remove(id);
+    const saiu = room.members.get(id);
     if (!room.members.delete(id)) return;
+    // Quem transmite larga o link de quem assistia e caiu sem avisar (espectador e convidado)
+    for (const alvoId of saiu.alvos || []) send(room.members.get(alvoId)?.ws, { type: 'signal', from: id, data: { side: 'viewer', unsubscribe: true } });
+    if (saiu.espectador) return; // era invisível: a sala não precisa saber que ele saiu
     room.broadcast({ type: 'member-left', id });
     memberGone({ subsalas: room.subsalas, broadcast: room.broadcast }, id);
-    if (room.members.size === 0) {
+    const pessoas = [...room.members].filter(([, m]) => ehPessoa(m));
+    if (pessoas.length === 0) { // só sobraram espectadores: não há mais transmissão, a sala fecha
+      for (const [vid, v] of room.members) {
+        const w = v.ws;
+        v.ws = null;
+        room.members.delete(vid);
+        send(w, { type: 'error', message: 'A sala foi fechada. Se quem transmitia voltou, entre de novo.' });
+        try { w?.close(); } catch {}
+      }
       rooms.delete(room.code);
       cfg.log(`sala ${room.code} fechada`);
       return;
@@ -192,8 +264,7 @@ function createInternetServer(options = {}) {
     // O host saiu: passa para quem está há mais tempo e entrou com a senha (senão, quem está há mais tempo).
     // É o host quem pode mudar a senha da sala
     if (room.hostId === id) {
-      const all = [...room.members];
-      room.hostId = (all.find(([, m]) => !m.viaPasse) || all[0])[0];
+      room.hostId = (pessoas.find(([, m]) => !m.viaPasse) || pessoas[0])[0];
       room.broadcast({ type: 'host', id: room.hostId });
     }
   }
@@ -203,17 +274,19 @@ function createInternetServer(options = {}) {
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify({ ok: true, app: 'tela-p2p-internet', salas: rooms.size, turn: !!(cfg.turnHost && cfg.turnSecret) }));
     }
+    const pagina = req.method === 'GET' ? web.get(String(req.url).split('?')[0]) : null;
+    if (pagina) {
+      res.writeHead(200, {
+        'content-type': pagina.tipo, 'content-security-policy': WEB_CSP, 'x-content-type-options': 'nosniff',
+        'referrer-policy': 'no-referrer', 'cache-control': 'no-cache',
+      });
+      return res.end(pagina.corpo);
+    }
     res.writeHead(404).end();
   });
   const wss = new WebSocketServer({ server: httpServer, maxPayload: 256 * 1024, perMessageDeflate: false });
 
-  function clientIp(req) {
-    if (cfg.trustProxy) {
-      const real = String(req.headers['x-forwarded-for'] || '').split(',').pop().trim();
-      if (real) return real;
-    }
-    return req.socket.remoteAddress || '?';
-  }
+  function clientIp(req) { return ipReal(req.socket.remoteAddress, req.headers['x-forwarded-for'], cfg.trustProxy); }
 
   wss.on('connection', (ws, req) => {
     const ip = clientIp(req);
@@ -224,6 +297,7 @@ function createInternetServer(options = {}) {
     let joinedViaPasse = false;
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
+    const salaCtx = () => ({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas });
 
     const deny = (message) => {
       busy = true;
@@ -241,6 +315,27 @@ function createInternetServer(options = {}) {
         removeMember(room, id);
         return ws.close(1000, 'left');
       }
+      if (me?.espectador) { // espectador só pede para assistir a quem transmite (aberta); o resto é ignorado
+        const alvo = typeof msg.to === 'string' ? room.members.get(msg.to) : null;
+        const d = msg.data;
+        if (msg.type !== 'signal' || !alvo || alvo.espectador || !d || typeof d !== 'object' || d.side !== 'viewer') return;
+        // Parar de assistir passa sempre (a transmissão pode ter parado ou fechado); o resto só com a transmissão aberta
+        if (d.unsubscribe === true) me.alvos.delete(msg.to);
+        else if (!alvo.sharing || alvo.shareInfo?.open === false) return;
+        else if (d.subscribe === true) me.alvos.add(msg.to);
+        return send(alvo.ws, { type: 'signal', from: id, data: { ...d, once: false } }); // sempre faixa WebRTC normal
+      }
+      if (me?.convidado) { // convidado só fala na voz e assiste à tela; o resto é ignorado, sem resposta
+        if (msg.type === 'voice-state') return handleMemberMessage(salaCtx(), id, me, msg);
+        const side = msg.type === 'signal' ? msg.data?.side : '';
+        if (side !== 'voice' && side !== 'viewer') return;
+        if (side === 'voice') return handleMemberMessage(salaCtx(), id, me, msg);
+        const alvo = typeof msg.to === 'string' ? room.members.get(msg.to) : null;
+        if (!alvo || alvo === me || !ehPessoa(alvo)) return; // assistir é só com quem é pessoa de verdade
+        if (msg.data.unsubscribe === true) me.alvos.delete(msg.to);
+        else if (msg.data.subscribe === true) me.alvos.add(msg.to);
+        return handleMemberMessage(salaCtx(), id, me, { ...msg, data: { ...msg.data, once: false } }); // sempre faixa WebRTC normal
+      }
       if (me && msg.type === 'passe') { // só quem entrou com a senha pode convidar com um passe
         if (me.viaPasse) return;
         if (msg.passe === null || (typeof msg.passe === 'string' && PASSE_RE.test(msg.passe))) room.passes.set(id, msg.passe);
@@ -254,7 +349,7 @@ function createInternetServer(options = {}) {
         if (nova === null) return send(ws, { type: 'senha-erro', message: `No modo Internet a senha precisa ter de ${cfg.minPassword} a 64 caracteres.` });
         room.check = passwordCheck(nova);
         room.passes.clear();
-        for (const [mid, m] of room.members) if (!room.away.has(mid)) send(m.ws, m.viaPasse ? { type: 'senha', by: id } : { type: 'senha', password: nova, by: id });
+        for (const [mid, m] of room.members) if (!room.away.has(mid) && ehPessoa(m)) send(m.ws, m.viaPasse ? { type: 'senha', by: id } : { type: 'senha', password: nova, by: id });
         if (room.amigosMembros) { room.passes.trocarSala(); room.avisarPasseSala(); }
         cfg.log(`sala ${room.code}: senha mudada`);
         return;
@@ -271,14 +366,17 @@ function createInternetServer(options = {}) {
         cfg.log(`sala ${room.code}: amigos dos membros ${msg.on ? 'ligado' : 'desligado'}`);
         return;
       }
-      if (me) return handleMemberMessage({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas }, id, me, msg);
+      if (me) return handleMemberMessage(salaCtx(), id, me, msg);
       if (busy) return;
       if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: !!(cfg.turnHost && cfg.turnSecret), stun: [...cfg.stunUrls, ...(cfg.turnHost ? [`stun:${cfg.turnHost}:${cfg.turnPort}`] : [])] }); return ws.close(); }
       if (msg.type !== 'hello') return;
+      const espectador = msg.role === 'espectador'; // assiste pelo navegador: nunca cria sala, nunca volta com "resume"
+      const convidado = msg.role === 'convidado'; // conversa pelo navegador: mesmas regras de entrada do espectador
+      const pelaWeb = espectador || convidado;
 
       if (fails.blocked(ip)) return deny('Muitas tentativas erradas. Espere alguns minutos e tente de novo.');
 
-      if (msg.create === true) {
+      if (msg.create === true && !pelaWeb) {
         const password = typeof msg.password === 'string' ? msg.password : '';
         if (password.length < cfg.minPassword || password.length > 64) {
           send(ws, { type: 'error', message: `No modo Internet a sala precisa de senha (${cfg.minPassword} a 64 caracteres).` });
@@ -295,7 +393,7 @@ function createInternetServer(options = {}) {
         // Com passe: um passe ativo da sala, ou (voltando depois de a conexão cair) o mesmo passe com que entrou,
         // mesmo que quem convidou já tenha saído
         const back = found && /^\d{1,6}$/.test(String(msg.resume || '')) ? found.members.get(String(msg.resume)) : null;
-        const viaPasse = !!found && typeof msg.passe === 'string' && (found.passes.check(msg.passe) ||
+        const viaPasse = !pelaWeb && !!found && typeof msg.passe === 'string' && (found.passes.check(msg.passe) ||
           !!(back?.passeDigest && PASSE_RE.test(msg.passe) && crypto.timingSafeEqual(back.passeDigest, found.passes.digest(msg.passe))));
         if (!found || (!viaPasse && !found.check(msg.password))) {
           fails.hit(ip);
@@ -306,7 +404,7 @@ function createInternetServer(options = {}) {
       }
 
       // Voltando depois de a conexão cair: mesmo número, se for o mesmo PC e ainda estiver no tempo de espera
-      const resume = String(msg.resume || '');
+      const resume = pelaWeb ? '' : String(msg.resume || '');
       const client = cleanClient(msg.client);
       const old = /^\d{1,6}$/.test(resume) ? room.members.get(resume) : null;
       const resuming = !!(old && client && old.client === client);
@@ -321,20 +419,50 @@ function createInternetServer(options = {}) {
         // O mesmo PC entrando de novo sem "resume": a conexão antiga era um fantasma
         if (client) for (const [oldId, m] of room.members) if (m.client === client) { try { m.ws?.terminate(); } catch {} removeMember(room, oldId); }
         if (!rooms.has(room.code)) rooms.set(room.code, room); // a sala esvaziou no passo acima
-        const active = room.members.size;
-        if (active >= MAX_MEMBERS) { send(ws, { type: 'error', message: 'A sala está cheia.' }); room = null; return ws.close(); }
+        let pessoas = 0;
+        let vendo = 0;
+        let conversando = 0;
+        for (const m of room.members.values()) { if (m.espectador) vendo++; else if (m.convidado) conversando++; else pessoas++; }
+        if (espectador ? vendo >= cfg.maxEspectadores : convidado ? conversando >= cfg.maxConvidados : pessoas >= MAX_MEMBERS) {
+          send(ws, { type: 'error', message: espectador ? 'Essa sala já tem espectadores demais.' : convidado ? 'Essa sala já tem convidados demais.' : 'A sala está cheia.' });
+          room = null;
+          return ws.close();
+        }
         id = String(room.nextId++);
       }
-      me = newMember(ws, msg, resuming ? resume : '', room.subsalas);
+      // Convidado: só nome e client valem (nada de version, lider, foto ou conta Razze emprestados); o rótulo é do servidor
+      const nomeLimpo = String(msg.name ?? '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g, '').trim();
+      const nomeConvidado = `${nomeLimpo.slice(0, 20) || 'Visitante'} (convidado)`;
+      me = newMember(ws, convidado ? { name: nomeConvidado, client: msg.client } : msg, resuming ? resume : '', room.subsalas);
       me.addrs = []; // pela internet não tem por que espalhar os IPs de casa de ninguém
+      if (convidado) { me.convidado = true; me.alvos = new Set(); } // alvos: quem transmite e recebeu o subscribe dele
       if (joinedViaPasse) { me.viaPasse = true; me.passeDigest = room.passes.digest(msg.passe); room.passes.remove(id); }
+      if (espectador) { // welcome enxuto (sem chat, subsalas, música, passe...) e sem avisar a sala
+        me.espectador = true;
+        me.alvos = new Set(); // quem transmite e recebeu o subscribe dele (para largar o link se ele cair sem avisar)
+        send(ws, {
+          type: 'welcome', id, sala: room.code, features: ['espectador'], now: cfg.now(), iceServers: iceServersFor(room.code, id),
+          members: [...room.members].filter(([, m]) => !m.espectador).map(([mid, m]) => ({ id: mid, name: m.name, sharing: m.sharing, shareInfo: m.shareInfo })),
+        });
+        room.members.set(id, me);
+        return;
+      }
+      if (convidado) { // welcome enxuto: sem chat, subsalas, música, passe nem perfis; só quem está na sala e na voz
+        send(ws, {
+          type: 'welcome', id, sala: room.code, features: ['voice', 'convidado'], now: cfg.now(), iceServers: iceServersFor(room.code, id),
+          members: [...room.members].filter(([, m]) => !m.espectador).map(([mid, m]) => enxutoConvidado(memberInfo(mid, m))),
+        });
+        room.members.set(id, me);
+        room.broadcast({ type: 'member-joined', ...memberInfo(id, me), resumed: false }, id);
+        return;
+      }
       if (!room.hostId) room.hostId = id;
       send(ws, {
         type: 'welcome',
         id,
         hostId: room.hostId,
         sala: room.code,
-        members: [...room.members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
+        members: [...room.members].filter(([mid, m]) => mid !== id && !m.espectador).map(([mid, m]) => memberInfo(mid, m)),
         features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping'],
         passeSala: room.passes.sala(),
         amigosMembros: room.amigosMembros,
@@ -353,6 +481,7 @@ function createInternetServer(options = {}) {
     ws.on('close', () => {
       if (!me || !room || me.ws !== ws) return; // nunca entrou, ou já foi trocada por uma conexão nova
       me.ws = null;
+      if (me.espectador || me.convidado) return removeMember(room, id); // não volta com "resume": sai na hora
       // Espera um pouco antes de tirar da sala: a internet piscou, o app volta sozinho com o mesmo número
       const r = room;
       const leftId = id;
@@ -391,7 +520,7 @@ function createInternetServer(options = {}) {
   };
 }
 
-module.exports = { createInternetServer, turnCredentials, cleanCode, makeCode };
+module.exports = { createInternetServer, turnCredentials, cleanCode, makeCode, ipReal };
 
 if (require.main === module) {
   const server = createInternetServer();

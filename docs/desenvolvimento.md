@@ -35,6 +35,8 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
   | `main/razze-wireguard.js` | Chaves locais, STUN, configuração e serviço WireGuard no Windows. |
   | `razze-api/server.js` | API central HTTP/SQLite e serviço STUN UDP. |
   | `razze-api/identificador.js`, `razze-api/email.js`, `razze-api/totp.js` | Identificador `nome#1234` (regras, sugestão, tag livre), envio de e-mail (cliente SMTP próprio com TLS e a fila) e o TOTP do 2FA com a cifra dos segredos. Sem dependências. |
+  | `servidor-internet/server.js` | Servidor do modo Internet (VPS): salas por código + senha, TURN, passes e o espectador do navegador (`hello { role: 'espectador' }` para só assistir e `role: 'convidado'` para falar). Testes em `tests/servidor-internet.test.js`. |
+  | `servidor-internet/web/` | A página `/ver` (`ver.html`, `ver.js`, `ver.css`) e `voz.js` (a voz do convidado, o mesmo protocolo de `voice.js`): assistir e conversar pelo navegador do celular, sem instalar nada. Só roda na VPS; não entra no `.exe` (fora de `PACK_FILES`). Specs: [assistir-no-navegador](spec/assistir-no-navegador.md) e [convidado-web](spec/convidado-web.md). |
   | `publicar.js` | Assina, gera o `.exe` portátil e o instalador e publica. |
   | `native/` | Código dos ajudantes nativos em C++. |
   | `bin/` | Os ajudantes compilados: `audiocap.exe` (som), `videocap.exe` (captura e NVENC), `teclas.exe` (apertar para falar), `midia.exe` (o que está tocando, com a capa, para a atividade do perfil; sem nada tocando, a primeira música pausada, com `"pausada":true`, que `main/atividade.js` mostra por 3 min). |
