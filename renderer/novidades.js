@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.12",
+    "date": "2026-11-07",
+    "items": [
+      "feat(abertura): logo animada enquanto o app carrega",
+      "feat(ver): lista de saída de som, botão de mudo e entrada mais fácil",
+      "fix(ver): som da tela, escolha alto-falante/auricular e voz que retoma"
+    ]
+  },
+  {
     "version": "1.20.11",
     "date": "2026-11-03",
     "items": [
@@ -15,6 +24,14 @@ const NOVIDADES = [
     "items": [
       "commit",
       "Teste de configurações: servidor sem configuração aparece em cinza no mapa",
+      "feat(ver): botão de saída de som e retomada da tela cheia no iPhone",
+      "feat(ver): link de convite com o código da sala (/ver#ABC234)",
+      "feat(ver): várias telas ao mesmo tempo na página do navegador",
+      "docs: resultado do teste no iPhone e pendências do convidado web",
+      "docs: convidado pelo navegador (spec, README do servidor, guia, roadmap)",
+      "feat(servidor): convidado pelo navegador com voz (role 'convidado' e voz.js)",
+      "docs: assistir pelo navegador (spec v1, README do servidor, roadmap)",
+      "feat(servidor): assistir pelo navegador do celular (espectador e página /ver)",
       "Sala pelo Nostr: spec e protótipo da fase 0"
     ]
   },
@@ -81,13 +98,6 @@ const NOVIDADES = [
     "date": "2026-10-17",
     "items": [
       "Ajustes na voz, mensagens e membros"
-    ]
-  },
-  {
-    "version": "1.20.0",
-    "date": "2026-10-12",
-    "items": [
-      "Apoio com Pix e spec do plano premium"
     ]
   }
 ];
