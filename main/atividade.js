@@ -377,7 +377,7 @@ async function capaNaSteam(nome) {
 }
 
 // ---------- O que estou fazendo (docs/spec/tarefa.md) ----------
-// O bin/foco.exe (native/foco.cpp) diz o .exe em primeiro plano e há quanto tempo o teclado e o mouse estão parados;
+// O bin/foco.exe (native/foco.cs) diz o .exe em primeiro plano e há quanto tempo o teclado e o mouse estão parados;
 // roda uma vez por leitura e fecha. Nunca lê o título da janela. Só o que está em PROGRAMAS sai do PC, já como a frase.
 // categoria -> { executável (minúsculas) -> onde }. Quem quiser incluir um programa acrescenta uma linha aqui.
 const CATEGORIAS = {

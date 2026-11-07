@@ -1,6 +1,8 @@
 @echo off
 rem Compila os ajudantes nativos para bin\ (precisa do Visual Studio Build Tools com C++ e o SDK do Windows)
 setlocal
+rem foco.exe é C# e compila com o csc.exe do Windows (.NET Framework 4), sem o Visual Studio
+if /i "%1"=="foco" goto foco
 set "PF86=%ProgramFiles(x86)%"
 if "%PF86%"=="" set "PF86=C:\Program Files (x86)"
 "%PF86%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath > "%TEMP%\tela-p2p-vs.txt" || exit /b 1
@@ -33,4 +35,4 @@ if /i not "%ONE%"=="todos" exit /b 0
 cl %FLAGS% midia.cpp /Fe..\bin\midia.exe windowsapp.lib || exit /b 1
 if /i not "%ONE%"=="todos" exit /b 0
 :foco
-cl %FLAGS% foco.cpp /Fe..\bin\foco.exe user32.lib || exit /b 1
+"%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /optimize+ /target:exe /out:"%~dp0..\bin\foco.exe" "%~dp0foco.cs" || exit /b 1

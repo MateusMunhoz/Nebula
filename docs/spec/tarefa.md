@@ -37,7 +37,7 @@ frente. Só a categoria e o nome do programa aparecem; nada do arquivo nem do pr
 - IPC: só ganha a opção `tarefa` (booleano) no `atividade-ler`. Nenhum canal novo.
 
 ## Dependências
-`native/foco.cpp`, `native/build.cmd`, `bin/foco.exe`, `main/atividade.js`, `main.js` e `preload.js`
+`native/foco.cs`, `native/build.cmd`, `bin/foco.exe`, `main/atividade.js`, `main.js` e `preload.js`
 (`atividade-ler`), `renderer/conta.js`, `renderer/ceu-voz.js`, `renderer/membros.js`, `renderer/util.js` (ícone
 `code`), `index.html`, `publicar.js` (`PACK_FILES`); no `.exe`, a pasta `bin/` já vai inteira (`extraResources`).
 
