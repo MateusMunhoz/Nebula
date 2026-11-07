@@ -8,7 +8,7 @@ set /p VS=<"%TEMP%\tela-p2p-vs.txt"
 call "%VS%\VC\Auxiliary\Build\vcvars64.bat" >nul 2>nul || exit /b 1
 cd /d "%~dp0"
 if not exist obj mkdir obj
-rem Todos: build.cmd   Só um: build.cmd audiocap | videocap | teclas
+rem Todos: build.cmd   Só um: build.cmd audiocap | videocap | teclas | midia | foco
 set FLAGS=/nologo /O2 /EHsc /std:c++20 /utf-8 /MT /DNOMINMAX /Foobj\
 set ONE=%1
 if "%ONE%"=="" set ONE=todos
@@ -17,7 +17,8 @@ if /i "%ONE%"=="audiocap" goto audiocap
 if /i "%ONE%"=="videocap" goto videocap
 if /i "%ONE%"=="teclas" goto teclas
 if /i "%ONE%"=="midia" goto midia
-echo Uso: build.cmd [audiocap^|videocap^|teclas^|midia]
+if /i "%ONE%"=="foco" goto foco
+echo Uso: build.cmd [audiocap^|videocap^|teclas^|midia^|foco]
 exit /b 1
 :audiocap
 cl %FLAGS% audiocap.cpp /Fe..\bin\audiocap.exe ole32.lib shell32.lib version.lib || exit /b 1
@@ -30,3 +31,6 @@ cl %FLAGS% teclas.cpp /Fe..\bin\teclas.exe user32.lib winmm.lib || exit /b 1
 if /i not "%ONE%"=="todos" exit /b 0
 :midia
 cl %FLAGS% midia.cpp /Fe..\bin\midia.exe windowsapp.lib || exit /b 1
+if /i not "%ONE%"=="todos" exit /b 0
+:foco
+cl %FLAGS% foco.cpp /Fe..\bin\foco.exe user32.lib || exit /b 1

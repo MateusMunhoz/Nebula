@@ -1492,6 +1492,17 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
         atvHaRelogio();
       }
     }
+    if (atv.codando) { // "Codando no VS Code" (conta.js; o jogo tem prioridade)
+      const txt = item('code', 'Codando', 'Codando ' + atv.codando, 'jogo codando');
+      if (atv.codandoDesde) {
+        const sub = el('span', 'atv-sub atv-ha');
+        sub.innerHTML = ICON.clock;
+        sub.append(el('span', '', atvHa(atv.codandoDesde)));
+        sub.dataset.desde = String(atv.codandoDesde);
+        txt.append(sub);
+        atvHaRelogio();
+      }
+    }
     box.append(caixa);
   }
   // Os últimos jogos e músicas (conta.js › atvhDe), menos o que já aparece tocando ou jogando agora

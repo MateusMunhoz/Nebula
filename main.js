@@ -509,7 +509,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-2fa-recovery', (_e, c) => razze.twoFactorRecovery(confirmacao(c)));
   ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
   // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
-  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: limparIdsSteam(opcoes?.steam) }));
+  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, codando: !!opcoes?.codando, steam: limparIdsSteam(opcoes?.steam) }));
   // Configurações › Atividade: os jogos instalados na Steam, com nome e imagem (lidos dos arquivos da Steam neste PC)
   ipcMain.handle('atividade-steam-jogos', (_e, recarregar) => jogosDaSteam({ recarregar: !!recarregar }));
   // A música mudou (midia.exe): avisa a página na hora, sem esperar a próxima leitura

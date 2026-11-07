@@ -376,26 +376,79 @@ async function capaNaSteam(nome) {
   try { return (await jogosDaSteam()).find((j) => mesmoJogo(j.nome, nome))?.imagem || ''; } catch { return ''; }
 }
 
-// opcoes: { jogos: boolean, musica: boolean, steam: ids marcados }. Só lê o que foi pedido.
+// ---------- Codando (docs/spec/codando.md) ----------
+// O bin/foco.exe (native/foco.cpp) diz o .exe em primeiro plano e há quanto tempo o teclado e o mouse estão parados;
+// roda uma vez por leitura e fecha. Nunca lê o título da janela. Só o que está em EDITORES sai do PC, já com o texto.
+const EDITORES = {
+  'code.exe': 'no VS Code', 'code - insiders.exe': 'no VS Code Insiders', 'cursor.exe': 'no Cursor', 'windsurf.exe': 'no Windsurf',
+  'zed.exe': 'no Zed', 'devenv.exe': 'no Visual Studio', 'idea64.exe': 'no IntelliJ IDEA', 'pycharm64.exe': 'no PyCharm',
+  'webstorm64.exe': 'no WebStorm', 'rider64.exe': 'no Rider', 'clion64.exe': 'no CLion', 'goland64.exe': 'no GoLand',
+  'phpstorm64.exe': 'no PhpStorm', 'studio64.exe': 'no Android Studio', 'sublime_text.exe': 'no Sublime Text',
+  'notepad++.exe': 'no Notepad++', 'claude.exe': 'com Claude',
+};
+// Terminal só conta com o Claude Code (claude.exe) aberto. Limitação: o app do Claude também é claude.exe, então com ele
+// aberto (até na bandeja) qualquer terminal na frente conta; o Claude Code instalado pelo npm (node.exe) não é visto
+const TERMINAIS = ['windowsterminal.exe', 'cmd.exe', 'powershell.exe', 'pwsh.exe', 'wezterm-gui.exe', 'alacritty.exe'];
+const CODANDO_FOLGA_MS = 5 * 60 * 1000; // sem uso do editor por mais que isso: some, e a próxima vez é sessão nova
+
+// "code.exe\t1234" -> { exe, ociosoMs } (null se a linha não é essa)
+function focoDoAjudante(saida) {
+  const m = /^([^\t\r\n]+)\t(\d+)\s*$/.exec(String(saida || ''));
+  return m ? { exe: m[1].toLowerCase(), ociosoMs: Number(m[2]) } : null;
+}
+
+// estado: { texto, desde, ultimo } guardado entre leituras. foco: { exe, ociosoMs, claudeAberto } ou null
+function codandoAgora(estado, foco, agora = Date.now()) {
+  const exe = foco?.exe || '';
+  const texto = (Object.hasOwn(EDITORES, exe) && EDITORES[exe]) || (TERMINAIS.includes(exe) && foco.claudeAberto ? 'com Claude' : '');
+  if (texto && foco.ociosoMs <= CODANDO_FOLGA_MS) {
+    if (!estado.ultimo || agora - estado.ultimo > CODANDO_FOLGA_MS) estado.desde = agora; // sessão nova
+    estado.ultimo = agora - foco.ociosoMs; // o último toque no teclado ou mouse com o editor na frente
+    estado.texto = texto;
+  }
+  if (!estado.ultimo || agora - estado.ultimo > CODANDO_FOLGA_MS) { estado.texto = ''; estado.desde = 0; estado.ultimo = 0; }
+  return { codando: estado.texto || '', codandoDesde: estado.texto ? estado.desde : 0 };
+}
+
+function caminhoFoco() {
+  const local = path.join(__dirname, '..', 'bin', 'foco.exe');
+  if (fs.existsSync(local)) return local;
+  return path.join(process.resourcesPath || '', 'bin', 'foco.exe');
+}
+function lerFoco() {
+  return new Promise((resolve) => {
+    const exe = caminhoFoco();
+    if (!fs.existsSync(exe)) return resolve(null);
+    execFile(exe, [], { windowsHide: true, timeout: 3000, encoding: 'utf8', maxBuffer: 4096 }, (erro, saida) => resolve(erro ? null : focoDoAjudante(saida)));
+  });
+}
+const codando = {};
+
+// opcoes: { jogos, musica, codando: boolean, steam: ids marcados }. Só lê o que foi pedido.
 async function lerAtividade(opcoes = {}) {
-  const vazio = { jogo: '', jogoImagem: '', musica: null };
+  const vazio = { jogo: '', jogoImagem: '', musica: null, codando: '', codandoDesde: 0 };
   if (process.platform !== 'win32') return vazio;
   if (!opcoes.musica) pararMidia(); // desligou a música: o midia.exe fecha
   const r = { ...vazio };
   const windows = opcoes.musica ? await musicaPeloWindows() : { ok: false };
   const daSteam = opcoes.jogos ? await jogoDaSteamAberto(limparIdsSteam(opcoes.steam)) : null;
   if (daSteam) r.jogo = daSteam.nome;
-  const lista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
+  const foco = opcoes.codando ? await lerFoco() : null;
+  const precisaLista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) || TERMINAIS.includes(foco?.exe);
+  const lista = precisaLista ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
+  if (opcoes.codando) Object.assign(r, codandoAgora(codando, foco && { ...foco, claudeAberto: lista.has('claude.exe') }));
   if (opcoes.jogos && !daSteam) r.jogo = jogoAberto(lista);
   // A capa da biblioteca da Steam (192x192, nítida no bloco grande do perfil), também para jogo achado pelo .exe que
   // está instalado na Steam (Deadlock fora da lista marcada); sem capa, o ícone do .exe
   if (r.jogo) r.jogoImagem = daSteam?.imagem || await capaNaSteam(r.jogo) || await iconeDoJogo(r.jogo, daSteam ? { pasta: daSteam.pasta } : { exe: exeAberto(lista) });
   if (windows.ok) r.musica = windows.musica;
   else if (opcoes.musica && lista.has('spotify.exe')) r.musica = musicaDoSpotify(await rodar('tasklist /v /fo csv /nh /fi "IMAGENAME eq Spotify.exe"'));
+  if (r.jogo) { r.codando = ''; r.codandoDesde = 0; } // jogo tem prioridade
   return r;
 }
 
 module.exports = {
+  focoDoAjudante, codandoAgora, EDITORES, TERMINAIS,
   lerAtividade, pararMidia, aoMudarMusica, jogosDaSteam, limparIdsSteam, lerVdf, registroSteam, naoEJogo, mesmoJogo,
   camposCsv, nomesDeProcessos, jogoAberto, musicaDoSpotify, musicaDoMidia, limparCapa, JOGOS,
 };

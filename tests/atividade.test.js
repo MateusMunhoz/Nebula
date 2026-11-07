@@ -73,7 +73,7 @@ test('lê a linha do midia.exe: faixa, artista, álbum e a capa só se for JPEG 
 
 test('a atividade que chega de outro PC é limpa e limitada', () => {
   const capa = 'data:image/jpeg;base64,/9j/AAAA';
-  assert.deepEqual(limparAtividade({ jogo: 'Dota 2', jogoImagem: capa, artista: 'A', faixa: 'B', album: 'C', capa }), { jogo: 'Dota 2', jogoImagem: capa, jogoDesde: 0, artista: 'A', faixa: 'B', album: 'C', capa, pausada: false, spotify: false });
+  assert.deepEqual(limparAtividade({ jogo: 'Dota 2', jogoImagem: capa, artista: 'A', faixa: 'B', album: 'C', capa }), { jogo: 'Dota 2', jogoImagem: capa, jogoDesde: 0, artista: 'A', faixa: 'B', album: 'C', capa, pausada: false, spotify: false, codando: '', codandoDesde: 0 });
   assert.equal(limparAtividade({ artista: 'A', spotify: true }).spotify, true); // do Spotify: a lista mostra o símbolo dele
   assert.equal(limparAtividade({ artista: 'A', spotify: 'sim' }).spotify, false); // só true conta
   assert.equal(limparAtividade({ jogo: 'X', spotify: true }).spotify, false); // sem música, sem Spotify
@@ -184,4 +184,90 @@ test('quando foi: hoje, ontem, há N dias, há N semanas', () => {
   assert.equal(atvQuando(new Date(2026, 9, 4, 12).getTime(), agora), 'há 3 dias');
   assert.equal(atvQuando(new Date(2026, 8, 29).getTime(), agora), 'há 1 semana');
   assert.equal(atvQuando(new Date(2026, 8, 17).getTime(), agora), 'há 2 semanas');
+});
+
+// ---------- Codando (docs/spec/codando.md) ----------
+const { focoDoAjudante, codandoAgora, EDITORES, TERMINAIS } = require('../main/atividade');
+const MIN = 60000;
+
+test('lê a linha do foco.exe: o .exe em primeiro plano e o tempo parado', () => {
+  assert.deepEqual(focoDoAjudante('Code.exe\t1234\r\n'), { exe: 'code.exe', ociosoMs: 1234 });
+  assert.deepEqual(focoDoAjudante('code - insiders.exe\t0\n'), { exe: 'code - insiders.exe', ociosoMs: 0 }); // nome com espaço
+  assert.equal(focoDoAjudante(''), null);
+  assert.equal(focoDoAjudante('code.exe'), null); // sem o tempo
+  assert.equal(focoDoAjudante('code.exe\tabc'), null);
+  assert.equal(focoDoAjudante('\t10'), null); // nada em primeiro plano
+});
+
+test('a lista de editores e terminais: minúsculas, .exe e um texto para cada', () => {
+  for (const [exe, texto] of Object.entries(EDITORES)) {
+    assert.equal(exe, exe.toLowerCase());
+    assert.match(exe, /\.exe$/);
+    assert.match(texto, /^(no|com) \S/);
+  }
+  for (const exe of TERMINAIS) { assert.equal(exe, exe.toLowerCase()); assert.ok(!(exe in EDITORES)); }
+  assert.equal(EDITORES['code.exe'], 'no VS Code');
+});
+
+test('codando: editor em uso aparece e o "desde" é o começo da sessão', () => {
+  const e = {};
+  const t0 = 1_000_000_000;
+  assert.deepEqual(codandoAgora(e, { exe: 'code.exe', ociosoMs: 1000 }, t0), { codando: 'no VS Code', codandoDesde: t0 });
+  for (let m = 1; m <= 10; m++) assert.deepEqual(codandoAgora(e, { exe: 'code.exe', ociosoMs: 0 }, t0 + m * MIN), { codando: 'no VS Code', codandoDesde: t0 }); // lido a cada minuto
+  // trocou de editor no meio: o texto muda, a sessão continua
+  assert.deepEqual(codandoAgora(e, { exe: 'cursor.exe', ociosoMs: 0 }, t0 + 11 * MIN), { codando: 'no Cursor', codandoDesde: t0 });
+});
+
+test('codando: fora do editor fica até 5 min; depois some e a próxima sessão começa do zero', () => {
+  const e = {};
+  const t0 = 1_000_000_000;
+  codandoAgora(e, { exe: 'code.exe', ociosoMs: 0 }, t0);
+  assert.equal(codandoAgora(e, { exe: 'chrome.exe', ociosoMs: 0 }, t0 + 4 * MIN).codando, 'no VS Code'); // foi ver a documentação
+  assert.deepEqual(codandoAgora(e, { exe: 'chrome.exe', ociosoMs: 0 }, t0 + 5 * MIN + 1), { codando: '', codandoDesde: 0 });
+  assert.deepEqual(codandoAgora(e, { exe: 'code.exe', ociosoMs: 0 }, t0 + 20 * MIN), { codando: 'no VS Code', codandoDesde: t0 + 20 * MIN });
+});
+
+test('codando: editor em primeiro plano mas parado há mais de 5 min não conta', () => {
+  const e = {};
+  assert.deepEqual(codandoAgora(e, { exe: 'code.exe', ociosoMs: 5 * MIN + 1 }, 1_000_000_000), { codando: '', codandoDesde: 0 });
+  // estava codando e saiu para almoçar com o VS Code na frente: some 5 min depois do último uso
+  const t0 = 1_000_000_000;
+  codandoAgora(e, { exe: 'code.exe', ociosoMs: 0 }, t0);
+  assert.equal(codandoAgora(e, { exe: 'code.exe', ociosoMs: 6 * MIN }, t0 + 6 * MIN).codando, '');
+});
+
+test('codando: terminal só conta com o Claude aberto; programa fora da lista não aparece', () => {
+  assert.deepEqual(codandoAgora({}, { exe: 'windowsterminal.exe', ociosoMs: 0, claudeAberto: true }, 1e9), { codando: 'com Claude', codandoDesde: 1e9 });
+  assert.equal(codandoAgora({}, { exe: 'windowsterminal.exe', ociosoMs: 0, claudeAberto: false }, 1e9).codando, '');
+  assert.equal(codandoAgora({}, { exe: 'claude.exe', ociosoMs: 0 }, 1e9).codando, 'com Claude');
+  assert.equal(codandoAgora({}, { exe: 'chrome.exe', ociosoMs: 0 }, 1e9).codando, '');
+  assert.equal(codandoAgora({}, null, 1e9).codando, ''); // sem o foco.exe
+});
+
+test('codando na sala: texto limpo, tempo conferido, aparece na prévia', () => {
+  const agora = Date.now();
+  const a = limparAtividade({ codando: 'no VS Code', codandoDesde: agora - 80 * MIN });
+  assert.equal(a.codando, 'no VS Code');
+  assert.equal(a.codandoDesde, agora - 80 * MIN);
+  assert.equal(limparAtividade({ codando: 'no VS Code', codandoDesde: agora - 49 * 3600 * 1000 }).codandoDesde, 0); // velho demais
+  assert.equal(limparAtividade({ codando: 'no\u0007 X'.repeat(50) }).codando.length <= 80, true);
+  assert.equal(limparAtividade({ codandoDesde: agora }), null); // sem texto, nada
+  assert.equal(limparAtividade({ jogo: 'X', codandoDesde: agora }).codandoDesde, 0);
+  assert.equal(atvTexto('', null, 'no VS Code'), 'Codando no VS Code');
+  assert.equal(atvTexto('', { artista: 'A', faixa: 'B' }, 'com Claude'), 'Codando com Claude · Ouvindo A — B');
+});
+
+test('codando: desligado por padrão; jogo e música continuam ligados por padrão', () => {
+  const antes = global.load;
+  global.load = (_k, padrao) => padrao; // quem nunca mexeu
+  try {
+    const { atvLigada } = require('../renderer/conta');
+    assert.equal(atvLigada('Codando'), false);
+    assert.equal(atvLigada('Jogo'), true);
+    assert.equal(atvLigada('Musica'), true);
+  } finally { global.load = antes; }
+});
+
+test('codando: nome de programa que bate com algo do Object não vira texto', () => {
+  for (const exe of ['constructor', '__proto__', 'tostring', 'hasownproperty']) assert.equal(codandoAgora({}, { exe, ociosoMs: 0 }, 1e9).codando, '');
 });

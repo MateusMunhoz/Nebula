@@ -93,10 +93,10 @@ function memberRow(id, name, sharing) {
     // dica e no perfil
     const icone = document.createElement('span');
     icone.className = 'matv-icon' + (atv.artista ? ' spotify' : ' jogo');
-    icone.innerHTML = atv.artista ? ICON.spotify : ICON.game;
+    icone.innerHTML = atv.artista ? ICON.spotify : atv.jogo ? ICON.game : ICON.code;
     const texto = document.createElement('span');
     texto.className = 'matv-text';
-    texto.textContent = atv.artista || `Jogando ${atv.jogo}`;
+    texto.textContent = atv.artista || (atv.jogo ? `Jogando ${atv.jogo}` : `Codando ${atv.codando}`);
     if (atv.artista) linha.title = (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) + (atv.spotify ? ' · Spotify' : '');
     linha.append(icone, texto);
     info.append(linha);

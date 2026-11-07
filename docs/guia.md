@@ -515,6 +515,11 @@ ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca 
 - **Mostrar a música que estou ouvindo (Spotify e outros players):** lê o que está tocando nos controles de mídia do Windows (os
   mesmos da tela de volume), com a capa do álbum, só quando está tocando. Vale para Spotify, Apple Music, Deezer, TIDAL, Amazon
   Music, Windows Media Player, foobar2000, MusicBee, AIMP e outros players de música; o que toca no navegador não aparece.
+- **Programa em que estou codando** (desligado por padrão): com um editor da lista na frente (VS Code, Cursor, Visual Studio,
+  IntelliJ, Android Studio, Sublime Text e outros; a lista está em `main/atividade.js`), aparece "Codando no VS Code" e há
+  quanto tempo; o terminal com o Claude Code aberto, ou o app do Claude, vira "Codando com Claude". Continua por até 5 minutos
+  depois que você sai do editor ou para de mexer, e aí some. Só o nome do editor sai do PC, nunca o projeto nem o título da
+  janela. Jogo aberto tem prioridade. Por enquanto só quem está na mesma sala vê (os amigos no Início, não).
 
 Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigos aceitos veem, no Início: "Jogando Valorant" ou
 "Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Para os
