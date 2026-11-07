@@ -1,4 +1,4 @@
-// foco.exe: para o "Codando" da atividade do perfil (docs/spec/codando.md).
+// foco.exe: para "O que estou fazendo" da atividade do perfil (docs/spec/tarefa.md).
 // Uso: foco.exe   (sem argumentos; roda, escreve uma linha e fecha)
 // Saída: "<nome do .exe em primeiro plano>\t<ms sem teclado nem mouse>\n", o nome em UTF-8, só o arquivo (sem a pasta).
 // Nada em primeiro plano (ou sem acesso ao processo): "\t<ms>". Nunca lê o título da janela.

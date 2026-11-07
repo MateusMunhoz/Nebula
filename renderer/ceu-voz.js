@@ -1492,13 +1492,13 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
         atvHaRelogio();
       }
     }
-    if (atv.codando) { // "Codando no VS Code" (conta.js; o jogo tem prioridade)
-      const txt = item('code', 'Codando', 'Codando ' + atv.codando, 'jogo codando');
-      if (atv.codandoDesde) {
+    if (atv.tarefa) { // "Codando no VS Code", "Desenhando no Figma" (conta.js; o jogo tem prioridade)
+      const txt = item(/^(Codando|Criando)/.test(atv.tarefa) ? 'code' : 'monitor', 'Fazendo agora', atv.tarefa, 'jogo tarefa');
+      if (atv.tarefaDesde) {
         const sub = el('span', 'atv-sub atv-ha');
         sub.innerHTML = ICON.clock;
-        sub.append(el('span', '', atvHa(atv.codandoDesde)));
-        sub.dataset.desde = String(atv.codandoDesde);
+        sub.append(el('span', '', atvHa(atv.tarefaDesde)));
+        sub.dataset.desde = String(atv.tarefaDesde);
         txt.append(sub);
         atvHaRelogio();
       }

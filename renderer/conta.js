@@ -156,14 +156,14 @@ async function salvarBio() {
 // ---------- Atividade (jogo e música) ----------
 const ATV_CADA_MS = 30 * 1000;
 const ATV_RENOVAR_MS = 60 * 1000;
-const atv = { leitura: 0, amigos: 0, ultimo: '', enviadoEm: 0, jogo: '', jogoImagem: '', jogoDesde: 0, codando: '', codandoDesde: 0 };
-// Jogo e música: ligados por padrão (quem nunca mexeu); desligar fica salvo como '0'. Codando: desligado por padrão
-const atvLigada = (k) => load('atividade' + k, k === 'Codando' ? '0' : '1') === '1';
+const atv = { leitura: 0, amigos: 0, ultimo: '', enviadoEm: 0, jogo: '', jogoImagem: '', jogoDesde: 0, tarefa: '', tarefaDesde: 0 };
+// Jogo e música: ligados por padrão (quem nunca mexeu); desligar fica salvo como '0'. O que estou fazendo (Tarefa): desligado por padrão
+const atvLigada = (k) => load('atividade' + k, k === 'Tarefa' ? '0' : '1') === '1';
 
-function atvTexto(jogo, musica, codando = '') {
+function atvTexto(jogo, musica, tarefa = '') {
   const p = [];
   if (jogo) p.push('Jogando ' + jogo);
-  else if (codando) p.push('Codando ' + codando); // "no VS Code", "com Claude" (main/atividade.js › EDITORES)
+  else if (tarefa) p.push(tarefa); // "Codando no VS Code", "Desenhando no Figma" (main/atividade.js › PROGRAMAS)
   if (musica) p.push('Ouvindo ' + musica.artista + ' — ' + musica.faixa);
   return p.join(' · ');
 }
@@ -171,11 +171,11 @@ function atvTexto(jogo, musica, codando = '') {
 // Lê o que está ligado, mostra a prévia (o que os amigos veem), passa para quem está na sala quando muda e manda ao
 // servidor quando muda ou a cada minuto. Sem conta e fora da sala não lê (só a prévia, quando forcar)
 async function atvTick(forcar = false) {
-  const jogos = atvLigada('Jogo'), musica = atvLigada('Musica'), codando = atvLigada('Codando');
+  const jogos = atvLigada('Jogo'), musica = atvLigada('Musica'), tarefa = atvLigada('Tarefa');
   const logado = typeof razzeUser !== 'undefined' && !!razzeUser;
   if (!forcar && !logado && !state.myId) return;
   let r = { jogo: '', jogoImagem: '', musica: null };
-  if ((jogos || musica || codando) && window.api?.atividadeLer) { try { r = await window.api.atividadeLer({ jogos, musica, codando, steam: steamMarcados() }); } catch { /* sem leitura: manda vazio */ } }
+  if ((jogos || musica || tarefa) && window.api?.atividadeLer) { try { r = await window.api.atividadeLer({ jogos, musica, tarefa, steam: steamMarcados() }); } catch { /* sem leitura: manda vazio */ } }
   const jogo = jogos ? r.jogo || '' : '';
   if (jogo !== atv.jogo) {
     // Últimos jogos: entra ao abrir e a hora é acertada ao fechar (se o app fechar no meio, fica a hora em que abriu)
@@ -185,14 +185,14 @@ async function atvTick(forcar = false) {
   if (jogo !== atv.jogo) atv.jogoDesde = jogo ? Date.now() : 0; // desde quando joga: "há 40 min" no perfil
   atv.jogo = jogo; // para a música que chega na hora (atvMusicaChegou) não apagar o jogo
   atv.jogoImagem = jogo ? r.jogoImagem || '' : '';
-  atv.codando = codando && !jogo ? r.codando || '' : '';
-  atv.codandoDesde = atv.codando ? r.codandoDesde || 0 : 0;
+  atv.tarefa = tarefa && !jogo ? r.tarefa || '' : '';
+  atv.tarefaDesde = atv.tarefa ? r.tarefaDesde || 0 : 0;
   const faixa = musica ? r.musica : null;
   const tocando = faixa && !faixa.pausada ? faixa : null; // os amigos (e a prévia) só veem a que está tocando
-  const texto = atvTexto(jogo, tocando, atv.codando);
-  $('atvPreview').textContent = !jogos && !musica && !codando ? 'Nada aparece no seu perfil.'
+  const texto = atvTexto(jogo, tocando, atv.tarefa);
+  $('atvPreview').textContent = !jogos && !musica && !tarefa ? 'Nada aparece no seu perfil.'
     : texto ? 'Aparece agora: ' + texto : 'Agora não há nada para mostrar (jogo não reconhecido, música pausada ou nenhum editor em uso).';
-  atvMudou(limparAtividade({ jogo, jogoImagem: atv.jogoImagem, jogoDesde: atv.jogoDesde, codando: atv.codando, codandoDesde: atv.codandoDesde, artista: faixa ? faixa.artista : '', faixa: faixa ? faixa.faixa : '', album: faixa?.album, capa: faixa?.capa, pausada: faixa?.pausada, spotify: faixa?.spotify }));
+  atvMudou(limparAtividade({ jogo, jogoImagem: atv.jogoImagem, jogoDesde: atv.jogoDesde, tarefa: atv.tarefa, tarefaDesde: atv.tarefaDesde, artista: faixa ? faixa.artista : '', faixa: faixa ? faixa.faixa : '', album: faixa?.album, capa: faixa?.capa, pausada: faixa?.pausada, spotify: faixa?.spotify }));
   if (!logado) return;
   const payload = { game: jogo, artist: tocando ? tocando.artista : '', title: tocando ? tocando.faixa : '' };
   const chave = JSON.stringify(payload);
@@ -206,7 +206,7 @@ function atvAgendar() {
   clearInterval(atv.leitura);
   atv.leitura = 0;
   // Lê com a conta ou numa sala (atvTick confere a cada vez: entrar ou sair da sala não precisa reagendar)
-  if (atvLigada('Jogo') || atvLigada('Musica') || atvLigada('Codando')) atv.leitura = setInterval(() => void atvTick(), ATV_CADA_MS);
+  if (atvLigada('Jogo') || atvLigada('Musica') || atvLigada('Tarefa')) atv.leitura = setInterval(() => void atvTick(), ATV_CADA_MS);
   void atvTick(true); // também manda o vazio quando acabou de desligar
 }
 
@@ -376,9 +376,9 @@ function limparAtividade(d) {
   a.spotify = !!a.artista && d?.spotify === true; // a música vem do Spotify: a lista mostra o símbolo dele
   if (!a.artista) a.album = a.capa = ''; // sem música, sem capa
   if (!a.jogo) { a.jogoImagem = ''; a.jogoDesde = 0; } // sem jogo, sem imagem nem tempo
-  a.codando = a.jogo ? '' : t(d?.codando); // "no VS Code": jogo tem prioridade
-  a.codandoDesde = a.codando ? instante(d?.codandoDesde) : 0;
-  return a.jogo || a.artista || a.codando ? a : null;
+  a.tarefa = a.jogo ? '' : t(d?.tarefa); // "no VS Code": jogo tem prioridade
+  a.tarefaDesde = a.tarefa ? instante(d?.tarefaDesde) : 0;
+  return a.jogo || a.artista || a.tarefa ? a : null;
 }
 // "há 40 min", "há 1 h 20 min" ('' sem tempo)
 function atvHa(desde, agora = Date.now()) {
@@ -408,7 +408,7 @@ function atvMudou(nova) {
 // A música mudou agora (main/atividade.js pelo midia.exe): a sala vê na hora; os amigos da conta, na próxima leitura
 function atvMusicaChegou(m) {
   if (!atvLigada('Musica')) return;
-  atvMudou(limparAtividade({ jogo: atvLigada('Jogo') ? atv.jogo : '', jogoImagem: atvLigada('Jogo') ? atv.jogoImagem : '', jogoDesde: atvLigada('Jogo') ? atv.jogoDesde : 0, codando: atvLigada('Codando') ? atv.codando : '', codandoDesde: atvLigada('Codando') ? atv.codandoDesde : 0, artista: m?.artista, faixa: m?.faixa, album: m?.album, capa: m?.capa, pausada: m?.pausada, spotify: m?.spotify }));
+  atvMudou(limparAtividade({ jogo: atvLigada('Jogo') ? atv.jogo : '', jogoImagem: atvLigada('Jogo') ? atv.jogoImagem : '', jogoDesde: atvLigada('Jogo') ? atv.jogoDesde : 0, tarefa: atvLigada('Tarefa') ? atv.tarefa : '', tarefaDesde: atvLigada('Tarefa') ? atv.tarefaDesde : 0, artista: m?.artista, faixa: m?.faixa, album: m?.album, capa: m?.capa, pausada: m?.pausada, spotify: m?.spotify }));
 }
 function pedirAtv(id) {
   if (!id || id === state.myId || atvPedidas.has(id) || !state.members.has(id)) return;
@@ -581,8 +581,8 @@ function syncBioComConta(user) {
 function setupConta() {
   $('atvJogo').checked = atvLigada('Jogo');
   $('atvMusica').checked = atvLigada('Musica');
-  $('atvCodando').checked = atvLigada('Codando');
-  for (const [id, k] of [['atvJogo', 'Jogo'], ['atvMusica', 'Musica'], ['atvCodando', 'Codando']]) {
+  $('atvTarefa').checked = atvLigada('Tarefa');
+  for (const [id, k] of [['atvJogo', 'Jogo'], ['atvMusica', 'Musica'], ['atvTarefa', 'Tarefa']]) {
     $(id).onchange = () => { save('atividade' + k, $(id).checked ? '1' : '0'); atvAgendar(); if (k === 'Jogo') atvAgendarProcura(); atvRedesenhar(null); };
   }
   // Últimos jogos e músicas: desligar apaga o que estava guardado neste PC
