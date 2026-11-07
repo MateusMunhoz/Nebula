@@ -3,13 +3,22 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.14",
+    "date": "2026-11-07",
+    "items": [
+      "test(mobile): ponte do iPhone com o escolhedor do YouTube e versão 1.20.12",
+      "fix(abertura): deixar o fundo inert com o card de atualização à vista"
+    ]
+  },
+  {
     "version": "1.20.13",
     "date": "2026-11-07",
     "items": [
       "build(nativos): versionar bin/foco.exe",
       "build(nativos): foco.exe em C# compilado pelo csc do Windows",
       "feat(atividade): generalizar Codando para o que estou fazendo no PC",
-      "feat(atividade): mostrar \"Codando no <editor>\" no perfil"
+      "feat(atividade): mostrar \"Codando no <editor>\" no perfil",
+      "feat(atualizacao): card da abertura com etapa e barra de progresso"
     ]
   },
   {
@@ -91,16 +100,6 @@ const NOVIDADES = [
     "items": [
       "Tempo da call: aparece também com você sozinho no canal",
       "Ajustes na interface: barra da chamada, painéis, transmitir e Início"
-    ]
-  },
-  {
-    "version": "1.20.2",
-    "date": "2026-10-19",
-    "items": [
-      "Docs: roadmap conferido com o código, guia e spec de assistir pelo navegador",
-      "O X da janela minimiza; esconder na bandeja vira opção",
-      "Tempo da call ao lado de cada canal de voz",
-      "Login Google: conta desativada responde account_disabled"
     ]
   }
 ];
