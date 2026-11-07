@@ -68,10 +68,33 @@
   30% { opacity: .95; scale: 1; rotate: 90deg; }
   100% { opacity: .45; scale: .85; rotate: 90deg; }
 }
+/* ---------- Atualizando (docs/spec/atualizacao-com-abertura.md): o mesmo card + etapa, barra e MB ---------- */
+.abertura-progresso { display: none; }
+.abertura.atualizando .abertura-nome { display: none; }
+/* abaixo do card, fora do grid: a logo não sai do lugar quando a atualização pega o card da abertura */
+.abertura.atualizando .abertura-progresso {
+  position: absolute; top: calc(50% + 84px + 24px); left: 50%; translate: -50% 0;
+  display: grid; justify-items: center; gap: 10px; width: min(300px, calc(100vw - 32px));
+}
+.abertura-etapa { margin: 0; text-wrap: balance; font: 600 13px/1.3 var(--font-display, sans-serif); color: color-mix(in srgb, var(--text) 80%, transparent); text-align: center; }
+.abertura-detalhe { margin: 0; min-height: 1em; font: 500 11px/1 var(--font-display, sans-serif); font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 45%, transparent); }
+.abertura-barra { position: relative; width: 100%; height: 4px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.abertura-barra > span {
+  position: absolute; inset: 0; border-radius: inherit; transform-origin: left center;
+  background: linear-gradient(90deg, var(--logo-2), var(--logo-1), var(--logo-3));
+  transform: scaleX(var(--p, 0)); transition: transform .2s ease-out;
+}
+/* sem tamanho conhecido: um pedaço da barra corre de um lado ao outro */
+.abertura.indefinido .abertura-barra > span { transform: scaleX(.35); animation: ab-corre 1.2s ease-in-out infinite; }
+@keyframes ab-corre { from { transform: translateX(-40%) scaleX(.35); } to { transform: translateX(110%) scaleX(.35); } }
+
 @keyframes ab-sai { to { opacity: 0; } }
 @keyframes ab-card-sai { to { scale: 1.6; opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .abertura-card::before, .abertura-logo .logo-dots circle, .abertura-logo > path { animation: none !important; }
   .abertura-logo .logo-dots circle, .abertura-logo > path { opacity: 1; }
+  /* a barra continua mostrando o progresso; sem tamanho, fica cheia e esmaecida (um trecho parado pareceria "35%") */
+  .abertura.indefinido .abertura-barra > span { animation: none; transform: none; opacity: .35; }
 }
+:root[data-gamer="on"] .abertura.indefinido .abertura-barra > span { transform: none; opacity: .35; }

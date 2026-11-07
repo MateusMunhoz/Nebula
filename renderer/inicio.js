@@ -380,6 +380,7 @@ document.querySelectorAll('.back').forEach((b) => { b.onclick = () => show('home
 $('createBtn').onclick = createRoom;
 // Sessões abertas: a lista chega do processo principal; a escolha de mostrar a sua fica guardada
 window.api.onSessoes(onSessoesDaRede);
+window.api.onUpdateProgresso((p) => avancarAtualizando({ feito: Number(p?.feito) || 0, total: Number(p?.total) || 0 }));
 $('roomVisible').checked = load('sessaoVisivel', '1') !== '0';
 $('roomVisible').onchange = () => save('sessaoVisivel', $('roomVisible').checked ? '1' : '0');
 $('roomAmigosMembros').checked = load('salaAmigosMembros', '1') !== '0'; // modo Internet: passe da sala (salas-amigos.js)

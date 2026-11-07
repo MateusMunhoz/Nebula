@@ -22,7 +22,7 @@ paths:
 - Sem animação contínua: o app roda junto com jogos. Só transições curtas em resposta a uma ação.
   Exceção aprovada: o vinil e as barrinhas do "Ouvindo agora" no perfil (`atvVinil`, `ceu-voz.js`), só com o perfil
   aberto, só `transform`, parados no modo gamer e com "reduzir movimento"; a abertura (logo animada enquanto o app carrega, `styles-abertura.css`,
-  `renderer/abertura.js`), parada com "reduzir movimento". Não abra outras sem pedir.
+  `renderer/abertura.js`) e o mesmo card durante a atualização (`mostrarAtualizando`), parada com "reduzir movimento". Não abra outras sem pedir.
 - Preferência nova: validar em `normalize()` (`renderer/preferencias-modelo.js`) e cobrir em `tests/preferencias.test.js`.
 - A página só fala com o processo principal por `window.api` (`preload.js`). Precisa de algo novo do main? Veja a regra
   de `main.js`/`preload.js` e apresente o plano antes.

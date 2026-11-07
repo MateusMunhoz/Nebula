@@ -574,7 +574,10 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());
-  ipcMain.handle('github-install', () => github.install(updater));
+  // update-progresso: a barra da atualização (renderer/abertura.js); só bytes, nada do conteúdo
+  ipcMain.handle('github-install', (e) => github.install(updater, (feito, total) => {
+    if (!e.sender.isDestroyed()) e.sender.send('update-progresso', { feito, total });
+  }));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));

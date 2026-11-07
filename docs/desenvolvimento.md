@@ -64,7 +64,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 8 | `tema.js` | Cores das janelas montadas por código, cor de cada pessoa, barrinhas de quem fala |
 | 9 | `fotos.js` | Foto de perfil sem servidor: a sua, pedir a dos outros pelo hash, pintar as bolinhas |
 | 10 | `fundo-perfil.js` | Fundo do perfil (imagem ou GIF até 1 MB): o seu, e o dos outros por mensagens diretas em pedaços, conferido pelo hash ([spec](spec/fundo-do-perfil.md)) |
-| — | `abertura.js` | A abertura: a logo animada num card até o `inicio.js` terminar (mínimo 2 s, `fecharAbertura`). Estilos em `styles-abertura.css` |
+| — | `abertura.js` | A abertura: a logo animada num card até o `inicio.js` terminar (mínimo 2 s, `fecharAbertura`). Estilos em `styles-abertura.css`. O mesmo card volta na atualização, com etapa e barra (`mostrarAtualizando`/`avancarAtualizando`/`fecharAtualizando`; o progresso do GitHub chega por `update-progresso`, de `github.js` `lerComProgresso`) |
 | 11 | `icone-app.js` | O ícone do app desenhado num canvas: a logo (`LOGO_STARS`, `LOGO_DOTS`), nas cores dela; os temas E.V.A, Arasaka e Cloud têm o próprio (também usado pelo `gerar-icone.js`) |
 | 12 | `configuracoes.js` | Configurações: a janela única (grupos à esquerda, abas em cima: `showSettingsTab`, `settingsOpenOn`), interface e preferências deste PC (`appPreferences.v1`) |
 | 13 | `modo-gamer.js` | Modo gamer (o controle na barrinha): prioridade normal, vidro opaco, sem animações, sem céu e sem luz ambiente, sem mudar as escolhas salvas |
