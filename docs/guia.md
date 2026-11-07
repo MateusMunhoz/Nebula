@@ -696,6 +696,8 @@ O tema **Top Gun** é a cabine de um caça: cada painel vira um MFD, com fósfor
 
 O tema **Cloud** é uma noite preta com nuvens vermelhas de contorno claro ao fundo (somem dentro da sala), cantos retos, um fio vermelho no alto de cada painel, letreiros em caixa alta e enfeites em japonês (o kanji de nuvem em pé no Início e "雲隠れ" na barra de título). Os sons não mudam: ficam os que você escolheu.
 
+Ao abrir, o Nebula mostra a logo num card enquanto carrega (no mínimo 2 segundos): as três estrelas do N acendem e um rastro de luz corre pelos pontos. Com os efeitos de animação do Windows desligados, a logo aparece parada.
+
 No tema Padrão, a tela inicial tem um céu ao fundo; de vez em quando (a cada 20 a 90 segundos, ao acaso) uma estrela cadente cruza esse céu. Ela só aparece com a janela do app em foco e não aparece se o Windows estiver com os efeitos de animação desligados.
 
 Na mesma tela, escolha o som de **entrada na sala**, **saída da sala**, **mensagem no chat**, **entrada no chat de voz**, **saída do chat de voz**, **mutar o microfone** e **desmutar o microfone**. Há os oito MP3 incluídos no app e quatro sons **Suave**, gerados na hora pelo próprio app (os padrões da voz e do microfone). Os da voz dos outros só tocam enquanto você está na voz. Os arquivos já vêm dentro do app; não é preciso manter a pasta original ao lado do executável. **Ouvir** toca uma prévia. **Sem som** desativa um evento específico, e **Silenciar som do chat** mantém os outros avisos ativos. A prévia continua disponível com o chat silenciado.

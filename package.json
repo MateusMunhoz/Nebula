@@ -64,6 +64,7 @@
       "styles-renascenca.css",
       "styles-topgun.css",
       "styles-cloud.css",
+      "styles-abertura.css",
       "renderer/**",
       "assets/audio/**",
       "assets/icone/**",

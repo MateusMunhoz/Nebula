@@ -263,7 +263,7 @@ function createWindow() {
     height: 780,
     minWidth: 820,
     minHeight: 560,
-    backgroundColor: '#22271E',
+    backgroundColor: '#0B0D10', // o fundo do tema Padrão: a janela não pisca antes da abertura
     autoHideMenuBar: true,
     // Barra de título no tema: a página desenha a barra (titlebar em index.html) e o Windows só os botões
     // minimizar, maximizar e fechar, nas cores que a página manda (setTitleBar)
