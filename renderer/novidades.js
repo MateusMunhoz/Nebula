@@ -3,6 +3,16 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.13",
+    "date": "2026-11-07",
+    "items": [
+      "build(nativos): versionar bin/foco.exe",
+      "build(nativos): foco.exe em C# compilado pelo csc do Windows",
+      "feat(atividade): generalizar Codando para o que estou fazendo no PC",
+      "feat(atividade): mostrar \"Codando no <editor>\" no perfil"
+    ]
+  },
+  {
     "version": "1.20.12",
     "date": "2026-11-07",
     "items": [
@@ -91,13 +101,6 @@ const NOVIDADES = [
       "O X da janela minimiza; esconder na bandeja vira opção",
       "Tempo da call ao lado de cada canal de voz",
       "Login Google: conta desativada responde account_disabled"
-    ]
-  },
-  {
-    "version": "1.20.1",
-    "date": "2026-10-17",
-    "items": [
-      "Ajustes na voz, mensagens e membros"
     ]
   }
 ];

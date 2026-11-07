@@ -131,7 +131,7 @@ contextBridge.exposeInMainWorld('api', {
   razze2faDisable: (c) => ipcRenderer.invoke('razze-2fa-disable', { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razze2faRecovery: (c) => ipcRenderer.invoke('razze-2fa-recovery', { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razzeResetPassword: (email, code, password) => ipcRenderer.invoke('razze-reset-password', String(email || ''), String(code || ''), String(password || '')),
-  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: Array.isArray(opcoes?.steam) ? opcoes.steam.slice(0, 500).map(String) : [] }),
+  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, tarefa: !!opcoes?.tarefa, steam: Array.isArray(opcoes?.steam) ? opcoes.steam.slice(0, 500).map(String) : [] }),
   atividadeSteamJogos: (recarregar) => ipcRenderer.invoke('atividade-steam-jogos', !!recarregar),
   aoMudarMusica: (cb) => ipcRenderer.on('atividade-musica', (_e, m) => cb(m)), // só recebe: a música nova (ou null)
   razzeSetActivity: (activity) => ipcRenderer.invoke('razze-set-activity', { game: String(activity?.game || ''), artist: String(activity?.artist || ''), title: String(activity?.title || '') }),

@@ -515,6 +515,14 @@ ou aqui a qualquer hora); os jogos da Steam só aparecem depois que você marca 
 - **Mostrar a música que estou ouvindo (Spotify e outros players):** lê o que está tocando nos controles de mídia do Windows (os
   mesmos da tela de volume), com a capa do álbum, só quando está tocando. Vale para Spotify, Apple Music, Deezer, TIDAL, Amazon
   Music, Windows Media Player, foobar2000, MusicBee, AIMP e outros players de música; o que toca no navegador não aparece.
+- **O que estou fazendo no PC** (desligado por padrão): pelo programa que está na frente, numa lista por categoria
+  (a lista está em `main/atividade.js`), aparece a frase e há quanto tempo: "Codando no VS Code" (Cursor, Visual Studio,
+  IntelliJ, Android Studio…), "Criando jogo no Unity", "Desenhando no Figma" (Photoshop, Krita…), "Editando vídeo no
+  DaVinci Resolve", "Modelando 3D no Blender", "Produzindo música no FL Studio", "Escrevendo no Word". No terminal,
+  "Codando com Claude" com o Claude Code aberto, senão "Codando no terminal". Não precisa de extensão em nenhum programa.
+  Continua por até 5 minutos depois que você sai do programa ou para de mexer, e aí some. Programa fora da lista não
+  aparece; só a frase sai do PC, nunca o arquivo, o projeto nem o título da janela. Jogo aberto tem prioridade. Por
+  enquanto só quem está na mesma sala vê (os amigos no Início, não).
 
 Embaixo das caixinhas, o app mostra **o que os amigos veem agora**. Só os amigos aceitos veem, no Início: "Jogando Valorant" ou
 "Ouvindo Metallica"; **clicar em "Ouvindo…" mostra a música**. Some em até 2 minutos depois que você para ou desliga. Para os
