@@ -539,3 +539,4 @@ setupYtEscolher(); // escolher a música no YouTube dentro do app (renderer/yout
 setupFila(); // a fila de músicas de cada canal (renderer/musica-fila.js)
 setupPhone();
 show('home');
+fecharAbertura(); // a logo animada sai (renderer/abertura.js)
