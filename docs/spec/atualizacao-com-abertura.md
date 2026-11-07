@@ -29,6 +29,8 @@ em cima de tudo, com uma barra de progresso e a etapa ("Etapa 1 de 3"), sem dize
 - "Reduzir movimento": a logo para, a barra continua mostrando o progresso.
 - CSP: largura da barra por `style.setProperty('--p', …)`, nada de `style=""` no HTML.
 - Progresso no máximo a cada 100 ms (não inunda o IPC).
+- Com o card à vista, o resto da página fica `inert` (`travarFundo`): teclado e leitor de tela não alcançam o app por baixo.
+  Ao fechar, solta só o que o card travou.
 
 ## Dependências
 - `github.js`: `lerComProgresso(res, avisar)` lê o corpo aos poucos; `install(updater, avisar)`.
@@ -44,5 +46,5 @@ em cima de tudo, com uma barra de progresso e a etapa ("Etapa 1 de 3"), sem dize
 - [ ] "Reduzir movimento": logo parada, barra funcionando.
 
 ## Testes
-- Automáticos: `tests/atualizacao-progresso.test.js` (texto/fração das etapas; leitura com progresso e sem tamanho).
+- Automáticos: `tests/atualizacao-progresso.test.js` (texto/fração das etapas; leitura com progresso e sem tamanho; fundo travado e solto).
 - Manuais: atualizar de verdade pelo GitHub no Windows (versão anterior instalada); repetir com "reduzir movimento".

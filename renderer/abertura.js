@@ -36,6 +36,16 @@ function progressoAtualizacao({ modo, feito, total, abrindo } = {}) {
 }
 
 let atualizando = null; // { modo } enquanto o card de atualização está à vista
+let fundoTravado = []; // o que o card deixou inert (teclado e leitor de tela não alcançam o app por baixo)
+
+// on: deixa inert os elementos (menos o card) que ainda não estavam e devolve só esses.
+// off: solta os da lista; o que outro painel travou (setUtilityBackground) continua travado.
+function travarFundo(elementos, card, on = true) {
+  if (!on) { for (const el of elementos) el.inert = false; return []; }
+  const travados = [];
+  for (const el of elementos) if (el !== card && !el.inert) { el.inert = true; travados.push(el); }
+  return travados;
+}
 
 function desenharAtualizando(p) {
   const el = $('abertura');
@@ -54,6 +64,7 @@ function mostrarAtualizando(modo) {
   el.setAttribute('aria-label', 'Atualizando o Nebula');
   desenharAtualizando(progressoAtualizacao({ modo }));
   el.hidden = false;
+  if (!fundoTravado.length) fundoTravado = travarFundo([...document.body.children], el);
 }
 
 // { feito, total } do download ou { abrindo: true }
@@ -67,8 +78,9 @@ function fecharAtualizando() {
   atualizando = null;
   const el = $('abertura');
   el.hidden = true;
+  fundoTravado = travarFundo(fundoTravado, el, false);
   el.classList.remove('atualizando', 'indefinido');
   el.setAttribute('aria-label', 'Abrindo o Nebula');
 }
 
-if (typeof module !== 'undefined') module.exports = { progressoAtualizacao };
+if (typeof module !== 'undefined') module.exports = { progressoAtualizacao, travarFundo };

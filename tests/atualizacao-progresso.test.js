@@ -86,3 +86,17 @@ test('lerComProgresso: rede parada sem fechar desiste em vez de esperar para sem
 test('lerComProgresso: sem quem avisar só lê', async () => {
   assert.equal(await lerComProgresso(resposta(['x'])), 'x');
 });
+
+test('card de atualização trava o fundo e devolve só o que ele travou', () => {
+  const { travarFundo } = require('../renderer/abertura');
+  const card = { inert: false };
+  const main = { inert: false };
+  const header = { inert: true }; // já travado por outro painel (setUtilityBackground)
+  const travados = travarFundo([card, main, header], card);
+  assert.equal(card.inert, false);
+  assert.equal(main.inert, true);
+  assert.equal(header.inert, true);
+  travarFundo(travados, card, false);
+  assert.equal(main.inert, false);
+  assert.equal(header.inert, true);
+});
