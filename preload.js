@@ -182,6 +182,7 @@ contextBridge.exposeInMainWorld('api', {
   restartApp: () => ipcRenderer.invoke('restart-app'),
   githubCheck: () => ipcRenderer.invoke('github-check'),
   githubInstall: () => ipcRenderer.invoke('github-install'),
+  onUpdateProgresso: (cb) => { ipcRenderer.removeAllListeners('update-progresso'); ipcRenderer.on('update-progresso', (_e, p) => cb(p)); },
   openGithub: (url) => ipcRenderer.invoke('open-github', url),
   startServer: (port, password, seed, provider) => ipcRenderer.invoke('start-server', port, password, seed, provider),
   stopServer: (endRoom) => ipcRenderer.invoke('stop-server', !!endRoom),

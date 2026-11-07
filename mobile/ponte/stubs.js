@@ -97,6 +97,7 @@ export const STUBS = {
   restartApp: v(undefined),
   githubCheck: v({ ok: false, error: 'No iPhone, atualize pelo SideStore ou AltStore.' }),
   githubInstall: v({ ok: false, error: NAO_EXISTE }),
+  onUpdateProgresso: ev,
   openGithub: v(undefined),
 
   // Conta Razze e mensagens (Fase 2): por enquanto "sem conta". As leituras devolvem vazio; o resto rejeita com a mensagem

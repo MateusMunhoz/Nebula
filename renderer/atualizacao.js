@@ -270,12 +270,14 @@ async function runUpdate() {
   const go = $('hvGo');
   update.installing = true;
   $('hvDepois').hidden = true;
+  mostrarAtualizando(m.mode); // o card da abertura com a barra (renderer/abertura.js)
   if (m.mode === 'github') {
     setBusy(go, true, 'Baixando…');
     $('hvAviso').textContent = 'Baixando a versão nova do GitHub…';
     const res = await window.api.githubInstall();
     if (!res.ok) {
       update.installing = false;
+      fecharAtualizando();
       setBusy(go, false, 'Atualizar e reiniciar');
       if (res.page && /exe novo|pacote de atualização/.test(res.error)) {
         // Mudou algo que só um .exe novo traz (ex.: versão do Electron): manda para a página da versão
@@ -290,7 +292,18 @@ async function runUpdate() {
   }
   setBusy(go, true, 'Reiniciando…');
   $('hvAviso').textContent = 'Abrindo a versão nova…';
-  window.api.restartApp();
+  avancarAtualizando({ abrindo: true });
+  reiniciarNaVersaoNova();
+}
+
+// Reinicia com o card à vista; se o reinício falhar, o card sai e o app volta a ser usável
+function reiniciarNaVersaoNova() {
+  Promise.resolve(window.api.restartApp()).catch(() => {
+    update.installing = false;
+    fecharAtualizando();
+    toast('Não deu para reiniciar. Feche e abra o Nebula para usar a versão nova.', 'error');
+    renderUpdateBanner();
+  });
 }
 
 // ---------- Atualização automática ----------
@@ -312,18 +325,21 @@ async function autoAtualizar(abrindo = false) {
   const m = updateMode();
   update.installing = true;
   $('homeVersaoEstado').textContent = `Atualizando para a ${m.version}…`;
+  mostrarAtualizando(m.mode);
   if (m.mode === 'github') {
     const res = await window.api.githubInstall();
     if (!res.ok) {
       update.installing = false;
+      fecharAtualizando();
       if (res.page && /exe novo|pacote de atualização/.test(res.error)) update.exePage = res.page;
       return renderUpdateBanner();
     }
     update.ready = res.version;
   }
   // entrou numa sala enquanto baixava: fica pronta, reinicia depois
-  if (state.myId || state.sharing) { update.installing = false; return renderUpdateBanner(); }
-  window.api.restartApp();
+  if (state.myId || state.sharing) { update.installing = false; fecharAtualizando(); return renderUpdateBanner(); }
+  avancarAtualizando({ abrindo: true });
+  reiniciarNaVersaoNova();
 }
 
 // ---------- Atualização obrigatória ----------
