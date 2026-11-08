@@ -140,8 +140,11 @@ function createMusicTile(ch, entry) {
   minBtn.className = 'btn icon tile-min';
   setIcon(minBtn, 'minimizar', 'Minimizar (a música continua tocando num player pequeno)');
   minBtn.onclick = () => setMinimizado(true);
-  const pipBtn = document.createElement('button'); // o palco espera um; a música não vai para a janela flutuante
-  pipBtn.hidden = true;
+  // Janela flutuante: o player muda para ela (renderer/pip.js)
+  const pipBtn = document.createElement('button');
+  pipBtn.className = 'btn icon';
+  setIcon(pipBtn, 'pip', 'Abrir em janela flutuante (fica por cima do jogo)');
+  pipBtn.onclick = () => togglePip(key);
   // Legendas (só para você): desligadas por padrão
   const cc = document.createElement('button');
   cc.className = 'btn icon';
@@ -150,7 +153,7 @@ function createMusicTile(ch, entry) {
     save('musicaLegenda', musica.legenda ? '1' : '0');
     for (const link of state.in.values()) link.music?.captions();
   };
-  bar.append(barSpace, mute, vol, cc, focusBtn, minBtn, fs, close);
+  bar.append(barSpace, mute, vol, cc, pipBtn, focusBtn, minBtn, fs, close);
   label.append(note, labelText, where, bar);
   // O player (visível, como pede o YouTube) e, embaixo dele, os controles que valem para todos
   const body = document.createElement('div');
@@ -190,8 +193,17 @@ function createMusicTile(ch, entry) {
   stopAll.className = 'btn small danger';
   stopAll.textContent = 'Parar a música';
   controls.append(playBtn, time, seek, liveChip, swap, stopAll);
-  const pipNote = document.createElement('div'); // idem: o palco mexe nele, aqui fica sempre escondido
+  const pipNote = document.createElement('div'); // à vista enquanto o player está na janela flutuante
+  pipNote.className = 'tile-pip-note';
   pipNote.hidden = true;
+  const pipNoteText = document.createElement('span');
+  pipNoteText.textContent = 'Tocando na janela flutuante';
+  const pipBack = document.createElement('button');
+  pipBack.type = 'button';
+  pipBack.className = 'btn small';
+  pipBack.textContent = 'Trazer de volta';
+  pipBack.onclick = () => closePip(key);
+  pipNote.append(pipNoteText, pipBack);
   // Luz ambiente (Aparência), como nas transmissões: o player fica do tamanho do vídeo (16:9) e as barras em volta
   // pegam as cores dele (ambientTick)
   const ambient = document.createElement('canvas');
@@ -365,6 +377,7 @@ function createMusicTile(ch, entry) {
   };
   mu.render = () => render();
   mu.iframe = iframe;
+  mu.recarregar = () => { if (mu.videoId) loadVideo(mu.videoId, musicPos(mu.entry)); };
 
   // ---------- Controles que valem para todos ----------
   playBtn.onclick = () => {
@@ -405,7 +418,7 @@ function createMusicTile(ch, entry) {
   async function ambientTick() {
     const bw = body.clientWidth, bh = body.clientHeight;
     const bars = bw && bh && Math.abs((16 / 9) / (bw / bh) - 1) > 0.02;
-    if (!appPreferences.appearance.ambient || !bars || el.classList.contains('small')) { ambient.hidden = true; return; }
+    if (!appPreferences.appearance.ambient || !bars || el.classList.contains('small') || iframe.ownerDocument !== document) { ambient.hidden = true; return; }
     if (ambientBusy || !mu.ready || mu.error || document.hidden || !document.hasFocus() || !window.api?.captureRegion) return;
     ambientBusy = true;
     try {
@@ -444,12 +457,14 @@ function createMusicTile(ch, entry) {
 // A voz mudou (você entrou, saiu ou trocou de canal): quem controla cada música pode ter mudado
 function renderMusicTiles() { for (const link of state.in.values()) link.music?.render(); }
 // As mensagens dos players chegam todas aqui: cada uma vai para o quadro do iframe que mandou
-window.addEventListener('message', (e) => {
+// (e de cada janela flutuante com um player, renderer/pip.js)
+function onYoutubeMessage(e) {
   if (e.origin !== YT_ORIGIN) return;
   let d;
   try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
   for (const link of state.in.values()) if (link.music && link.music.iframe.contentWindow === e.source) return link.music.onMessage(d || {});
-});
+}
+window.addEventListener('message', onYoutubeMessage);
 
 // ---------- No painel de voz: a música de cada canal, e "Pôr música" no seu ----------
 function musicRow(ch) {

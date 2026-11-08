@@ -71,7 +71,10 @@ $('profilePhotoFile').onchange = async () => {
   const file = $('profilePhotoFile').files[0];
   $('profilePhotoFile').value = '';
   if (!file) return;
-  try { await ajustarFoto(file); } catch { toast('Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP...).', 'error'); }
+  try { await ajustarFoto(file); } catch (e) {
+    toast(e.message === 'grande' ? 'GIF grande demais para a foto: até 128 KB.' : e.message === 'lado' ? 'GIF grande demais para a foto: até 512 px.'
+      : 'Não deu para abrir essa imagem. Escolha uma foto (JPG, PNG, WebP, GIF...).', 'error');
+  }
 };
 $('profilePhotoRemove').onclick = removeMyPhoto;
 for (const b of $('profilePhotoFit').querySelectorAll('[data-fit]')) b.onclick = () => setPhotoFit(b.dataset.fit);
@@ -144,11 +147,15 @@ window.api.onPip((m) => {
     for (const [id, p] of state.pips) {
       if (p.win.closed) continue;
       setPipLocked(p, !m.on);
-      const o = m.opacity && m.opacity[id];
+      const o = m.opacity && m.opacity[p.winId || id];
       if (typeof o === 'number') p.opacity.value = String(Math.round(o * 100));
     }
   }
-  else if (m.type === 'closed' && state.pips.has(m.id)) { const p = state.pips.get(m.id); state.pips.delete(m.id); pipClosed(p); }
+  else if (m.type === 'closed') {
+    // A janela vem pelo nome dela (pipWinId); a música tem outro id no app
+    const id = [...state.pips].find(([, p]) => p.winId === m.id)?.[0];
+    if (id !== undefined) { const p = state.pips.get(id); state.pips.delete(id); pipClosed(p); }
+  }
   else if (m.type === 'shortcut-busy') toast(`Outro programa já usa ${accelLabel(m.accel)}, então esse atalho não funciona agora. Dá para trocar em Configurações › Atalhos (a engrenagem na barra).`, 'error');
 });
 

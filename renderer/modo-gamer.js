@@ -5,7 +5,7 @@
 // - vidro opaco (sem o acrílico do Windows nem o desfoque dos painéis: applyAppTheme, configuracoes.js)
 // - nenhuma animação nem transição, e o céu estrelado do fundo some (CSS :root[data-gamer="on"])
 // - o céu em cima da lista da voz some (renderVoiceSky) e a luz ambiente das transmissões desliga (assistir.js)
-// - o fundo do perfil em GIF fica parado no primeiro quadro (fundo-perfil.js)
+// - o fundo do perfil e a foto em GIF ficam parados no primeiro quadro (fundo-perfil.js, fotos.js)
 // Transmitir, assistir, voz e música continuam funcionando. Fica salvo neste PC (modoGamer).
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: util, configuracoes.
 const gamerOn = () => document.documentElement.dataset.gamer === 'on';
@@ -17,6 +17,8 @@ function setGamerMode(on, quiet = false) {
   applyAppTheme();
   if (typeof renderVoiceSky === 'function' && state.myId) renderVoiceSky();
   if (typeof skyFocusId !== 'undefined' && skyFocusId) { skyFocusKey = ''; renderSkyProfile(); }
+  if (typeof perfilFixoMudou === 'function') perfilFixoMudou(); // o GIF do fundo para ou volta
+  repaintAllAvatars(); // e o da foto
   renderGamerButton();
   if (!quiet) {
     toast(on ? 'Modo gamer ligado: sem animações, sem vidro e sem céu, e o app em prioridade normal. Voz e transmissões continuam.'

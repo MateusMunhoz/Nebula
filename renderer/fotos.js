@@ -13,6 +13,9 @@
 // pessoa onde estiverem (lista, cartão, barra da voz, chat, perfil).
 const FOTO_SIZE = 128;
 const FOTO_MAX = 64 * 1024;      // bytes da imagem que alguém pode mandar
+// GIF vai como é (o navegador não regrava GIF animado): até 128 KB e 512 px. Ele mesmo serve de foto inteira.
+const FOTO_GIF_MAX = 128 * 1024;
+const FOTO_GIF_SIDE = 512;
 const FOTO_KEEP = 50;            // fotos dos outros guardadas no PC (as mais recentes)
 // A foto inteira (sem o corte quadrado), para ver no perfil: até 1024 px no lado maior. Vai pela sala só quando
 // alguém abre o seu perfil, e cabe numa mensagem da sala (256 KB) já em base64.
@@ -25,6 +28,7 @@ const fotos = {
   fullUrls: new Map(),           // hash da foto inteira -> data: URL (só na memória: não enche o PC)
   asked: new Map(),              // hash -> quando pedi (não pede de novo antes de 20 s)
   fullWaiting: new Map(),        // hash da foto inteira -> quem espera por ela (o visualizador)
+  stills: new Map(),             // hash de um GIF -> data: URL do primeiro quadro (modo gamer, reduzir movimento)
 };
 try { const m = JSON.parse(load('fotoPerfil', 'null')); if (m && /^[0-9a-f]{64}$/.test(m.hash) && typeof m.data === 'string') fotos.mine = m; } catch {}
 try { const m = JSON.parse(load('fotoPerfilInteira', 'null')); if (m && /^[0-9a-f]{64}$/.test(m.hash) && typeof m.data === 'string') fotos.mineFull = m; } catch {}
@@ -34,6 +38,7 @@ async function sha256(bytes) { return hex(await crypto.subtle.digest('SHA-256', 
 function toBase64(bytes) { let s = ''; for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(s); }
 function fromBase64(b64) { const s = atob(b64); const out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
 function imageMime(b) {
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif'; // "GIF8"
   if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
   if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
   return 'image/webp';
@@ -54,6 +59,24 @@ function photoUrl(hash) {
   if (!data || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return '';
   const url = `data:${imageMime(fromBase64(data.slice(0, 8)))};base64,${data}`;
   fotos.urls.set(hash, url);
+  return url;
+}
+// GIF parado no primeiro quadro com "reduzir movimento" ou no modo gamer, como o fundo do perfil
+const fotoParada = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.gamer === 'on';
+function avatarUrl(hash) {
+  const url = photoUrl(hash);
+  if (!url.startsWith('data:image/gif') || !fotoParada()) return url;
+  if (fotos.stills.has(hash)) return fotos.stills.get(hash) || url;
+  fotos.stills.set(hash, ''); // fazendo: enquanto isso, o GIF
+  (async () => {
+    const bmp = await createImageBitmap(await (await fetch(url)).blob()); // o primeiro quadro
+    const c = new OffscreenCanvas(bmp.width, bmp.height);
+    c.getContext('2d').drawImage(bmp, 0, 0);
+    bmp.close();
+    const blob = await c.convertToBlob({ type: 'image/webp', quality: 0.85 });
+    fotos.stills.set(hash, `data:image/webp;base64,${toBase64(new Uint8Array(await blob.arrayBuffer()))}`);
+    repaintAllAvatars();
+  })().catch(() => {});
   return url;
 }
 
@@ -82,7 +105,7 @@ function paintAvatar(el, id) {
   const owner = !id || id === state.myId ? 'me' : id;
   el.dataset.owner = owner;
   const hash = photoHashOf(owner);
-  const url = photoUrl(hash);
+  const url = avatarUrl(hash);
   el.classList.toggle('photo', !!url);
   el.classList.toggle('star', !url);
   el.style.backgroundImage = url ? `url("${url}")` : '';
@@ -116,10 +139,11 @@ async function onPhotoSignal(from, data) {
   const { hash } = data;
   if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash) || typeof data.data !== 'string') return;
   const full = fotos.fullWaiting.has(hash);
-  if (data.data.length > Math.ceil((full ? FOTO_FULL_MAX : FOTO_MAX) / 3) * 4 || !fotos.asked.has(hash)) return; // só o que eu pedi
+  if (data.data.length > Math.ceil((full ? FOTO_FULL_MAX : FOTO_GIF_MAX) / 3) * 4 || !fotos.asked.has(hash)) return; // só o que eu pedi
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data.data)) return; // base64 puro: a foto vai parar dentro de um url("") do CSS
   let bytes;
   try { bytes = fromBase64(data.data); } catch { return; }
+  if (!full && imageMime(bytes) !== 'image/gif' && bytes.length > FOTO_MAX) return; // só GIF passa dos 64 KB
   if (await sha256(bytes) !== hash) return;
   try {
     const bmp = await createImageBitmap(new Blob([bytes], { type: imageMime(bytes) }));
@@ -156,11 +180,29 @@ let fotoFit = load('fotoEncaixe', 'inteira') === 'preencher' ? 'preencher' : 'in
 
 // Minha foto: qualquer imagem vira um quadrado de 128x128 em WebP (sem metadados); vale na hora, na sala também
 async function setMyPhoto(file) {
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  if (imageMime(head) === 'image/gif') return setMyPhotoGif(file);
   const bmp = await createImageBitmap(file); // a rotação da foto de celular já vem aplicada
   fotos.mineFull = await fullPhoto(bmp);
   save('fotoPerfilInteira', JSON.stringify(fotos.mineFull));
   await setSmallPhoto(bmp);
   bmp.close();
+}
+// GIF: do jeito que é, sem recorte, se couber; vale como foto pequena e inteira
+async function setMyPhotoGif(file) {
+  if (file.size > FOTO_GIF_MAX) throw new Error('grande');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const bmp = await createImageBitmap(new Blob([bytes], { type: 'image/gif' }));
+  const ok = bmp.width <= FOTO_GIF_SIDE && bmp.height <= FOTO_GIF_SIDE;
+  bmp.close();
+  if (!ok) throw new Error('lado');
+  fotos.mine = { hash: await sha256(bytes), data: toBase64(bytes) };
+  fotos.mineFull = fotos.mine;
+  save('fotoPerfil', JSON.stringify(fotos.mine));
+  save('fotoPerfilInteira', JSON.stringify(fotos.mineFull));
+  recorteApagar('fotoOrigem');
+  send({ type: 'avatar', hash: fotos.mine.hash, full: fotos.mine.hash });
+  renderMyPhoto();
 }
 // Trocou entre "Inteira" e "Preencher": refaz a bolinha a partir da foto inteira guardada
 async function setPhotoFit(fit) {
@@ -222,7 +264,7 @@ async function fullPhoto(bmp) {
 function fullPhotoOf(id) {
   const owner = !id || id === state.myId ? 'me' : id;
   const small = photoUrl(photoHashOf(owner));
-  if (owner === 'me') return Promise.resolve(fotos.mineFull ? `data:image/webp;base64,${fotos.mineFull.data}` : small);
+  if (owner === 'me') return Promise.resolve(fotos.mineFull ? `data:${imageMime(fromBase64(fotos.mineFull.data.slice(0, 8)))};base64,${fotos.mineFull.data}` : small);
   const hash = state.members.get(owner)?.avatarFull || '';
   if (!hash) return Promise.resolve(small);
   if (fotos.fullUrls.has(hash)) return Promise.resolve(fotos.fullUrls.get(hash));

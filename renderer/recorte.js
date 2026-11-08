@@ -125,6 +125,7 @@ const recorteTem = (chave) => load(chave, 'null').startsWith('{');
 
 // A foto: arrasta e dá zoom na bolinha; o resultado entra no mesmo caminho de antes (renderer/fotos.js › setMyPhoto)
 async function ajustarFoto(blob, quadro = null) {
+  if (imageMime(new Uint8Array(await blob.slice(0, 4).arrayBuffer())) === 'image/gif') return setMyPhoto(blob); // GIF não corta: fica animado
   const r = await abrirRecorte({ blob, forma: 'circulo', titulo: 'Ajustar a foto', dica: 'Arraste para enquadrar e use o zoom. A bolinha mostra como os outros te veem.', saidaLado: 1024, quadro });
   if (!r) return;
   await setMyPhoto(r.saida);
