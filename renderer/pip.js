@@ -9,11 +9,42 @@
 // Cada transmissão pode ter a sua janela; o nome da janela leva o id para o processo principal saber de quem é
 function togglePip(id) {
   if (state.pips.has(id)) return closePip(id);
-  const win = window.open('', `tela-pip-${id}`);
+  const win = window.open('', `tela-pip-${pipWinId(id)}`);
   if (!win) return toast('Não foi possível abrir a janela flutuante.', 'error');
   const p = buildPip(win, id);
   state.pips.set(id, p);
-  setPipStream(id);
+  const music = state.in.get(id)?.music;
+  if (music) setPipMusic(p, music);
+  else setPipStream(id);
+}
+
+// O nome da janela só aceita letras, números, _ e - (main.js); a música é "musica:<canal>"
+function pipWinId(id) {
+  return /^[\w-]{1,40}$/.test(id) ? id : String(id).replace(/[^\w-]/g, '-').slice(0, 40);
+}
+
+// Música do YouTube: o próprio player (o iframe) muda para a janela flutuante e volta ao fechar. Mudar de página
+// recarrega o player, então ele carrega de novo no ponto da sala (1 a 2 s)
+function setPipMusic(p, music) {
+  const link = state.in.get(p.id);
+  p.video.style.display = 'none';
+  Object.assign(music.iframe.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', border: '0' });
+  p.win.document.body.prepend(music.iframe);
+  // As mensagens do player vão para a janela onde ele está
+  p.win.addEventListener('message', onYoutubeMessage);
+  music.recarregar();
+  p.name.textContent = p.lockTag.textContent = link.tile.name;
+  p.win.document.title = `${link.tile.name} · Nebula`;
+  renderPipButtons();
+}
+
+function pipMusicBack(p) {
+  const link = p && state.in.get(p.id);
+  if (!link?.music) return;
+  const iframe = link.music.iframe;
+  iframe.removeAttribute('style');
+  link.tile.el.querySelector('.music-body')?.prepend(iframe);
+  link.music.recarregar();
 }
 
 function pipButton(d, text, onClick, primary) {
@@ -71,8 +102,9 @@ function buildPip(win, id) {
   const sizes = d.createElement('div');
   Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
   sizes.style.setProperty('-webkit-app-region', 'no-drag');
+  const winId = pipWinId(id);
   for (const key of ['P', 'M', 'G']) {
-    const b = pipButton(d, key, () => window.api.pipSize(id, key), false);
+    const b = pipButton(d, key, () => window.api.pipSize(winId, key), false);
     Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: THEME.muted });
     b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
     sizes.append(b);
@@ -89,7 +121,7 @@ function buildPip(win, id) {
   opacity.max = '100';
   opacity.value = '100';
   Object.assign(opacity.style, { flex: '1', accentColor: THEME.accent });
-  opacity.oninput = () => window.api.pipOpacity(id, Number(opacity.value) / 100);
+  opacity.oninput = () => window.api.pipOpacity(winId, Number(opacity.value) / 100);
   opacityRow.append('Transparência', opacity);
 
   // Com 2 ou mais janelas: mesmo tamanho para todas e como enfileirar (coluna ou linha, a partir de qual canto)
@@ -101,7 +133,7 @@ function buildPip(win, id) {
   const linked = d.createElement('input');
   linked.type = 'checkbox';
   linked.style.accentColor = THEME.accent;
-  linked.onchange = () => window.api.pipGroup(id, { linked: linked.checked });
+  linked.onchange = () => window.api.pipGroup(winId, { linked: linked.checked });
   linkedLabel.append(linked, 'Todas do mesmo tamanho');
   const seg = (items, onPick) => {
     const box = d.createElement('div');
@@ -118,10 +150,10 @@ function buildPip(win, id) {
     return { box, btns };
   };
   const layoutSeg = seg([['coluna', 'Coluna', 'Enfileirar em coluna'], ['linha', 'Linha', 'Enfileirar em linha']],
-    (layout) => window.api.pipGroup(id, { layout }));
+    (layout) => window.api.pipGroup(winId, { layout }));
   const cornerSeg = seg([['tl', '↖', 'Começar no canto de cima à esquerda'], ['tr', '↗', 'Começar no canto de cima à direita'],
     ['bl', '↙', 'Começar no canto de baixo à esquerda'], ['br', '↘', 'Começar no canto de baixo à direita']],
-    (corner) => window.api.pipGroup(id, { corner }));
+    (corner) => window.api.pipGroup(winId, { corner }));
   groupRow.append(linkedLabel, layoutSeg.box, cornerSeg.box);
 
   const hint = d.createElement('span');
@@ -156,8 +188,8 @@ function buildPip(win, id) {
   Object.assign(talkers.style, { position: 'fixed', left: '8px', bottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', pointerEvents: 'none' });
   d.body.append(video, speakRing, talkers, edit, lockTag, notice);
   // Roda do mouse (no modo de ajuste; travada, o mouse passa direto para o jogo): som dessa transmissão
-  if (!state.in.get(id)?.self) onWheelVolume(d, id, 'screen', d);
-  const p = { win, id, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg, speakRing, talkers };
+  if (!state.in.get(id)?.self && !state.in.get(id)?.music) onWheelVolume(d, id, 'screen', d);
+  const p = { win, id, winId, video, edit, name, opacity, lockTag, notice, noticeTimer: null, groupRow, linked, layoutSeg, cornerSeg, speakRing, talkers };
   requestAnimationFrame(() => renderPipSpeaking());
   return p;
 }
@@ -222,7 +254,8 @@ function releasePipVideo(p) {
 function pipClosed(p) {
   releasePipVideo(p);
   const link = p && state.in.get(p.id);
-  if (link) refreshTileStream(link);
+  if (link?.music) pipMusicBack(p);
+  else if (link) refreshTileStream(link);
   syncIncomingVideo();
   renderPipButtons();
 }
