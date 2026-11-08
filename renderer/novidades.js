@@ -3,6 +3,14 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.15",
+    "date": "2026-11-08",
+    "items": [
+      "Música na janela flutuante: player novo ao ir e voltar (não fica preto)",
+      "Música do YouTube na janela flutuante e foto de perfil em GIF"
+    ]
+  },
+  {
     "version": "1.20.14",
     "date": "2026-11-07",
     "items": [
@@ -92,14 +100,6 @@ const NOVIDADES = [
       "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
       "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
       "Chat: prévia dos vídeos do YouTube, com capa, título, canal e Tocar na voz"
-    ]
-  },
-  {
-    "version": "1.20.4",
-    "date": "2026-10-19",
-    "items": [
-      "Tempo da call: aparece também com você sozinho no canal",
-      "Ajustes na interface: barra da chamada, painéis, transmitir e Início"
     ]
   }
 ];
