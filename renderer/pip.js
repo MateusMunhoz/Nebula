@@ -23,16 +23,14 @@ function pipWinId(id) {
   return /^[\w-]{1,40}$/.test(id) ? id : String(id).replace(/[^\w-]/g, '-').slice(0, 40);
 }
 
-// Música do YouTube: o próprio player (o iframe) muda para a janela flutuante e volta ao fechar. Mudar de página
-// recarrega o player, então ele carrega de novo no ponto da sala (1 a 2 s)
+// Música do YouTube: o player muda para a janela flutuante e volta ao fechar (um player novo de cada vez,
+// musica.js › moverPlayer), carregando no ponto da sala (1 a 2 s)
 function setPipMusic(p, music) {
   const link = state.in.get(p.id);
   p.video.style.display = 'none';
-  Object.assign(music.iframe.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', border: '0' });
-  p.win.document.body.prepend(music.iframe);
   // As mensagens do player vão para a janela onde ele está
   p.win.addEventListener('message', onYoutubeMessage);
-  music.recarregar();
+  music.moverPlayer(p.win.document.body);
   p.name.textContent = p.lockTag.textContent = link.tile.name;
   p.win.document.title = `${link.tile.name} · Nebula`;
   renderPipButtons();
@@ -40,11 +38,7 @@ function setPipMusic(p, music) {
 
 function pipMusicBack(p) {
   const link = p && state.in.get(p.id);
-  if (!link?.music) return;
-  const iframe = link.music.iframe;
-  iframe.removeAttribute('style');
-  link.tile.el.querySelector('.music-body')?.prepend(iframe);
-  link.music.recarregar();
+  if (link?.music) link.music.moverPlayer(null);
 }
 
 function pipButton(d, text, onClick, primary) {
