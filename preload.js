@@ -21,6 +21,14 @@ contextBridge.exposeInMainWorld('api', {
   chatCompose: (on, opening = false) => ipcRenderer.invoke('chat-compose', !!on, !!opening),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   youtubePrevia: (id) => ipcRenderer.invoke('youtube-previa', String(id || '')),
+  // Escolher a música no YouTube dentro do app (main/youtube-escolher.js): a página do YouTube não fala com a página do
+  // app; daqui vão só o retângulo e ações fixas, e de lá volta o id do vídeo clicado
+  ytEscolherAbrir: (r) => ipcRenderer.invoke('yt-escolher-abrir', { x: Number(r?.x) || 0, y: Number(r?.y) || 0, w: Number(r?.w) || 0, h: Number(r?.h) || 0 }),
+  ytEscolherPosicao: (r) => ipcRenderer.invoke('yt-escolher-posicao', r ? { x: Number(r.x) || 0, y: Number(r.y) || 0, w: Number(r.w) || 0, h: Number(r.h) || 0 } : null),
+  ytEscolherAcao: (acao) => ipcRenderer.invoke('yt-escolher-acao', String(acao || '')),
+  ytEscolherFocar: () => ipcRenderer.invoke('yt-escolher-focar'),
+  ytEscolherFechar: () => ipcRenderer.invoke('yt-escolher-fechar'),
+  onYtEscolher: (cb) => { ipcRenderer.removeAllListeners('yt-escolher'); ipcRenderer.on('yt-escolher', (_e, msg) => cb(msg)); },
   clipSave: (bytes, label) => ipcRenderer.invoke('clip-save', bytes, label),
   clipShow: (id) => ipcRenderer.invoke('clip-show', id),
   // Comando de voz (main/comando-voz.js): baixar e conferir o Whisper, transcrever o WAV do comando, a tecla de segurar
@@ -123,7 +131,7 @@ contextBridge.exposeInMainWorld('api', {
   razze2faDisable: (c) => ipcRenderer.invoke('razze-2fa-disable', { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razze2faRecovery: (c) => ipcRenderer.invoke('razze-2fa-recovery', { currentPassword: String(c?.currentPassword || ''), code2fa: String(c?.code2fa || '') }),
   razzeResetPassword: (email, code, password) => ipcRenderer.invoke('razze-reset-password', String(email || ''), String(code || ''), String(password || '')),
-  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: Array.isArray(opcoes?.steam) ? opcoes.steam.slice(0, 500).map(String) : [] }),
+  atividadeLer: (opcoes) => ipcRenderer.invoke('atividade-ler', { jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, tarefa: !!opcoes?.tarefa, steam: Array.isArray(opcoes?.steam) ? opcoes.steam.slice(0, 500).map(String) : [] }),
   atividadeSteamJogos: (recarregar) => ipcRenderer.invoke('atividade-steam-jogos', !!recarregar),
   aoMudarMusica: (cb) => ipcRenderer.on('atividade-musica', (_e, m) => cb(m)), // só recebe: a música nova (ou null)
   razzeSetActivity: (activity) => ipcRenderer.invoke('razze-set-activity', { game: String(activity?.game || ''), artist: String(activity?.artist || ''), title: String(activity?.title || '') }),
@@ -174,6 +182,7 @@ contextBridge.exposeInMainWorld('api', {
   restartApp: () => ipcRenderer.invoke('restart-app'),
   githubCheck: () => ipcRenderer.invoke('github-check'),
   githubInstall: () => ipcRenderer.invoke('github-install'),
+  onUpdateProgresso: (cb) => { ipcRenderer.removeAllListeners('update-progresso'); ipcRenderer.on('update-progresso', (_e, p) => cb(p)); },
   openGithub: (url) => ipcRenderer.invoke('open-github', url),
   startServer: (port, password, seed, provider) => ipcRenderer.invoke('start-server', port, password, seed, provider),
   stopServer: (endRoom) => ipcRenderer.invoke('stop-server', !!endRoom),

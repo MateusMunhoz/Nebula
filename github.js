@@ -25,16 +25,54 @@ function minimaDasNotas(body) {
   return m ? m[1] : '';
 }
 
-async function downloadText(url) {
+// Lê o corpo aos poucos para mostrar a barra da atualização; avisar(feito, total) no máximo a cada 100 ms e no fim.
+// total = 0 enquanto o servidor não diz o tamanho; o último aviso sempre tem total = feito (a barra chega ao fim).
+// Ficou paradoMs sem chegar nada: desiste, para o card da atualização não ficar preso.
+const PARADO_MS = 30 * 1000;
+async function lerComProgresso(res, avisar, paradoMs = PARADO_MS) {
+  if (!avisar || !res.body) return res.text();
+  const total = Number(res.headers.get('content-length')) || 0;
+  const pedacos = [];
+  let feito = 0;
+  let ultimo = 0;
+  const reader = res.body.getReader();
+  const lerUm = () => {
+    let t;
+    const parado = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('o download parou (sem resposta da rede)')), paradoMs); });
+    return Promise.race([reader.read(), parado]).finally(() => clearTimeout(t));
+  };
+  try {
+    for (;;) {
+      const { done, value } = await lerUm();
+      if (done) break;
+      pedacos.push(value);
+      feito += value.length;
+      if (Date.now() - ultimo >= 100) { ultimo = Date.now(); avisar(feito, total); }
+    }
+  } catch (e) {
+    reader.cancel().catch(() => {});
+    throw e;
+  }
+  avisar(feito, feito);
+  return Buffer.concat(pedacos).toString('utf8');
+}
+
+async function downloadText(url, avisar) {
   if (!/^https:\/\/github\.com\//.test(url || '')) throw new Error('arquivo fora do GitHub');
-  const res = await net.fetch(url, { headers: { 'User-Agent': HEADERS['User-Agent'] } });
+  // a resposta (cabeçalhos) também não pode demorar para sempre; o corpo é vigiado em lerComProgresso
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), PARADO_MS);
+  const res = await net.fetch(url, { headers: { 'User-Agent': HEADERS['User-Agent'] }, signal: ctl.signal })
+    .catch((e) => { throw ctl.signal.aborted ? new Error('o GitHub não respondeu') : e; })
+    .finally(() => clearTimeout(t));
   if (!res.ok) throw new Error(`o download falhou (${res.status})`);
-  return res.text();
+  return lerComProgresso(res, avisar);
 }
 
 module.exports = {
   REPO,
   minimaDasNotas,
+  lerComProgresso,
 
   async check() {
     try {
@@ -44,13 +82,14 @@ module.exports = {
     }
   },
 
-  // Baixa o pacote da última versão e entrega para o boot.js conferir e guardar
-  async install(updater) {
+  // Baixa o pacote da última versão e entrega para o boot.js conferir e guardar.
+  // avisar(feito, total): progresso do pack.json (o pack.sig é pequeno)
+  async install(updater, avisar) {
     try {
       const rel = await latestRelease();
       if (!rel) return { ok: false, error: 'nenhuma versão publicada no GitHub' };
       if (!rel.pack || !rel.sig) return { ok: false, error: 'essa versão não tem o pacote de atualização', page: rel.page };
-      const [pack, sig] = await Promise.all([downloadText(rel.pack), downloadText(rel.sig)]);
+      const [pack, sig] = await Promise.all([downloadText(rel.pack, avisar), downloadText(rel.sig)]);
       return { ...updater.install(pack, sig), page: rel.page };
     } catch (e) {
       return { ok: false, error: e.message };

@@ -12,7 +12,7 @@ const TIPOS = ['ping', 'voice-state', 'subsala-create', 'subsala-delete', 'subsa
   'lider-responder', 'lider-tirar', 'musica-set', 'musica-ouvindo', 'musica-ctl', 'share', 'chat', 'signal', 'avatar', 'razze', 'name-font',
   'leave', 'hello', 'info', 'senha', 'passe', 'amigos-membros', 'tipo-que-nao-existe'];
 const CAMPOS = ['id', 'to', 'ch', 'channel', 'session', 'text', 'file', 'name', 'size', 'mime', 'videoId', 'action', 'pos', 'dur', 'title', 'modo', 'ok',
-  'sharing', 'info', 'hash', 'full', 'font', 'data', 'muted', 'deafened', 'on', 'targetSession', 'resume', 'client', 'addrs', 'password'];
+  'sharing', 'info', 'hash', 'full', 'font', 'data', 'muted', 'deafened', 'on', 'targetSession', 'resume', 'client', 'addrs', 'password', 'item', 'para', 'tudo'];
 const grande = 'x'.repeat(100000);
 const VALORES = [null, undefined, true, false, 0, -1, 1.5, 1e308, NaN, Infinity, '', ' ', '0', '999999', 'a'.repeat(70), grande, [], [1, 2], ['a'], {}, { a: 1 },
   { id: 'x'.repeat(10), size: 5 }, { side: 'voice', session: 5 }, { side: 'lider', role: 'ouvrir' }, '__proto__', 'constructor', 'toString',
@@ -44,6 +44,31 @@ test('o tratador de mensagens não lança com nenhum tipo e valor estranhos (cam
   }
   assert.ok(n > 10000);
   assert.equal({}.polui, undefined, 'nenhuma mensagem polui o Object.prototype');
+});
+
+test('fila da música: ações com valores estranhos não lançam nem deixam a fila quebrada', () => {
+  const { ctx, members } = sala();
+  const ok = /^[\w-]{11}$/;
+  for (let i = 0; i < 5; i++) handleMemberMessage(ctx, '1', members.get('1'), { type: 'musica-ctl', ch: '', action: 'fila-por', videoId: `video${String(i).padStart(6, '0')}` });
+  for (const action of ['fila-por', 'fila-mover', 'fila-tirar', 'pular', 'stop']) {
+    for (const campo of ['item', 'para', 'pos', 'videoId', 'title', 'tudo', 'ch']) {
+      for (const valor of VALORES) {
+        for (const quem of ['1', '3']) {
+          const msg = { type: 'musica-ctl', ch: '', action, item: 1, videoId: 'dQw4w9WgXcQ', [campo]: valor };
+          try { handleMemberMessage(ctx, quem, members.get(quem), msg); }
+          catch (e) { assert.fail(`lançou com ${action} ${campo}=${typeof valor === 'string' ? valor.slice(0, 20) : JSON.stringify(valor)}: ${e.message}`); }
+          // Se a música saiu (stop, pular), volta, para continuar testando
+          if (!ctx.musicas.map.has('')) handleMemberMessage(ctx, '1', members.get('1'), { type: 'musica-set', videoId: 'dQw4w9WgXcQ' });
+          const m = ctx.musicas.map.get('');
+          assert.ok(Array.isArray(m.fila) && m.fila.length <= 30);
+          for (const f of m.fila) {
+            assert.ok(ok.test(f.videoId) && Number.isInteger(f.id) && f.id > 0 && typeof f.title === 'string' && f.title.length <= 200 && typeof f.by === 'string');
+          }
+        }
+      }
+    }
+  }
+  assert.equal({}.polui, undefined);
 });
 
 test('mensagens que não são objeto, e hello com campos estranhos, não derrubam o tratador e o newMember', () => {

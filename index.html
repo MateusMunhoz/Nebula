@@ -14,8 +14,15 @@
   <link rel="stylesheet" href="styles-renascenca.css">
   <link rel="stylesheet" href="styles-topgun.css">
   <link rel="stylesheet" href="styles-cloud.css">
+  <link rel="stylesheet" href="styles-abertura.css">
 </head>
 <body>
+  <!-- Abertura: a logo animada enquanto o app carrega (styles-abertura.css, renderer/abertura.js). Sai no fim do inicio.js -->
+  <div id="abertura" class="abertura" role="status" aria-label="Abrindo o Nebula">
+    <div class="abertura-card"><svg class="app-logo abertura-logo" viewBox="0 0 100 100" aria-hidden="true"><path class="logo-c2" d="M19.5 73C20.18 78.7 22.8 81.33 28.5 82C22.8 82.68 20.18 85.3 19.5 91C18.83 85.3 16.2 82.68 10.5 82C16.2 81.33 18.83 78.7 19.5 73Z"/><path class="logo-c1" d="M35.5 3C36.33 9.96 39.54 13.18 46.5 14C39.54 14.83 36.33 18.04 35.5 25C34.67 18.04 31.46 14.83 24.5 14C31.46 13.18 34.67 9.96 35.5 3Z"/><path class="logo-c3" d="M71.5 67C72.63 76.5 77.01 80.88 86.5 82C77.01 83.13 72.63 87.51 71.5 97C70.38 87.51 66 83.13 56.5 82C66 80.88 70.38 76.5 71.5 67Z"/><g class="logo-dots"><circle class="logo-c2" cx="21.42" cy="70.12" r="1.04"/><circle class="logo-c2" cx="22.41" cy="64.72" r="0.92"/><circle class="logo-c2" cx="23.47" cy="59.34" r="0.81"/><circle class="logo-c12" cx="24.61" cy="53.98" r="0.69"/><circle class="logo-c12" cx="25.81" cy="48.63" r="0.57"/><circle class="logo-c12" cx="27.09" cy="43.3" r="0.65"/><circle class="logo-c1" cx="28.44" cy="37.99" r="0.76"/><circle class="logo-c1" cx="29.86" cy="32.69" r="0.88"/><circle class="logo-c1" cx="31.36" cy="27.41" r="1"/><circle class="logo-c1" cx="41.26" cy="26.79" r="1.03"/><circle class="logo-c1" cx="42.86" cy="30.18" r="0.95"/><circle class="logo-c1" cx="44.49" cy="33.56" r="0.88"/><circle class="logo-c1" cx="46.14" cy="36.92" r="0.81"/><circle class="logo-c1" cx="47.81" cy="40.27" r="0.74"/><circle class="logo-c13" cx="49.52" cy="43.61" r="0.66"/><circle class="logo-c13" cx="51.24" cy="46.93" r="0.59"/><circle class="logo-c13" cx="52.99" cy="50.24" r="0.58"/><circle class="logo-c13" cx="54.77" cy="53.54" r="0.66"/><circle class="logo-c3" cx="56.57" cy="56.82" r="0.73"/><circle class="logo-c3" cx="58.4" cy="60.09" r="0.8"/><circle class="logo-c3" cx="60.25" cy="63.35" r="0.88"/><circle class="logo-c3" cx="62.13" cy="66.59" r="0.95"/><circle class="logo-c3" cx="74.9" cy="64.29" r="1.25"/><circle class="logo-c3" cx="76.28" cy="58.03" r="1.14"/><circle class="logo-c3" cx="77.75" cy="51.79" r="1.02"/><circle class="logo-c3" cx="79.32" cy="45.57" r="0.91"/><circle class="logo-c3" cx="80.98" cy="39.38" r="0.8"/><circle class="logo-c3" cx="82.73" cy="33.21" r="0.69"/><circle class="logo-c3" cx="84.57" cy="27.07" r="0.57"/><circle class="logo-c3" cx="86.5" cy="20.94" r="0.46"/><circle class="logo-c3" cx="88.52" cy="14.85" r="0.35"/></g></svg><p class="abertura-nome">Nebula</p></div>
+    <!-- Só durante a atualização (mostrarAtualizando): etapa, barra e MB -->
+    <div class="abertura-progresso"><p id="aberturaEtapa" class="abertura-etapa" aria-live="polite"></p><div class="abertura-barra"><span></span></div><p id="aberturaDetalhe" class="abertura-detalhe" aria-hidden="true"></p></div>
+  </div>
   <div id="titlebar" class="titlebar"><svg class="app-logo" viewBox="0 0 100 100" aria-hidden="true"><path class="logo-c2" d="M19.5 73C20.18 78.7 22.8 81.33 28.5 82C22.8 82.68 20.18 85.3 19.5 91C18.83 85.3 16.2 82.68 10.5 82C16.2 81.33 18.83 78.7 19.5 73Z"/><path class="logo-c1" d="M35.5 3C36.33 9.96 39.54 13.18 46.5 14C39.54 14.83 36.33 18.04 35.5 25C34.67 18.04 31.46 14.83 24.5 14C31.46 13.18 34.67 9.96 35.5 3Z"/><path class="logo-c3" d="M71.5 67C72.63 76.5 77.01 80.88 86.5 82C77.01 83.13 72.63 87.51 71.5 97C70.38 87.51 66 83.13 56.5 82C66 80.88 70.38 76.5 71.5 67Z"/><g class="logo-dots"><circle class="logo-c2" cx="21.42" cy="70.12" r="1.04"/><circle class="logo-c2" cx="22.41" cy="64.72" r="0.92"/><circle class="logo-c2" cx="23.47" cy="59.34" r="0.81"/><circle class="logo-c12" cx="24.61" cy="53.98" r="0.69"/><circle class="logo-c12" cx="25.81" cy="48.63" r="0.57"/><circle class="logo-c12" cx="27.09" cy="43.3" r="0.65"/><circle class="logo-c1" cx="28.44" cy="37.99" r="0.76"/><circle class="logo-c1" cx="29.86" cy="32.69" r="0.88"/><circle class="logo-c1" cx="31.36" cy="27.41" r="1"/><circle class="logo-c1" cx="41.26" cy="26.79" r="1.03"/><circle class="logo-c1" cx="42.86" cy="30.18" r="0.95"/><circle class="logo-c1" cx="44.49" cy="33.56" r="0.88"/><circle class="logo-c1" cx="46.14" cy="36.92" r="0.81"/><circle class="logo-c1" cx="47.81" cy="40.27" r="0.74"/><circle class="logo-c13" cx="49.52" cy="43.61" r="0.66"/><circle class="logo-c13" cx="51.24" cy="46.93" r="0.59"/><circle class="logo-c13" cx="52.99" cy="50.24" r="0.58"/><circle class="logo-c13" cx="54.77" cy="53.54" r="0.66"/><circle class="logo-c3" cx="56.57" cy="56.82" r="0.73"/><circle class="logo-c3" cx="58.4" cy="60.09" r="0.8"/><circle class="logo-c3" cx="60.25" cy="63.35" r="0.88"/><circle class="logo-c3" cx="62.13" cy="66.59" r="0.95"/><circle class="logo-c3" cx="74.9" cy="64.29" r="1.25"/><circle class="logo-c3" cx="76.28" cy="58.03" r="1.14"/><circle class="logo-c3" cx="77.75" cy="51.79" r="1.02"/><circle class="logo-c3" cx="79.32" cy="45.57" r="0.91"/><circle class="logo-c3" cx="80.98" cy="39.38" r="0.8"/><circle class="logo-c3" cx="82.73" cy="33.21" r="0.69"/><circle class="logo-c3" cx="84.57" cy="27.07" r="0.57"/><circle class="logo-c3" cx="86.5" cy="20.94" r="0.46"/><circle class="logo-c3" cx="88.52" cy="14.85" r="0.35"/></g><g class="logo-dots-p"><circle class="logo-c2" cx="21.42" cy="70.12" r="2.71"/><circle class="logo-c12" cx="24.22" cy="55.76" r="1.89"/><circle class="logo-c12" cx="27.53" cy="41.53" r="1.78"/><circle class="logo-c1" cx="31.36" cy="27.41" r="2.6"/><circle class="logo-c1" cx="41.26" cy="26.79" r="2.67"/><circle class="logo-c1" cx="45.14" cy="34.9" r="2.21"/><circle class="logo-c13" cx="49.17" cy="42.94" r="1.76"/><circle class="logo-c13" cx="53.35" cy="50.9" r="1.56"/><circle class="logo-c3" cx="57.66" cy="58.79" r="2.01"/><circle class="logo-c3" cx="62.13" cy="66.59" r="2.47"/><circle class="logo-c3" cx="74.9" cy="64.29" r="3"/><circle class="logo-c3" cx="78.79" cy="47.64" r="2.28"/><circle class="logo-c3" cx="83.33" cy="31.16" r="1.56"/><circle class="logo-c3" cx="88.52" cy="14.85" r="0.84"/></g></svg><span class="brand-name"><span class="brand-n">N</span>ebula</span></div>
   <!-- Letreiro na lateral, como o que vem pintado na armadura do EVA-01 (tema E.V.A). Some em janela estreita. -->
   <div id="themeDecor" class="theme-decor" aria-hidden="true" hidden>
@@ -273,7 +280,7 @@
       </div>
     </section>
   </aside>
-  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Sair; renderer/musica.js) -->
+  <!-- A música que você está ouvindo: a pílula do canal abre este menu (volume, Pausar ou Continuar, Fila, Sair; renderer/musica.js) -->
   <div class="rail-music-menu" id="navMusicMenu" role="menu" aria-label="Música" hidden></div>
   <!-- Música junto: colar o link do YouTube para pôr (ou trocar) a música de um canal (renderer/musica.js) -->
   <div id="musicPop" class="music-pop" role="dialog" aria-labelledby="musicPopTitle" hidden>
@@ -283,6 +290,44 @@
       <p id="musicPopError" class="music-pop-error" role="status"></p>
       <div class="music-pop-actions"><button id="musicPopCancel" type="button" class="btn small">Cancelar</button><button id="musicPopGo" type="submit" class="btn small primary">Tocar</button></div>
     </form>
+  </div>
+  <!-- A fila de músicas do canal (renderer/musica-fila.js): preso ao botão Fila da tela da música ou à pílula do canal -->
+  <div id="filaPop" class="music-fila-pop" role="dialog" aria-labelledby="filaPopTitulo" hidden>
+    <div class="fila-head"><strong id="filaPopTitulo">Fila</strong><button id="filaPopFechar" type="button" class="btn icon"></button></div>
+    <p id="filaPopTocando" class="fila-tocando"><span class="song-eq" aria-hidden="true"><span></span><span></span><span></span></span><span></span></p>
+    <p id="filaPopSeguir" class="fila-seguir">A seguir</p>
+    <ol id="filaPopLista" class="fila-lista" role="list"></ol>
+    <p id="filaPopVazio" class="fila-vazio">Nada na fila. Quando esta música acabar, o canal fica livre.</p>
+    <div class="fila-rodape">
+      <button id="filaPopProcurar" type="button" class="btn small">Procurar no YouTube</button>
+      <button id="filaPopColar" type="button" class="btn small">Colar link</button>
+      <p id="filaPopAviso" class="fila-aviso"></p>
+    </div>
+    <p id="filaPopStatus" class="fila-status" role="status"></p>
+  </div>
+  <!-- Escolher a música no próprio YouTube: o cabeçalho é daqui; a página do YouTube é uma view do processo principal
+       posta em cima de #ytEscolherArea (renderer/youtube-escolher.js, main/youtube-escolher.js) -->
+  <div id="ytEscolher" class="modal global yt-escolher" hidden>
+    <div class="dialog yt-escolher-dialog" role="dialog" aria-modal="true" aria-labelledby="ytEscolherFrase">
+      <div class="yt-escolher-head">
+        <button id="ytEscolherVoltar" type="button" class="btn icon" disabled></button>
+        <span id="ytEscolherModo" class="yt-escolher-modo">Tocar</span>
+        <p id="ytEscolherFrase" class="yt-escolher-frase" role="status"></p>
+        <form id="ytEscolherLink" class="yt-escolher-link" hidden>
+          <input id="ytEscolherUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Cole o link do YouTube" aria-label="Link do vídeo do YouTube">
+          <button id="ytEscolherIr" type="submit" class="btn small primary">Tocar</button>
+        </form>
+        <button id="ytEscolherColar" type="button" class="btn small">Colar link</button>
+        <button id="ytEscolherFechar" type="button" class="btn icon"></button>
+      </div>
+      <div id="ytEscolherArea" class="yt-escolher-area">
+        <p id="ytEscolherCarregando">Carregando o YouTube…</p>
+        <div id="ytEscolherErro" class="yt-escolher-erro" hidden>
+          <p>Não consegui abrir o YouTube.</p>
+          <div><button id="ytEscolherTentar" type="button" class="btn small primary">Tentar de novo</button> <button id="ytEscolherErroColar" type="button" class="btn small">Colar link</button></div>
+        </div>
+      </div>
+    </div>
   </div>
   <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
@@ -1247,6 +1292,10 @@
               <label class="switch"><input type="checkbox" id="atvMusica" role="switch" aria-labelledby="atvMusicaLabel" aria-describedby="atvMusicaHint"><span class="track" aria-hidden="true"></span></label>
             </div>
             <div class="switch-linha">
+              <span class="switch-linha-texto"><span id="atvTarefaLabel">O que estou fazendo no PC</span><span class="hint" id="atvTarefaHint">Codando, desenhando, editando vídeo… pelo programa da frente; nunca o arquivo nem o projeto</span></span>
+              <label class="switch"><input type="checkbox" id="atvTarefa" role="switch" aria-labelledby="atvTarefaLabel" aria-describedby="atvTarefaHint"><span class="track" aria-hidden="true"></span></label>
+            </div>
+            <div class="switch-linha">
               <span class="switch-linha-texto"><span id="atvHistLabel">Últimos 3 jogos e 3 músicas no perfil</span><span class="hint" id="atvHistHint">Desligar apaga o que está guardado.</span></span>
               <label class="switch"><input type="checkbox" id="atvHist" role="switch" aria-labelledby="atvHistLabel" aria-describedby="atvHistHint"><span class="track" aria-hidden="true"></span></label>
             </div>
@@ -1652,6 +1701,8 @@
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
   <script src="renderer/musica.js"></script>
+  <script src="renderer/musica-fila.js"></script>
+  <script src="renderer/youtube-escolher.js"></script>
   <script src="vendor/mp4-muxer/mp4-muxer.js"></script>
   <script src="renderer/clipe-mp4.js"></script>
   <script src="renderer/clipes.js"></script>
@@ -1684,6 +1735,7 @@
   <script src="renderer/recorte.js"></script>
   <script src="renderer/navegacao.js"></script>
   <script src="renderer/tour.js"></script>
+  <script src="renderer/abertura.js"></script>
   <script src="renderer/inicio.js"></script>
 </body>
 </html>

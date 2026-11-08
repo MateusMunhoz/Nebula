@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard, nativeImage, safeStorage } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, desktopCapturer, session, globalShortcut, shell, clipboard, nativeImage, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -17,6 +17,12 @@ const { keys, setShortcut, setRoomKeys, setPtt, setVoiceCmdKey } = require('./ma
 const comandoVoz = require('./main/comando-voz');
 const { criarIa, buscarYoutube } = require('./main/comando-voz-ia');
 const { previaYoutube } = require('./main/youtube-previa');
+const { criarEscolhedor } = require('./main/youtube-escolher');
+const escolhedorYt = criarEscolhedor({
+  WebContentsView, session, app, janela: () => janelas.main,
+  enviar: (msg) => { const w = janelas.main; if (w && !w.isDestroyed()) w.webContents.send('yt-escolher', msg); },
+  devTools: !app.isPackaged,
+});
 let vozCmd = null; // comando de voz: Whisper baixado só por quem liga (criado quando o app fica pronto)
 const sessoes = require('./main/sessoes');
 const celular = require('./main/celular');
@@ -257,7 +263,7 @@ function createWindow() {
     height: 780,
     minWidth: 820,
     minHeight: 560,
-    backgroundColor: '#22271E',
+    backgroundColor: '#0B0D10', // o fundo do tema Padrão: a janela não pisca antes da abertura
     autoHideMenuBar: true,
     // Barra de título no tema: a página desenha a barra (titlebar em index.html) e o Windows só os botões
     // minimizar, maximizar e fechar, nas cores que a página manda (setTitleBar)
@@ -319,7 +325,10 @@ function createWindow() {
     protectFromCapture(child);
   });
   bandeja.hideOnClose(win);
+  // A página do app recarregou: o escolhedor do YouTube (que é dela) fecha junto
+  win.webContents.on('did-navigate', () => escolhedorYt.fechar());
   win.on('closed', () => {
+    escolhedorYt.fechar();
     for (const p of pips.values()) if (!p.win.isDestroyed()) p.win.close();
     if (janelas.chat && !janelas.chat.isDestroyed()) janelas.chat.close();
   });
@@ -500,7 +509,7 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('razze-2fa-recovery', (_e, c) => razze.twoFactorRecovery(confirmacao(c)));
   ipcMain.handle('razze-reset-password', (_e, email, code, password) => razze.resetPassword(String(email || '').slice(0, 254), String(code || '').slice(0, 20), String(password || '').slice(0, 200)));
   // Atividade no perfil: só lê o que a página pediu (jogo e/ou Spotify) e devolve o nome do jogo e a faixa
-  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, steam: limparIdsSteam(opcoes?.steam) }));
+  ipcMain.handle('atividade-ler', (_e, opcoes) => lerAtividade({ jogos: !!opcoes?.jogos, musica: !!opcoes?.musica, tarefa: !!opcoes?.tarefa, steam: limparIdsSteam(opcoes?.steam) }));
   // Configurações › Atividade: os jogos instalados na Steam, com nome e imagem (lidos dos arquivos da Steam neste PC)
   ipcMain.handle('atividade-steam-jogos', (_e, recarregar) => jogosDaSteam({ recarregar: !!recarregar }));
   // A música mudou (midia.exe): avisa a página na hora, sem esperar a próxima leitura
@@ -565,7 +574,10 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
   ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());
-  ipcMain.handle('github-install', () => github.install(updater));
+  // update-progresso: a barra da atualização (renderer/abertura.js); só bytes, nada do conteúdo
+  ipcMain.handle('github-install', (e) => github.install(updater, (feito, total) => {
+    if (!e.sender.isDestroyed()) e.sender.send('update-progresso', { feito, total });
+  }));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));
   ipcMain.handle('pip-edit', (_e, on) => setPipEdit(on));
   ipcMain.handle('pip-size', (_e, id, key) => setPipSize(id, key));
@@ -605,6 +617,13 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('voz-ia-testar', (_e, opcoes) => vozIa.testar(opcoesIa(opcoes)));
   ipcMain.handle('voz-cmd-youtube', (_e, busca) => buscarYoutube(String(busca || '').slice(0, 100))); // "toca Evidências"
   ipcMain.handle('youtube-previa', (_e, id) => previaYoutube(id)); // link do YouTube no chat: título, canal e capa
+  // Escolher a música no YouTube, dentro do app (main/youtube-escolher.js): a página só manda o retângulo e ações fixas
+  const retangulo = (r) => (r && typeof r === 'object' ? { x: Number(r.x) || 0, y: Number(r.y) || 0, w: Number(r.w) || 0, h: Number(r.h) || 0 } : null);
+  ipcMain.handle('yt-escolher-abrir', (_e, r) => escolhedorYt.abrir(retangulo(r)));
+  ipcMain.handle('yt-escolher-posicao', (_e, r) => escolhedorYt.posicao(retangulo(r)));
+  ipcMain.handle('yt-escolher-acao', (_e, acao) => escolhedorYt.acao(String(acao || '').slice(0, 20)));
+  ipcMain.handle('yt-escolher-focar', () => escolhedorYt.focar());
+  ipcMain.handle('yt-escolher-fechar', () => escolhedorYt.fechar());
   ipcMain.handle('open-link', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\/[^\s]+$/i.test(url)) shell.openExternal(url);
   });

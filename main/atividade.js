@@ -376,26 +376,98 @@ async function capaNaSteam(nome) {
   try { return (await jogosDaSteam()).find((j) => mesmoJogo(j.nome, nome))?.imagem || ''; } catch { return ''; }
 }
 
-// opcoes: { jogos: boolean, musica: boolean, steam: ids marcados }. Só lê o que foi pedido.
+// ---------- O que estou fazendo (docs/spec/tarefa.md) ----------
+// O bin/foco.exe (native/foco.cs) diz o .exe em primeiro plano e há quanto tempo o teclado e o mouse estão parados;
+// roda uma vez por leitura e fecha. Nunca lê o título da janela. Só o que está em PROGRAMAS sai do PC, já como a frase.
+// categoria -> { executável (minúsculas) -> onde }. Quem quiser incluir um programa acrescenta uma linha aqui.
+const CATEGORIAS = {
+  Codando: {
+    'code.exe': 'no VS Code', 'code - insiders.exe': 'no VS Code Insiders', 'cursor.exe': 'no Cursor', 'windsurf.exe': 'no Windsurf',
+    'zed.exe': 'no Zed', 'devenv.exe': 'no Visual Studio', 'idea64.exe': 'no IntelliJ IDEA', 'pycharm64.exe': 'no PyCharm',
+    'webstorm64.exe': 'no WebStorm', 'rider64.exe': 'no Rider', 'clion64.exe': 'no CLion', 'goland64.exe': 'no GoLand',
+    'phpstorm64.exe': 'no PhpStorm', 'studio64.exe': 'no Android Studio', 'sublime_text.exe': 'no Sublime Text',
+    'notepad++.exe': 'no Notepad++', 'claude.exe': 'com Claude',
+  },
+  'Criando jogo': { 'unity.exe': 'no Unity', 'unrealeditor.exe': 'no Unreal Engine', 'ue4editor.exe': 'no Unreal Engine' },
+  Desenhando: {
+    'photoshop.exe': 'no Photoshop', 'illustrator.exe': 'no Illustrator', 'figma.exe': 'no Figma', 'krita.exe': 'no Krita',
+    'clipstudiopaint.exe': 'no Clip Studio Paint', 'inkscape.exe': 'no Inkscape', 'paintdotnet.exe': 'no Paint.NET',
+  },
+  'Editando vídeo': {
+    'adobe premiere pro.exe': 'no Premiere Pro', 'afterfx.exe': 'no After Effects', 'resolve.exe': 'no DaVinci Resolve',
+    'capcut.exe': 'no CapCut', 'shotcut.exe': 'no Shotcut', 'kdenlive.exe': 'no Kdenlive',
+  },
+  'Modelando 3D': { 'blender.exe': 'no Blender', '3dsmax.exe': 'no 3ds Max', 'maya.exe': 'no Maya', 'zbrush.exe': 'no ZBrush' },
+  'Produzindo música': { 'fl64.exe': 'no FL Studio', 'reaper.exe': 'no REAPER', 'studio one.exe': 'no Studio One' },
+  Escrevendo: { 'winword.exe': 'no Word', 'obsidian.exe': 'no Obsidian', 'notion.exe': 'no Notion' },
+};
+// executável -> a frase que aparece ("Codando no VS Code"); sem protótipo, para nome de programa nenhum bater com o do Object
+const PROGRAMAS = Object.assign(Object.create(null), ...Object.entries(CATEGORIAS).flatMap(([cat, lista]) =>
+  Object.entries(lista).map(([exe, onde]) => ({ [exe]: cat + ' ' + onde }))));
+// Terminal: "Codando com Claude" com o Claude Code (claude.exe) aberto, senão "Codando no terminal". Limitação: o app do
+// Claude também é claude.exe, então com ele aberto (até na bandeja) o terminal vira "com Claude"; o Claude Code instalado
+// pelo npm (node.exe) não é visto
+const TERMINAIS = ['windowsterminal.exe', 'cmd.exe', 'powershell.exe', 'pwsh.exe', 'wezterm-gui.exe', 'alacritty.exe'];
+const TAREFA_FOLGA_MS = 5 * 60 * 1000; // sem uso do programa por mais que isso: some, e a próxima vez é sessão nova
+
+// "code.exe\t1234" -> { exe, ociosoMs } (null se a linha não é essa)
+function focoDoAjudante(saida) {
+  const m = /^([^\t\r\n]+)\t(\d+)\s*$/.exec(String(saida || ''));
+  return m ? { exe: m[1].toLowerCase(), ociosoMs: Number(m[2]) } : null;
+}
+
+// estado: { texto, desde, ultimo } guardado entre leituras. foco: { exe, ociosoMs, claudeAberto } ou null
+function tarefaAgora(estado, foco, agora = Date.now()) {
+  const exe = foco?.exe || '';
+  const texto = PROGRAMAS[exe] || (TERMINAIS.includes(exe) ? (foco.claudeAberto ? 'Codando com Claude' : 'Codando no terminal') : '');
+  if (texto && foco.ociosoMs <= TAREFA_FOLGA_MS) {
+    if (!estado.ultimo || agora - estado.ultimo > TAREFA_FOLGA_MS) estado.desde = agora; // sessão nova
+    estado.ultimo = agora - foco.ociosoMs; // o último toque no teclado ou mouse com o programa na frente
+    estado.texto = texto;
+  }
+  if (!estado.ultimo || agora - estado.ultimo > TAREFA_FOLGA_MS) { estado.texto = ''; estado.desde = 0; estado.ultimo = 0; }
+  return { tarefa: estado.texto || '', tarefaDesde: estado.texto ? estado.desde : 0 };
+}
+
+function caminhoFoco() {
+  const local = path.join(__dirname, '..', 'bin', 'foco.exe');
+  if (fs.existsSync(local)) return local;
+  return path.join(process.resourcesPath || '', 'bin', 'foco.exe');
+}
+function lerFoco() {
+  return new Promise((resolve) => {
+    const exe = caminhoFoco();
+    if (!fs.existsSync(exe)) return resolve(null);
+    execFile(exe, [], { windowsHide: true, timeout: 3000, encoding: 'utf8', maxBuffer: 4096 }, (erro, saida) => resolve(erro ? null : focoDoAjudante(saida)));
+  });
+}
+const tarefa = {};
+
+// opcoes: { jogos, musica, tarefa: boolean, steam: ids marcados }. Só lê o que foi pedido.
 async function lerAtividade(opcoes = {}) {
-  const vazio = { jogo: '', jogoImagem: '', musica: null };
+  const vazio = { jogo: '', jogoImagem: '', musica: null, tarefa: '', tarefaDesde: 0 };
   if (process.platform !== 'win32') return vazio;
   if (!opcoes.musica) pararMidia(); // desligou a música: o midia.exe fecha
   const r = { ...vazio };
   const windows = opcoes.musica ? await musicaPeloWindows() : { ok: false };
   const daSteam = opcoes.jogos ? await jogoDaSteamAberto(limparIdsSteam(opcoes.steam)) : null;
   if (daSteam) r.jogo = daSteam.nome;
-  const lista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
+  const foco = opcoes.tarefa ? await lerFoco() : null;
+  const precisaLista = (opcoes.jogos && !daSteam) || (opcoes.musica && !windows.ok) || TERMINAIS.includes(foco?.exe);
+  const lista = precisaLista ? nomesDeProcessos(await rodar('tasklist /fo csv /nh')) : new Set();
+  if (opcoes.tarefa) Object.assign(r, tarefaAgora(tarefa, foco && { ...foco, claudeAberto: lista.has('claude.exe') }));
   if (opcoes.jogos && !daSteam) r.jogo = jogoAberto(lista);
   // A capa da biblioteca da Steam (192x192, nítida no bloco grande do perfil), também para jogo achado pelo .exe que
   // está instalado na Steam (Deadlock fora da lista marcada); sem capa, o ícone do .exe
   if (r.jogo) r.jogoImagem = daSteam?.imagem || await capaNaSteam(r.jogo) || await iconeDoJogo(r.jogo, daSteam ? { pasta: daSteam.pasta } : { exe: exeAberto(lista) });
   if (windows.ok) r.musica = windows.musica;
   else if (opcoes.musica && lista.has('spotify.exe')) r.musica = musicaDoSpotify(await rodar('tasklist /v /fo csv /nh /fi "IMAGENAME eq Spotify.exe"'));
+  if (r.jogo) { r.tarefa = ''; r.tarefaDesde = 0; } // jogo tem prioridade
   return r;
 }
 
 module.exports = {
+  focoDoAjudante, tarefaAgora, PROGRAMAS, TERMINAIS,
   lerAtividade, pararMidia, aoMudarMusica, jogosDaSteam, limparIdsSteam, lerVdf, registroSteam, naoEJogo, mesmoJogo,
   camposCsv, nomesDeProcessos, jogoAberto, musicaDoSpotify, musicaDoMidia, limparCapa, JOGOS,
 };

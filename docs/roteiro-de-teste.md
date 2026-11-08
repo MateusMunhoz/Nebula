@@ -101,6 +101,21 @@ Antes: a RazzeAPI da VPS com o código novo (links de amigo, conta, atividade e,
 9. **Apagar.** Apague a Líder.
    Deve acontecer: ninguém ouve mais A nem quem tinha a palavra de fora, e A volta para a Voz geral.
 
+## Música e fila (dois PCs, os dois na versão nova)
+
+1. **Pôr e enfileirar.** A e B na Voz geral. A clica em **Pôr música**, escolhe um vídeo; depois abre **Fila** na tela da
+   música, **Procurar no YouTube**, e escolhe mais dois. Deve acontecer: o quadro do YouTube fica aberto e diz "Na fila: … (1ª)",
+   "(2ª)"; B vê a mesma fila, com "posta por A".
+2. **Mexer.** B arrasta o segundo para cima, usa **Alt+↓** num item e tira um (**Desfazer** devolve ao lugar). Deve acontecer:
+   A vê a mesma ordem na hora.
+3. **Fim e Próxima.** Leve a música para perto do fim. Deve acontecer: a primeira da fila começa nos dois, sem aviso de
+   "trocou". **Próxima** pula para a seguinte; com a fila vazia, ela fica desligada e o fim libera o canal.
+4. **De fora.** B entra numa subsala. Deve acontecer: B vê a fila sem os botões ("Só quem está em Voz geral mexe na fila"),
+   mas tira o item que ele mesmo pôs.
+5. **Parar.** A clica em **Parar a música**. Deve acontecer: a confirmação diz quantas estão na fila, e música e fila somem.
+6. **Troca de host.** Com fila, o host sai da sala. Deve acontecer: a fila continua na mesma ordem. Com um PC numa versão
+   antiga virando host, a fila some com o aviso.
+
 ## Anotações
 
 | Item | Quem | O que aconteceu |

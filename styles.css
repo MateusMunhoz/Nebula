@@ -2650,7 +2650,70 @@ html[data-tips="off"] .tip { display: none !important; }
 .music-pop .hint { margin: 0; font-size: 12px; }
 .music-pop-error { margin: 0; font-size: 12px; color: var(--warn); }
 .music-pop-error:empty { display: none; }
+/* Escolher a música no YouTube (youtube-escolher.js): o quadro quase do tamanho da janela; a página do YouTube é uma
+   view do processo principal por cima de .yt-escolher-area (o que ficar ali embaixo só aparece sem ela: carregando, erro) */
+.modal.yt-escolher { padding: 8px; }
+@media (min-height: 900px) { .modal.yt-escolher { padding: 16px; } }
+.yt-escolher-dialog { width: min(1280px, 100%); height: 100%; max-height: none; padding: 0; gap: 0; overflow: hidden; }
+.yt-escolher-head { flex: none; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 8px; box-sizing: border-box; border-bottom: 1px solid var(--line); }
+.yt-escolher-head .btn.icon { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; flex: none; }
+.yt-escolher-modo { flex: none; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.yt-escolher-frase { flex: 1; min-width: 0; margin: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yt-escolher-frase.aviso { color: var(--warn); }
+.yt-escolher-link { flex: 2; min-width: 0; display: flex; gap: 8px; } /* colar o link: divide a linha com a frase (os avisos seguem nela) */
+.yt-escolher-link input { flex: 1; min-width: 0; padding: 6px 10px; font: inherit; font-size: 13px; color: var(--text); background: var(--sunken);
+  border: 1px solid var(--field-line); border-radius: 8px; }
+.yt-escolher-link input:focus, .yt-escolher-link input:focus-visible { border-color: var(--accent); outline: none; }
+.yt-escolher-area { flex: 1; min-height: 0; display: grid; place-items: center; background: var(--sunken); color: var(--muted); font-size: 13px; }
+.yt-escolher-erro { display: grid; justify-items: center; gap: 10px; }
+.yt-escolher-erro p { margin: 0; color: var(--text); }
 .music-pop-actions { display: flex; justify-content: flex-end; gap: 6px; }
+/* A fila (musica-fila.js): o botão Fila com o número num selo, e o painel preso a ele (ou à pílula do canal) */
+.music-fila-btn { position: relative; }
+.music-fila-num { position: absolute; top: -3px; right: -4px; min-width: 15px; height: 15px; padding: 0 3px; box-sizing: border-box; border-radius: 8px;
+  background: var(--primary); color: var(--primary-ink); font-size: 10px; font-weight: 600; line-height: 15px; text-align: center; pointer-events: none; }
+.music-fila-num:empty { display: none; }
+.music-fila-pop { position: fixed; z-index: 40; width: 380px; max-width: calc(100vw - 16px); max-height: min(520px, calc(100vh - 16px)); display: flex; flex-direction: column;
+  box-sizing: border-box; padding: 6px 0 10px; background: var(--panel); color: var(--text); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); }
+.music-fila-pop[hidden] { display: none; }
+.fila-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 14px; min-height: 36px; }
+.fila-head strong { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-head .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
+.fila-tocando { flex: none; display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 14px 8px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.fila-tocando > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-tocando.paused .song-eq { color: var(--muted); }
+.fila-tocando.paused .song-eq > span { height: 3px; }
+.fila-seguir { flex: none; margin: 8px 14px 2px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.fila-lista { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0; padding: 0 6px; list-style: none; }
+.fila-item { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; }
+.fila-item:hover, .fila-item:focus-within { background: var(--panel-2); }
+.fila-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fila-item.arrastando { opacity: .5; }
+.fila-item.soltar-cima { border-top-color: var(--accent); }
+.fila-item.soltar-baixo { border-bottom-color: var(--accent); }
+.fila-puxador { flex: none; width: 14px; color: var(--muted); cursor: grab; text-align: center; user-select: none; }
+.fila-num { flex: none; min-width: 16px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.fila-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fila-info strong { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-info span { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-info .fila-voce { color: var(--accent); }
+/* As ações só com o mouse em cima ou o foco no item: parado, o título usa a linha toda */
+.fila-acoes { flex: none; display: none; gap: 2px; }
+.fila-item:hover .fila-acoes, .fila-item:focus-within .fila-acoes { display: flex; }
+.fila-acoes .btn.icon { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; }
+.fila-acoes svg, .fila-head svg, .fila-rodape svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fila-acoes .btn.icon:disabled { opacity: .35; cursor: default; }
+.fila-acoes .fila-tirar:hover:not(:disabled) { color: var(--warn); }
+.fila-tirou { display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 12px; font-size: 12px; color: var(--muted); }
+.fila-vazio { margin: 12px 14px 4px; font-size: 12.5px; color: var(--muted); }
+.fila-vazio[hidden], .fila-seguir[hidden] { display: none; }
+.fila-rodape { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 14px 0; margin-top: 6px; border-top: 1px solid var(--line); }
+.fila-rodape .btn.small { display: inline-flex; align-items: center; gap: 6px; }
+.fila-rodape .btn.small[hidden] { display: none; }
+.fila-rodape svg { width: 13px; height: 13px; }
+.fila-aviso { flex: 1 0 100%; margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.fila-aviso:empty { display: none; }
+.fila-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Configurações › Celular (renderer/celular.js): os dois botões, depois um passo de cada vez (senha, QR, resumo) */
 .phone-panel { display: grid; gap: 12px; }

@@ -40,9 +40,9 @@ before(async () => {
   api = sandbox.window.api;
 });
 
-test('o desktop expõe 155 entradas e a ponte tem as mesmas, sem faltar nem sobrar', () => {
+test('o desktop expõe 162 entradas e a ponte tem as mesmas, sem faltar nem sobrar', () => {
   const preload = chavesDoPreload();
-  assert.equal(preload.length, 155, 'o preload.js mudou: confira se o regex ainda acha todas as chaves');
+  assert.equal(preload.length, 162, 'o preload.js mudou: confira se o regex ainda acha todas as chaves');
   const ponte = Object.keys(api);
   assert.deepEqual(preload.filter((k) => !ponte.includes(k)), [], 'faltam na ponte do iPhone (função nova no desktop?)');
   assert.deepEqual(ponte.filter((k) => !preload.includes(k)), [], 'sobram na ponte');

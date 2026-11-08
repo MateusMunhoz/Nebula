@@ -132,6 +132,7 @@ const ICON = {
   ondasParadas: svg('M4 11v2M8 10v4M12 9v6M16 10v4M20 11v2'),  // as mesmas, baixas e iguais: um canal em que você não está
   spotify: svg('M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM7 9.5c3.3-1 7-.7 10 1M7.6 12.6c2.7-.8 5.6-.5 8 .9M8.2 15.5c2.1-.6 4.3-.4 6 .7'), // o símbolo do Spotify, numa cor só: a música vem dele
   game: svg('M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.4 2l1.3-2h6.6l1.3 2A3 3 0 0 0 22 15l-.7-6.4A4 4 0 0 0 17.3 5z'), // controle: jogando
+  code: svg('M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16'), // < / >: codando
   monitor: svg('M3 4h18v12H3zM8 20h8M12 16v4'),       // tela: transmitindo
   monitorOff: svg('M3 4h18v12H3zM8 20h8M12 16v4M2 2l20 20'), // o monitor cortado: parar de transmitir
   // Monitor do Assistir na lista: a tela (.tela) e o símbolo de dentro (.miolo) são pintados pelo CSS (.watch-btn)
@@ -144,6 +145,9 @@ const ICON = {
   moveTo: svg('M5 12h14M13 6l6 6-6 6'),
   pin: svg('M12 17v5M9 3h6l-1 6 4 4H6l4-4z'),                                         // alfinete: fixar                                            // seta: mudar de canal
   pause: svg('M7 4h4v16H7zM13 4h4v16h-4z'),
+  proxima: svg('M5 4v16l11-8zM17 4h3v16h-3z'),                                       // pular para a próxima da fila (cheio, como o play)
+  fila: svg('M3 5h13v2.5H3zM3 10.5h13V13H3zM3 16h8v2.5H3zM15 14v7l6-3.5z'),             // a fila de músicas (cheio)
+  chevronDown: svg('M6 9l6 6 6-6'),
   swap: svg('M4 7h13l-3-3M20 17H7l3 3'),
   stop: svg('M7 7h10v10H7z'),
   scissors: svg('M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12'), // tesoura: salvar clipe

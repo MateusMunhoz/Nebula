@@ -97,6 +97,7 @@ export const STUBS = {
   restartApp: v(undefined),
   githubCheck: v({ ok: false, error: 'No iPhone, atualize pelo SideStore ou AltStore.' }),
   githubInstall: v({ ok: false, error: NAO_EXISTE }),
+  onUpdateProgresso: ev,
   openGithub: v(undefined),
 
   // Conta Razze e mensagens (Fase 2): por enquanto "sem conta". As leituras devolvem vazio; o resto rejeita com a mensagem
@@ -176,6 +177,14 @@ export const STUBS = {
   dmImagemLer: v(null),
   dmExportar: v([]),
   dmImportar: v(0),
+
+  // Escolhedor do YouTube (janela nativa do Electron): sem ele o renderer cai no balão de colar o link
+  ytEscolherAbrir: v({ ok: false }),
+  ytEscolherPosicao: v(null),
+  ytEscolherAcao: v(null),
+  ytEscolherFocar: v(null),
+  ytEscolherFechar: v(null),
+  onYtEscolher: ev,
 
   // Base que já funciona na Fase 0 sem depender do nativo
   youtubePrevia: v(null), // Fase 1: busca com o fetch nativo (a WebView não pode por causa do CORS)

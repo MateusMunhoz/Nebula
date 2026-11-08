@@ -93,10 +93,10 @@ function memberRow(id, name, sharing) {
     // dica e no perfil
     const icone = document.createElement('span');
     icone.className = 'matv-icon' + (atv.artista ? ' spotify' : ' jogo');
-    icone.innerHTML = atv.artista ? ICON.spotify : ICON.game;
+    icone.innerHTML = atv.artista ? ICON.spotify : atv.jogo ? ICON.game : /^(Codando|Criando)/.test(atv.tarefa) ? ICON.code : ICON.monitor;
     const texto = document.createElement('span');
     texto.className = 'matv-text';
-    texto.textContent = atv.artista || `Jogando ${atv.jogo}`;
+    texto.textContent = atv.artista || (atv.jogo ? `Jogando ${atv.jogo}` : atv.tarefa);
     if (atv.artista) linha.title = (atv.faixa ? `${atv.faixa} — ${atv.artista}` : atv.artista) + (atv.spotify ? ' · Spotify' : '');
     linha.append(icone, texto);
     info.append(linha);
@@ -253,7 +253,7 @@ function renderPalcoGente() {
   if (musica && palcoMusicaAcabou(musica)) {
     if (canControlMusic(musica) && palcoFimEnviado !== `${musica.videoId}:${musica.at}`) {
       palcoFimEnviado = `${musica.videoId}:${musica.at}`;
-      musicCtl(musica, 'stop');
+      musicCtl(musica, ...musicaFim(musica.videoId));
     }
     musica = null;
   }

@@ -913,7 +913,7 @@ function skyCard(ch, sub) {
     const put = button('voice-music sky-card-nomusic', () => {
       if (musicPopFor?.ch === ch) return closeMusicPop();
       if (!mine) voice.setChannel(ch);
-      openMusicPop(ch, put, 'por');
+      escolherMusica(ch, put, 'por'); // o YouTube dentro do app; sem ele, o balão de colar o link
     });
     put.disabled = !canGo;
     put.title = mine ? `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`
@@ -1488,6 +1488,17 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
         sub.innerHTML = ICON.clock;
         sub.append(el('span', '', atvHa(atv.jogoDesde)));
         sub.dataset.desde = String(atv.jogoDesde);
+        txt.append(sub);
+        atvHaRelogio();
+      }
+    }
+    if (atv.tarefa) { // "Codando no VS Code", "Desenhando no Figma" (conta.js; o jogo tem prioridade)
+      const txt = item(/^(Codando|Criando)/.test(atv.tarefa) ? 'code' : 'monitor', 'Fazendo agora', atv.tarefa, 'jogo tarefa');
+      if (atv.tarefaDesde) {
+        const sub = el('span', 'atv-sub atv-ha');
+        sub.innerHTML = ICON.clock;
+        sub.append(el('span', '', atvHa(atv.tarefaDesde)));
+        sub.dataset.desde = String(atv.tarefaDesde);
         txt.append(sub);
         atvHaRelogio();
       }

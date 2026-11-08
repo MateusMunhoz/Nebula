@@ -1,0 +1,55 @@
+:root {
+  --fundo: #0b0d14;
+  --painel: #151a26;
+  --texto: #e8eaf2;
+  --suave: #9aa3b8;
+  --destaque: #f5c542;
+  --borda: #2a3247;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fundo); color: var(--texto); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { min-height: 100vh; padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); max-width: 720px; margin: 0 auto; }
+h1 { font-size: 1.4rem; margin: 24px 0 8px; }
+.dica { color: var(--suave); margin: 0 0 20px; }
+label { display: block; margin-bottom: 14px; color: var(--suave); font-size: .9rem; }
+input {
+  display: block; width: 100%; margin-top: 6px; padding: 12px; font: inherit; font-size: 1.1rem; color: var(--texto);
+  background: var(--painel); border: 1px solid var(--borda); border-radius: 10px;
+}
+#codigo { text-transform: uppercase; letter-spacing: .2em; }
+.opcao { display: flex; align-items: center; color: var(--texto); font-size: 1rem; }
+input[type="checkbox"] { display: inline-block; width: 22px; height: 22px; margin: 0 10px 0 0; accent-color: var(--destaque); }
+.saida-voz { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; } /* a voz dos outros: toca, mas não aparece */
+#vozLista { list-style: none; margin: 0 0 8px; padding: 0; }
+#vozLista li { padding: 6px 0; border-bottom: 1px solid var(--borda); }
+#vozLista .mudo { color: var(--suave); }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+button {
+  padding: 12px 18px; font: inherit; font-weight: 600; color: #15120a; background: var(--destaque);
+  border: 0; border-radius: 10px; cursor: pointer;
+}
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button:active { transform: scale(.97); } /* o toque responde na hora, antes mesmo da rede */
+button.secundario { color: var(--texto); background: var(--painel); border: 1px solid var(--borda); }
+select { width: 100%; margin-top: 6px; padding: 12px; font: inherit; color: var(--texto); background: var(--painel); border: 1px solid var(--borda); border-radius: 10px; }
+#mudo { flex: 1 1 100%; padding: 16px; font-size: 1.05rem; }
+#mudo.secundario { border-style: dashed; color: var(--suave); } /* mudo: apagado e tracejado, bem diferente do ligado */
+.barra label { flex: 1 1 100%; margin: 0; }
+button:disabled { opacity: .6; }
+#form button { width: 100%; }
+#aviso, #estado { min-height: 1.4em; color: var(--suave); }
+#aviso.erro { color: var(--destaque); }
+#telas { display: flex; flex-wrap: wrap; gap: 8px; }
+.tela { flex: 0 1 calc(50% - 4px); min-width: 0; margin: 0; cursor: pointer; }
+.tela.destaque { flex-basis: 100%; order: -1; cursor: default; }
+.tela video { display: block; width: 100%; max-height: 22vh; background: #000; border-radius: 10px; }
+.tela.destaque video { max-height: 70vh; }
+.tela video:not(.ligado) { display: none; }
+.tela figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 4px 0 8px; font-size: .9rem; color: var(--suave); }
+.tela figcaption strong { color: var(--texto); }
+.tela button { padding: 6px 12px; font-size: .9rem; }
+#lista { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+/* Controles sempre à mão, mesmo com várias telas e a lista da conversa ocupando a página */
+.barra { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); background: var(--fundo); border-top: 1px solid var(--borda); }
+#debug { margin: 16px 0 0; font-size: .75rem; color: var(--suave); white-space: pre-wrap; word-break: break-all; }
+[hidden] { display: none !important; }

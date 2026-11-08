@@ -75,7 +75,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
           ws.ping();
         }
       }, 10000);
-      musicTimer = setInterval(() => { if (limparMusicas(musicas, members)) broadcast(musicas.msg()); }, 15000);
+      musicTimer = setInterval(() => { if (limparMusicas(musicas, members)) broadcast(musicas.msg()); }, 5000); // 5 s: a próxima da fila não espera
       resolve({ ok: true });
     });
 
@@ -169,7 +169,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
             id,
             hostId,
             members: [...members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'senha', 'ping'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'senha', 'ping'],
             chat: chat.log,
             subsalas: subsalas.list,
             lider: subsalas.liderMsg(),

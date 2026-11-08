@@ -129,21 +129,49 @@ function cleanTitle(t) { return typeof t === 'string' ? t.replace(/[\x00-\x1f]/g
 function cleanPos(p) { return Math.max(0, Math.min(MUSICA_MAX_POS, Number(p) || 0)); }
 // Duração que o player de quem ouve contou: de 1 s a 24 h, em décimos; fora disso, 0 (não sabe)
 function cleanDur(d) { const n = Number(d); return Number.isFinite(n) && n >= 1 && n <= MUSICA_MAX_POS ? Math.round(n * 10) / 10 : 0; }
+// Fila de cada canal (fila: [{ id, videoId, title, by }]): o que toca depois, na ordem. O id é do servidor, crescente na
+// sala, e separa duas cópias da mesma música. Limites por canal, por pessoa em cada canal e somando a sala (o welcome
+// leva tudo)
+const FILA_MAX = 30, FILA_POR_PESSOA = 10, FILA_SALA_MAX = 100;
+const cleanBy = (by) => (/^\d{1,6}$/.test(String(by || '')) ? String(by) : '');
+const cleanItem = (x) => (/^\d{1,9}$/.test(String(x ?? '')) ? Number(x) : 0);
 function createMusicas(seed, now = Date.now) {
   const map = new Map();
+  let seq = 0, total = 0;
   for (const m of Array.isArray(seed) ? seed : []) {
     const ch = cleanChannel(m?.ch), videoId = cleanVideoId(m?.videoId);
     if (!videoId || map.has(ch)) continue;
-    map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: /^\d{1,6}$/.test(String(m.by || '')) ? String(m.by) : '', playing: m.playing !== false, pos: cleanPos(m.pos), at: now(), dur: cleanDur(m.dur) });
+    // A fila que veio do host anterior: limpa, corta nos limites e ganha números novos (este servidor conta do zero)
+    const fila = [], porPessoa = new Map();
+    for (const f of Array.isArray(m.fila) ? m.fila : []) {
+      const v = cleanVideoId(f?.videoId), by = cleanBy(f?.by);
+      if (!v || fila.length >= FILA_MAX || total >= FILA_SALA_MAX || (porPessoa.get(by) || 0) >= FILA_POR_PESSOA) continue;
+      porPessoa.set(by, (porPessoa.get(by) || 0) + 1);
+      fila.push({ id: ++seq, videoId: v, title: cleanTitle(f.title), by });
+      total++;
+    }
+    map.set(ch, { ch, videoId, title: cleanTitle(m.title), by: cleanBy(m.by), playing: m.playing !== false, pos: cleanPos(m.pos), at: now(), dur: cleanDur(m.dur), fila });
   }
   // sozinha: canal -> desde quando a música está sem ninguém no canal e sem ninguém ouvindo (limparMusicas)
-  return { map, now, sozinha: new Map(), msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
+  return { map, now, sozinha: new Map(), seq: () => ++seq, msg: () => ({ type: 'musicas', list: [...map.values()], now: now() }) };
+}
+const filaDaSala = (musicas) => { let n = 0; for (const m of musicas.map.values()) n += m.fila.length; return n; };
+// A música do canal acabou (ou alguém pulou): a primeira da fila (ou o item pedido) começa do zero, e quem pôs o item
+// vira o "posta por". Fila vazia: a música sai e o canal fica livre
+function avancarMusica(musicas, ch, item = 0) {
+  const m = musicas.map.get(ch);
+  if (!m) return;
+  const i = item ? m.fila.findIndex((f) => f.id === item) : 0;
+  if (i < 0) return;
+  const prox = m.fila.splice(i, 1)[0];
+  if (!prox) { musicas.map.delete(ch); musicas.sozinha.delete(ch); return; }
+  Object.assign(m, { videoId: prox.videoId, title: prox.title, by: prox.by, playing: true, pos: 0, at: musicas.now(), dur: 0 });
 }
 // Tira sozinho as músicas esquecidas: pausada há mais de 4 min, ou 1 min sem ninguém no canal e sem ninguém ouvindo
-// (tocando ou não). Pausada, "at" é o instante da pausa. E a que acabou: tocando e já passou da duração (com uma folga
-// para o player de quem ouve terminar), mesmo sem ninguém ouvindo. Os servidores chamam de tempos em tempos; true se
-// tirou alguma.
-const MUSICA_PAUSADA_MS = 4 * 60 * 1000, MUSICA_SOZINHA_MS = 60 * 1000, MUSICA_FIM_FOLGA_S = 5;
+// (tocando ou não); a fila sai junto. Pausada, "at" é o instante da pausa. E a que acabou: tocando e já passou da
+// duração (com uma folga para o player de quem ouve terminar), mesmo sem ninguém ouvindo: vai para a próxima da fila.
+// Os servidores chamam de tempos em tempos; true se mudou alguma.
+const MUSICA_PAUSADA_MS = 4 * 60 * 1000, MUSICA_SOZINHA_MS = 60 * 1000, MUSICA_FIM_FOLGA_S = 5, MUSICA_FIM_ANTIGO_S = 3;
 function limparMusicas(musicas, members) {
   const t = musicas.now();
   let changed = false;
@@ -153,9 +181,12 @@ function limparMusicas(musicas, members) {
     if (gente) musicas.sozinha.delete(ch);
     else if (!musicas.sozinha.has(ch)) musicas.sozinha.set(ch, t);
     const acabou = m.playing && m.dur > 0 && m.pos + (t - m.at) / 1000 >= m.dur + MUSICA_FIM_FOLGA_S;
-    if (acabou || (!m.playing && t - m.at >= MUSICA_PAUSADA_MS) || (!gente && t - musicas.sozinha.get(ch) >= MUSICA_SOZINHA_MS)) {
+    if ((!m.playing && t - m.at >= MUSICA_PAUSADA_MS) || (!gente && t - musicas.sozinha.get(ch) >= MUSICA_SOZINHA_MS)) {
       musicas.map.delete(ch);
       musicas.sozinha.delete(ch);
+      changed = true;
+    } else if (acabou) {
+      avancarMusica(musicas, ch);
       changed = true;
     }
   }
@@ -304,7 +335,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     const videoId = cleanVideoId(msg.videoId), ch = channelOf(me);
     if (!videoId) return;
     if (musicas.map.has(ch)) return send(me.ws, { type: 'musica-erro', text: `Já tem uma música em ${channelLabel(ch)}. Troque ou pare a que está tocando.` });
-    musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now(), dur: 0 });
+    musicas.map.set(ch, { ch, videoId, title: cleanTitle(msg.title), by: id, playing: true, pos: 0, at: musicas.now(), dur: 0, fila: [] });
     broadcast(musicas.msg());
   } else if (msg.type === 'musica-ouvindo' && musicas) {
     // Abriu ou fechou a tela da música (Ouvir): conta como gente para limparMusicas, mesmo fora do canal
@@ -327,11 +358,39 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
       if (!m.dur && dur && cleanVideoId(msg.videoId) === m.videoId) { m.dur = dur; broadcast(musicas.msg()); }
       return;
     }
-    // Controla quem está no canal da música, ou quem pôs ela
+    // Controla quem está no canal da música, ou quem pôs ela. Um item da fila, quem pôs ele também tira
+    const item = cleanItem(msg.item), i = item ? m.fila.findIndex((f) => f.id === item) : -1;
+    if (msg.action === 'fila-tirar' && i >= 0 && m.fila[i].by === id) { m.fila.splice(i, 1); return broadcast(musicas.msg()); }
     if (channelOf(me) !== ch && m.by !== id) return send(me.ws, { type: 'musica-erro', text: `Só quem está em ${channelLabel(ch)} controla a música de lá.` });
     const t = musicas.now();
-    if (msg.action === 'stop') musicas.map.delete(ch);
-    else if (msg.action === 'play' || msg.action === 'pause' || msg.action === 'seek') {
+    if (msg.action === 'stop') {
+      // O app novo manda "tudo" (para e limpa a fila). O antigo também manda stop quando a música acaba: perto do fim e
+      // com fila, é fim (vai para a próxima); senão, é o "Parar a música" dele
+      const fim = msg.tudo !== true && m.playing && m.dur > 0 && m.pos + (t - m.at) / 1000 >= m.dur - MUSICA_FIM_ANTIGO_S;
+      if (fim && m.fila.length) avancarMusica(musicas, ch);
+      else { musicas.map.delete(ch); musicas.sozinha.delete(ch); }
+    } else if (msg.action === 'pular') {
+      // Só para a música que está no canal agora: dois cliques juntos (ou o fim visto por dois PCs) pulam uma vez
+      if (cleanVideoId(msg.videoId) !== m.videoId || (item && i < 0)) return;
+      avancarMusica(musicas, ch, item);
+    } else if (msg.action === 'fila-por') {
+      const videoId = cleanVideoId(msg.videoId);
+      if (!videoId) return;
+      if (m.fila.length >= FILA_MAX) return send(me.ws, { type: 'musica-erro', text: `A fila de ${channelLabel(ch)} está cheia (${FILA_MAX}).` });
+      if (m.fila.filter((f) => f.by === id).length >= FILA_POR_PESSOA) return send(me.ws, { type: 'musica-erro', text: `Você já pôs ${FILA_POR_PESSOA} músicas na fila de ${channelLabel(ch)}.` });
+      if (filaDaSala(musicas) >= FILA_SALA_MAX) return send(me.ws, { type: 'musica-erro', text: `As filas da sala estão cheias (${FILA_SALA_MAX} músicas).` });
+      // pos: o Desfazer devolve ao mesmo lugar; sem pos (ou inválido), vai para o fim
+      const p = Math.floor(Number(msg.pos));
+      const pos = msg.pos != null && Number.isFinite(p) ? Math.max(0, Math.min(m.fila.length, p)) : m.fila.length;
+      m.fila.splice(pos, 0, { id: musicas.seq(), videoId, title: cleanTitle(msg.title), by: id });
+    } else if (msg.action === 'fila-mover') {
+      const para = Math.floor(Number(msg.para));
+      if (i < 0 || !Number.isFinite(para)) return;
+      m.fila.splice(Math.max(0, Math.min(m.fila.length - 1, para)), 0, m.fila.splice(i, 1)[0]);
+    } else if (msg.action === 'fila-tirar') {
+      if (i < 0) return;
+      m.fila.splice(i, 1);
+    } else if (msg.action === 'play' || msg.action === 'pause' || msg.action === 'seek') {
       m.pos = cleanPos(msg.pos);
       m.at = t;
       if (msg.action !== 'seek') m.playing = msg.action === 'play';
@@ -381,5 +440,5 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
 
 module.exports = {
   MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanRazze, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
-  cleanChannel, createSubsalas, memberGone, cleanVideoId, createMusicas, limparMusicas, newMember, memberInfo, createChat, handleMemberMessage,
+  cleanChannel, createSubsalas, memberGone, cleanVideoId, createMusicas, limparMusicas, FILA_MAX, FILA_POR_PESSOA, FILA_SALA_MAX, newMember, memberInfo, createChat, handleMemberMessage,
 };

@@ -47,14 +47,18 @@ function setMusicas(list, serverNow, quiet = false) {
   for (const e of Array.isArray(list) ? list : []) {
     if (!e || !/^[\w-]{11}$/.test(String(e.videoId))) continue;
     const dur = Number.isFinite(e.dur) && e.dur > 0 && e.dur <= 24 * 3600 ? e.dur : 0; // a duração que a sala guardou (0: não sabe)
-    next.set(String(e.ch || ''), { ...e, ch: String(e.ch || ''), dur });
+    // A fila (musica-fila.js): vem de outro PC, então só o que tem forma de item, e no máximo o limite do servidor
+    const fila = (Array.isArray(e.fila) ? e.fila : []).filter((f) => f && Number.isInteger(f.id) && f.id > 0 && /^[\w-]{11}$/.test(String(f.videoId))).slice(0, 30)
+      .map((f) => ({ id: f.id, videoId: String(f.videoId), title: typeof f.title === 'string' ? f.title.slice(0, 200) : '', by: String(f.by || '') }));
+    next.set(String(e.ch || ''), { ...e, ch: String(e.ch || ''), dur, fila });
   }
   const before = state.musicas;
   state.musicas = next;
   for (const [ch, e] of next) {
     const old = before.get(ch);
+    const daFila = !!old?.fila.some((f) => f.videoId === e.videoId && f.by === e.by); // a próxima da fila começou: não é "trocou"
     // Alguém pôs (ou trocou) a música do seu canal: avisa, para você poder ouvir junto
-    if (!quiet && e.by !== state.myId && ch === myVoiceChannel() && (!old || old.videoId !== e.videoId) && !state.in.has(musicKey(ch))) {
+    if (!quiet && !daFila && e.by !== state.myId && ch === myVoiceChannel() && (!old || old.videoId !== e.videoId) && !state.in.has(musicKey(ch))) {
       toast(`${nameOf(e.by)} ${old ? 'trocou' : 'pôs'} uma música em ${channelName(ch)}. Clique em Ouvir no painel de voz para ouvir junto.`);
     }
     state.in.get(musicKey(ch))?.music.sync(e);
@@ -63,21 +67,33 @@ function setMusicas(list, serverNow, quiet = false) {
   for (const ch of before.keys()) if (!next.has(ch) && state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
   renderVoice();
   renderNavMusic(); // tocando ou pausada: o botão e o menu da barrinha acompanham
+  if (typeof ytEscRender === 'function') ytEscRender(); // o escolhedor do YouTube aberto diz se alguém pôs música (youtube-escolher.js)
+  if (typeof renderFila === 'function') renderFila(); // o painel da fila aberto (musica-fila.js)
 }
-// Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora
+// Para a troca de host: o servidor novo continua com as músicas, do ponto em que estão agora, e com as filas
 function musicSeed() {
   return [...state.musicas.values()].filter((e) => !e.ch || state.subsalas?.some((s) => s.id === e.ch))
-    .map((e) => ({ ch: e.ch, videoId: e.videoId, title: e.title, by: e.by, playing: e.playing, pos: musicPos(e), dur: e.dur || 0 }));
+    .map((e) => ({ ch: e.ch, videoId: e.videoId, title: e.title, by: e.by, playing: e.playing, pos: musicPos(e), dur: e.dur || 0,
+      fila: e.fila.map((f) => ({ videoId: f.videoId, title: f.title, by: f.by })) }));
 }
 function clearMusicas() {
   for (const ch of state.musicas.keys()) if (state.in.has(musicKey(ch))) stopWatching(musicKey(ch), false);
   state.musicas = new Map();
   musica.wantOpen = null;
   closeMusicPop();
+  if (typeof fecharFila === 'function') fecharFila(false);
+  if (typeof fecharEscolhedor === 'function') fecharEscolhedor(false);
 }
 // Ao entrar (ou o servidor da sala trocar), conta de novo que você está ouvindo
 function resendListening() { const l = listenedMusic(); if (l) send({ type: 'musica-ouvindo', ch: l.ch, on: true }); }
 function musicCtl(e, action, extra = {}) { send({ type: 'musica-ctl', ch: e.ch, action, ...extra }); }
+// A música acabou: com fila no servidor, "pular" (anda uma vez, mesmo que vários PCs vejam o fim); senão, tirar
+const musicaFim = (videoId) => (state.filaOn ? ['pular', { videoId }] : ['stop']);
+// "A seguir: Pais e Filhos (+2)", ou '' sem fila
+function aSeguir(e) {
+  if (!state.filaOn || !e?.fila.length) return '';
+  return `A seguir: ${musicTitle(e.fila[0])}${e.fila.length > 1 ? ` (+${e.fila.length - 1})` : ''}`;
+}
 
 // ---------- A tela de música no palco ----------
 function listenMusic(ch) {
@@ -192,7 +208,17 @@ function createMusicTile(ch, entry) {
   stopAll.type = 'button';
   stopAll.className = 'btn small danger';
   stopAll.textContent = 'Parar a música';
-  controls.append(playBtn, time, seek, liveChip, swap, stopAll);
+  // A fila (musica-fila.js): Próxima colada ao tocar e Fila com o número; ícones, para não sumir em tela estreita
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'btn icon';
+  const filaBtn = document.createElement('button');
+  filaBtn.type = 'button';
+  filaBtn.className = 'btn icon music-fila-btn';
+  filaBtn.setAttribute('aria-haspopup', 'dialog');
+  const filaNum = document.createElement('span');
+  filaNum.className = 'music-fila-num';
+  controls.append(playBtn, nextBtn, time, seek, liveChip, filaBtn, swap, stopAll);
   const pipNote = document.createElement('div'); // à vista enquanto o player está na janela flutuante
   pipNote.className = 'tile-pip-note';
   pipNote.hidden = true;
@@ -318,8 +344,17 @@ function createMusicTile(ch, entry) {
       overlay.textContent = [101, 150, 153].includes(mu.error)
         ? 'Este vídeo não pode tocar aqui: quem publicou não deixa tocar fora do YouTube. Troque por outro.'
         : 'O YouTube não conseguiu tocar este vídeo. Troque por outro.';
-      // Quem pôs fica sabendo na hora (os outros veem o aviso no quadro)
-      if (mu.entry?.by === state.myId) toast('Este vídeo não pode tocar fora do YouTube. Troque por outro.', 'error');
+      // Com fila, quem controla pula sozinho depois de 3 s (o pular vale uma vez, mesmo de vários PCs)
+      const video0 = mu.videoId, comFila = state.filaOn && mu.entry?.fila.length > 0;
+      if (comFila && canControlMusic(mu.entry)) {
+        setTimeout(() => {
+          const e = state.musicas.get(ch);
+          if (mu.error && mu.videoId === video0 && e?.videoId === video0 && canControlMusic(e)) {
+            musicCtl(e, 'pular', { videoId: video0 });
+            toast(`${mu.title || musicTitle(e)} não pode tocar fora do YouTube. Fui para a próxima.`);
+          }
+        }, 3000);
+      } else if (mu.entry?.by === state.myId) toast('Este vídeo não pode tocar fora do YouTube. Troque por outro.', 'error'); // quem pôs fica sabendo na hora (os outros veem o aviso no quadro)
     } else if (d.event === 'onApiChange') {
       applyCaptions(); // o player carregou um módulo (as legendas vêm por aqui): vale a sua escolha
     } else if (d.event === 'onStateChange') {
@@ -353,12 +388,13 @@ function createMusicTile(ch, entry) {
         render();
       }
     }
-    // Acabou: quem pôs para a música (ou, se essa pessoa saiu, quem controla, um pouco depois)
+    // Acabou: quem pôs passa para a próxima da fila, ou tira a música (ou, se essa pessoa saiu, quem controla, um pouco
+    // depois). Servidor sem fila: stop, como antes
     if (mu.state === 0 && !mu.live && !mu.endTimer && canControlMusic(mu.entry)) {
       const video0 = mu.videoId;
       mu.endTimer = setTimeout(() => {
         mu.endTimer = null;
-        if (mu.state === 0 && mu.videoId === video0 && state.musicas.get(ch)?.videoId === video0) musicCtl(mu.entry, 'stop');
+        if (mu.state === 0 && mu.videoId === video0 && state.musicas.get(ch)?.videoId === video0) musicCtl(mu.entry, ...musicaFim(video0));
       }, mu.entry.by === state.myId || !state.members.has(mu.entry.by) ? 1500 : 6000);
     }
   }
@@ -387,10 +423,14 @@ function createMusicTile(ch, entry) {
   };
   seek.oninput = () => { mu.seeking = true; time.textContent = `${clock(Number(seek.value))} / ${clock(mu.duration)}`; };
   seek.onchange = () => { mu.seeking = false; if (canControlMusic(mu.entry)) musicCtl(mu.entry, 'seek', { pos: Number(seek.value) }); };
-  swap.onclick = () => openMusicPop(ch, swap, 'trocar');
+  swap.onclick = () => escolherMusica(ch, swap, 'trocar'); // o YouTube dentro do app (youtube-escolher.js)
+  nextBtn.onclick = () => { const e = mu.entry; if (canControlMusic(e) && e.fila.length) musicCtl(e, 'pular', { videoId: e.videoId }); };
+  filaBtn.onclick = () => toggleFila(ch, filaBtn);
   stopAll.onclick = async () => {
-    if (!(await appConfirm(`Parar a música de ${channelName(ch)} para todo mundo?`, { title: 'Parar a música', ok: 'Parar', danger: true }))) return;
-    musicCtl(mu.entry, 'stop');
+    const n = state.filaOn ? mu.entry.fila.length : 0;
+    const texto = n ? `Parar a música de ${channelName(ch)} e limpar a fila (${n}) para todo mundo?` : `Parar a música de ${channelName(ch)} para todo mundo?`;
+    if (!(await appConfirm(texto, { title: 'Parar a música', ok: 'Parar', danger: true }))) return;
+    musicCtl(mu.entry, 'stop', { tudo: true });
   };
 
   function render() {
@@ -404,6 +444,15 @@ function createMusicTile(ch, entry) {
     const why = can ? '' : ` (só quem está em ${channelName(ch)} controla)`;
     setIcon(playBtn, e.playing ? 'pause' : 'play', (e.playing ? 'Pausar para todos' : 'Tocar para todos') + why);
     for (const b of [playBtn, seek, swap, stopAll]) b.disabled = !can;
+    // Fila: só com servidor que sabe; Próxima desligada sem fila (a dica diz qual vem)
+    const fila = state.filaOn ? e.fila : [];
+    nextBtn.hidden = filaBtn.hidden = !state.filaOn;
+    nextBtn.disabled = !can || !fila.length;
+    setIcon(nextBtn, 'proxima', !fila.length ? 'A fila está vazia' : `Próxima: ${musicTitle(fila[0])} (para todos)${why}`);
+    setIcon(filaBtn, 'fila', fila.length ? `Fila (${fila.length})` : 'Fila');
+    filaNum.textContent = fila.length ? String(fila.length) : '';
+    filaBtn.append(filaNum);
+    filaBtn.setAttribute('aria-expanded', String(filaAberta(ch)));
     time.hidden = seek.hidden = mu.live;
     liveChip.hidden = !mu.live;
     swap.title = can ? 'Trocar por outra música (para todos)' : why.trim();
@@ -455,7 +504,7 @@ function createMusicTile(ch, entry) {
   return tile;
 }
 // A voz mudou (você entrou, saiu ou trocou de canal): quem controla cada música pode ter mudado
-function renderMusicTiles() { for (const link of state.in.values()) link.music?.render(); }
+function renderMusicTiles() { for (const link of state.in.values()) link.music?.render(); if (typeof ytEscRender === 'function') ytEscRender(); }
 // As mensagens dos players chegam todas aqui: cada uma vai para o quadro do iframe que mandou
 // (e de cada janela flutuante com um player, renderer/pip.js)
 function onYoutubeMessage(e) {
@@ -506,7 +555,8 @@ function musicHeadButton(ch) {
     b.className = 'voice-channel-song' + (e.playing ? '' : ' paused');
     b.setAttribute('aria-pressed', String(open));
     b.title = `${titulo}\n${e.playing ? 'Tocando' : 'Pausada'} · posta por ${e.by === state.myId ? 'você' : nameOf(e.by)}\n`
-      + (open ? 'Volume, pausar ou sair da música' : 'Ouvir junto, no mesmo ponto');
+      + (aSeguir(e) ? `${aSeguir(e)}\n` : '')
+      + (open ? 'Volume, pausar, fila ou sair da música' : 'Ouvir junto, no mesmo ponto');
     // Ouvindo: a pílula abre o menu da música (o que antes ficava no botão em cima do cartão "Você")
     if (open) {
       const aberto = navMusicFrom?.ch === ch && !$('navMusicMenu').hidden;
@@ -536,7 +586,7 @@ function musicHeadButton(ch) {
   b.innerHTML = ICON.music;
   b.append('Pôr música');
   b.title = `Pôr uma música do YouTube em ${channelName(ch)} (todos ouvem junto)`;
-  b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : openMusicPop(ch, b, 'por'); };
+  b.onclick = (ev) => { ev.stopPropagation(); musicPopFor?.ch === ch ? closeMusicPop() : escolherMusica(ch, b, 'por'); };
   return b;
 }
 
@@ -565,6 +615,7 @@ function buildNavMusic() {
   const where = document.createElement('span');
   where.textContent = `${m.e.playing ? 'Tocando' : 'Pausada'} em ${channelName(m.ch)}`;
   head.append(title, where);
+  if (aSeguir(m.e)) { const seguir = document.createElement('span'); seguir.textContent = aSeguir(m.e); head.append(seguir); }
   const item = (icon, text, tip, onclick, disabled = false) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -597,6 +648,9 @@ function buildNavMusic() {
   menu.replaceChildren(head, volRow,
     item(m.e.playing ? 'pause' : 'play', m.e.playing ? 'Pausar' : 'Continuar', why || (m.e.playing ? 'Pausar para todos' : 'Continuar para todos'),
       () => { const e = state.musicas.get(m.ch); if (e && canControlMusic(e)) musicCtl(e, e.playing ? 'pause' : 'play', { pos: musicPos(e) }); }, !can),
+    // A fila pelo menu: o caminho quando a tela da música está pequena (sem os controles)
+    ...(state.filaOn ? [item('fila', m.e.fila.length ? `Fila (${m.e.fila.length})` : 'Fila', 'Ver e mexer no que toca depois',
+      () => { const anchor = navMusicFrom?.anchor; closeNavMusic(); abrirFila(m.ch, anchor); })] : []),
     item('leave', 'Sair da música', 'Para de ouvir (a música continua para os outros)', () => { closeNavMusic(); stopWatching(m.key, false); }));
 }
 // Embaixo da pílula (ou em cima, sem espaço), alinhado à direita dela; "fixed" conta a partir do body, como o musicPop
@@ -628,8 +682,8 @@ let musicPopFor = null; // { ch, mode: 'por' | 'trocar' }
 function openMusicPop(ch, anchor, mode) {
   const pop = $('musicPop');
   musicPopFor = { ch, mode };
-  $('musicPopTitle').textContent = mode === 'trocar' ? `Trocar a música de ${channelName(ch)}` : `Música em ${channelName(ch)}`;
-  $('musicPopGo').textContent = mode === 'trocar' ? 'Trocar' : 'Tocar';
+  $('musicPopTitle').textContent = mode === 'trocar' ? `Trocar a música de ${channelName(ch)}` : mode === 'fila' ? `Pôr na fila de ${channelName(ch)}` : `Música em ${channelName(ch)}`;
+  $('musicPopGo').textContent = mode === 'trocar' ? 'Trocar' : mode === 'fila' ? 'Pôr na fila' : 'Tocar';
   $('musicUrl').value = '';
   $('musicPopError').textContent = '';
   pop.hidden = false;
@@ -656,6 +710,15 @@ function submitMusicPop() {
   if (mode === 'trocar') {
     const e = state.musicas.get(ch);
     if (e) musicCtl(e, 'trocar', { videoId });
+  } else if (mode === 'fila') {
+    // A fila pede o título antes (musica-fila.js): o balão fecha quando der certo, ou mostra o motivo
+    porNaFila(ch, videoId).then((r) => {
+      if (musicPopFor?.ch !== ch || musicPopFor.mode !== 'fila') return;
+      if (r.erro) { $('musicPopError').textContent = r.erro; return; }
+      toast(r.texto);
+      closeMusicPop();
+    });
+    return;
   } else {
     musica.wantOpen = ch;
     send({ type: 'musica-set', videoId });

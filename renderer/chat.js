@@ -231,7 +231,9 @@ async function previaYoutubeNoChat(body, text) {
     if (!state.myId) return;
     if (!state.musicaOn) return toast('Esta sala não tem música: quem criou precisa atualizar o app.', 'error');
     const ch = myVoiceChannel(), playing = state.musicas.get(ch);
-    if (playing) musicCtl(playing, 'trocar', { videoId: id });
+    // Com música tocando: vai para a fila (musica-fila.js); sem fila na sala, troca, como antes
+    if (playing && state.filaOn) porNaFila(ch, id).then((r) => toast(r.erro || r.texto, r.erro ? 'error' : undefined));
+    else if (playing) musicCtl(playing, 'trocar', { videoId: id });
     else { musica.wantOpen = ch; send({ type: 'musica-set', videoId: id }); }
   };
   info.append(tocar);
@@ -849,7 +851,8 @@ function renderChatCommand() {
       box.replaceChildren(frame);
       chatCmd.videoId = videoId;
     } else box.querySelector('.chat-cmd-line')?.remove();
-    box.append(line(playing ? `Enter para trocar a música de ${channelName(ch)}` : `Enter para tocar em ${channelName(ch)}`, 'go'));
+    box.append(line(playing && state.filaOn ? `Enter para pôr na fila de ${channelName(ch)} (${playing.fila.length + 1}ª)`
+      : playing ? `Enter para trocar a música de ${channelName(ch)}` : `Enter para tocar em ${channelName(ch)}`, 'go'));
     chatCmd.ready = { ch, videoId, playing };
   }
   box.hidden = false;
@@ -865,7 +868,8 @@ function completeChatCommand(o) {
 function runChatCommand() {
   const r = chatCmd.ready;
   if (!r) return;
-  if (r.playing) musicCtl(r.playing, 'trocar', { videoId: r.videoId });
+  if (r.playing && state.filaOn) porNaFila(r.ch, r.videoId).then((x) => toast(x.erro || x.texto, x.erro ? 'error' : undefined));
+  else if (r.playing) musicCtl(r.playing, 'trocar', { videoId: r.videoId });
   else { musica.wantOpen = r.ch; send({ type: 'musica-set', videoId: r.videoId }); }
   $('chatInput').value = '';
   fitChatInput();

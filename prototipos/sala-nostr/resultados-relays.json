@@ -1,0 +1,96 @@
+{
+  "quando": "2026-10-28T18:58:02.349Z",
+  "kind": 25871,
+  "resultados": [
+    {
+      "url": "wss://relay.damus.io",
+      "conecta": 329,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 316,
+      "grande": "ok (16476 B)",
+      "rajada": "2/10 aceitos, 2/10 entregues — rate-limited: you are noting too much; banned: too many rate-limit violations, try again later",
+      "avisos": []
+    },
+    {
+      "url": "wss://nos.lol",
+      "conecta": 617,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 271,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://relay.primal.net",
+      "conecta": 1415,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 249,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://relay.snort.social",
+      "conecta": 901,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 216,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://nostr.mom",
+      "conecta": 776,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 294,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://relay.nostr.net",
+      "conecta": 1294,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 566,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 4/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://offchain.pub",
+      "conecta": 1075,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 308,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://nostr.oxtr.dev",
+      "conecta": 1569,
+      "aceita": true,
+      "motivo": "",
+      "idaVolta": 304,
+      "grande": "ok (16476 B)",
+      "rajada": "10/10 aceitos, 10/10 entregues",
+      "avisos": []
+    },
+    {
+      "url": "wss://relay.nostr.band",
+      "conecta": null,
+      "aceita": false,
+      "motivo": "não conectou: falha ao conectar",
+      "idaVolta": null,
+      "grande": "",
+      "rajada": "",
+      "avisos": []
+    }
+  ]
+}

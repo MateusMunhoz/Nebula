@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer } = require('../signaling');
-const { createMusicas, cleanVideoId, limparMusicas, handleMemberMessage } = require('../sala-protocolo');
+const { createMusicas, cleanVideoId, limparMusicas, handleMemberMessage, FILA_MAX, FILA_POR_PESSOA, FILA_SALA_MAX } = require('../sala-protocolo');
 
 async function freePort() {
   const probe = net.createServer();
@@ -39,7 +39,7 @@ test('vídeo do YouTube: só ids de 11 caracteres; a semente (troca de host) lim
   assert.equal(cleanVideoId('<script>abc'), '');
   let t = 1000;
   const m = createMusicas([{ ch: '', videoId: VID, pos: 42, playing: false, by: '3', title: 'x\u0001y', dur: 212.34 }, { ch: '', videoId: VID2 }, { ch: '2', videoId: 'ruim' }], () => t);
-  assert.deepEqual([...m.map.values()], [{ ch: '', videoId: VID, title: 'x y', by: '3', playing: false, pos: 42, at: 1000, dur: 212.3 }]);
+  assert.deepEqual([...m.map.values()], [{ ch: '', videoId: VID, title: 'x y', by: '3', playing: false, pos: 42, at: 1000, dur: 212.3, fila: [] }]);
   t = 2000;
   assert.deepEqual(m.msg(), { type: 'musicas', list: [...m.map.values()], now: 2000 });
 });
@@ -62,7 +62,7 @@ test('uma música por canal: vai para o canal de quem pôs; quem é de fora não
   a.send({ type: 'musica-set', videoId: VID });
   const set = await b.wait(m => m.type === 'musicas');
   assert.equal(set.list.length, 1);
-  assert.deepEqual({ ...set.list[0], at: 0 }, { ch: '1', videoId: VID, title: '', by: a.welcome.id, playing: true, pos: 0, at: 0, dur: 0 });
+  assert.deepEqual({ ...set.list[0], at: 0 }, { ch: '1', videoId: VID, title: '', by: a.welcome.id, playing: true, pos: 0, at: 0, dur: 0, fila: [] });
   // Outra música no mesmo canal: recusada, com o motivo
   a.send({ type: 'musica-set', videoId: VID2 });
   assert.match((await a.wait(m => m.type === 'musica-erro')).text, /Já tem uma música em Subsala_1/);
@@ -179,4 +179,174 @@ test('música que acabou sai sozinha (com gente no canal e ninguém ouvindo); se
   assert.equal(limparMusicas(s, members), false);
   t += 1000;
   assert.equal(limparMusicas(s, members), true);
+});
+
+// Fila: '1' está no canal da música (Voz geral), '2' está na Subsala 2 (de fora), '3' também está na Voz geral
+function salaComFila(seed = [{ ch: '', videoId: VID, by: '1', dur: 200 }]) {
+  const sala = { t: 0, erros: [], avisos: 0 };
+  sala.musicas = createMusicas(seed, () => sala.t);
+  sala.members = new Map([
+    ['1', { ws: { id: '1', readyState: 1 }, voiceSession: 's', voiceChannel: '' }],
+    ['2', { ws: { id: '2', readyState: 1 }, voiceSession: 's', voiceChannel: '2' }],
+    ['3', { ws: { id: '3', readyState: 1 }, voiceSession: 's', voiceChannel: '' }],
+  ]);
+  for (const x of sala.members.values()) x.ws.send = (raw) => sala.erros.push([x.ws.id, JSON.parse(raw).text]);
+  sala.msg = (id, m) => handleMemberMessage({ members: sala.members, broadcast() { sala.avisos++; }, chat: null, subsalas: null, musicas: sala.musicas }, id, sala.members.get(id), { type: 'musica-ctl', ch: '', ...m });
+  sala.m = () => sala.musicas.map.get('');
+  sala.fila = () => sala.m()?.fila.map((f) => f.videoId) ?? null;
+  return sala;
+}
+const VIDS = Array.from({ length: 40 }, (_, i) => `video${String(i).padStart(6, '0')}`);
+
+test('fila: pôr no fim ou numa posição, mover, tirar; quem é de fora só vê e tira o que pôs', () => {
+  const s = salaComFila();
+  s.msg('1', { action: 'fila-por', videoId: VIDS[0], title: ' Pais\u0007e Filhos ' });
+  s.msg('3', { action: 'fila-por', videoId: VIDS[1] });
+  s.msg('1', { action: 'fila-por', videoId: VIDS[2], pos: 0 });
+  s.msg('1', { action: 'fila-por', videoId: VIDS[3], pos: 99 });
+  assert.deepEqual(s.fila(), [VIDS[2], VIDS[0], VIDS[1], VIDS[3]]);
+  assert.equal(s.m().fila[1].title, 'Pais e Filhos');
+  assert.equal(s.m().fila[1].by, '1');
+  assert.equal(new Set(s.m().fila.map((f) => f.id)).size, 4, 'cada item tem número próprio');
+  // Repetida pode (cada cópia é um item)
+  s.msg('1', { action: 'fila-por', videoId: VIDS[0] });
+  assert.equal(s.fila().filter((v) => v === VIDS[0]).length, 2);
+  const id = (v) => s.m().fila.find((f) => f.videoId === v).id;
+  s.msg('3', { action: 'fila-mover', item: id(VIDS[3]), para: 0 });
+  assert.deepEqual(s.fila().slice(0, 2), [VIDS[3], VIDS[2]]);
+  s.msg('3', { action: 'fila-mover', item: id(VIDS[3]), para: 99 });
+  assert.equal(s.fila().at(-1), VIDS[3]);
+  s.msg('1', { action: 'fila-tirar', item: s.m().fila.at(-2).id });
+  assert.deepEqual(s.fila(), [VIDS[2], VIDS[0], VIDS[1], VIDS[3]]);
+  // De fora: não põe, não move, não tira o dos outros (com o motivo)
+  const antes = JSON.stringify(s.fila());
+  s.msg('2', { action: 'fila-por', videoId: VIDS[9] });
+  s.msg('2', { action: 'fila-mover', item: id(VIDS[3]), para: 0 });
+  s.msg('2', { action: 'fila-tirar', item: id(VIDS[3]) });
+  assert.equal(JSON.stringify(s.fila()), antes);
+  assert.equal(s.erros.filter(([q]) => q === '2').length, 3);
+  // Quem pôs um item tira o seu mesmo de fora do canal
+  s.members.get('3').voiceChannel = '2';
+  s.msg('3', { action: 'fila-tirar', item: id(VIDS[1]) });
+  assert.deepEqual(s.fila(), [VIDS[2], VIDS[0], VIDS[3]]);
+  // Lixo: ignorado sem resposta
+  const erros = s.erros.length, avisos = s.avisos;
+  for (const m of [{ action: 'fila-por', videoId: 'ruim' }, { action: 'fila-mover', item: 'x', para: 0 }, { action: 'fila-mover', item: id(VIDS[3]), para: 'abc' },
+    { action: 'fila-tirar', item: 999 }, { action: 'fila-tirar', item: -1 }, { action: 'fila-tirar', item: '1e3' }, { action: 'fila-por', videoId: VIDS[5], ch: '9' }]) s.msg('1', m);
+  assert.equal(s.avisos, avisos);
+  assert.equal(s.erros.length, erros);
+});
+
+test('fila: limites por canal, por pessoa e da sala, com aviso só para quem pediu', () => {
+  const s = salaComFila([{ ch: '', videoId: VID, by: '1' }, { ch: '2', videoId: VID2, by: '2' }]);
+  for (let i = 0; i < FILA_POR_PESSOA + 1; i++) s.msg('1', { action: 'fila-por', videoId: VIDS[i] });
+  assert.equal(s.fila().length, FILA_POR_PESSOA);
+  assert.match(s.erros.at(-1)[1], /Você já pôs 10/);
+  assert.equal(s.erros.at(-1)[0], '1');
+  // Outras pessoas enchem o canal até o limite
+  for (const id of ['4', '5']) s.members.set(id, { ws: { id, readyState: 1, send: (raw) => s.erros.push([id, JSON.parse(raw).text]) }, voiceSession: 's', voiceChannel: '' });
+  for (const id of ['3', '4', '5']) for (let i = 0; i < FILA_POR_PESSOA; i++) s.msg(id, { action: 'fila-por', videoId: VIDS[i] });
+  assert.equal(s.fila().length, FILA_MAX);
+  assert.match(s.erros.at(-1)[1], /cheia \(30\)/);
+  // A sala soma os canais
+  const sala = createMusicas([{ ch: '4', videoId: VID, fila: Array.from({ length: 30 }, (_, i) => ({ videoId: VIDS[i], by: String(i % 3 + 10) })) },
+    { ch: '1', videoId: VID, fila: Array.from({ length: 30 }, (_, i) => ({ videoId: VIDS[i], by: String(i % 3 + 10) })) },
+    { ch: '2', videoId: VID, fila: Array.from({ length: 30 }, (_, i) => ({ videoId: VIDS[i], by: String(i % 3 + 10) })) },
+    { ch: '', videoId: VID, fila: Array.from({ length: 30 }, (_, i) => ({ videoId: VIDS[i], by: String(i % 3 + 10) })) }]); // a Voz geral, por último, fica com 10
+  assert.equal([...sala.map.values()].reduce((n, m) => n + m.fila.length, 0), FILA_SALA_MAX);
+  const s2 = salaComFila();
+  s2.musicas = sala;
+  s2.msg('1', { action: 'fila-por', videoId: VIDS[0] });
+  assert.match(s2.erros.at(-1)[1], /filas da sala estão cheias/);
+});
+
+test('fila: pular só a música de agora (uma vez), tocar agora, fim avança, fila vazia libera o canal', () => {
+  const s = salaComFila();
+  for (const v of VIDS.slice(0, 3)) s.msg('3', { action: 'fila-por', videoId: v, title: v });
+  s.t = 50000;
+  // Dois PCs pedem para pular a mesma música: anda uma vez só
+  s.msg('1', { action: 'pular', videoId: VID });
+  s.msg('3', { action: 'pular', videoId: VID });
+  assert.equal(s.m().videoId, VIDS[0]);
+  assert.deepEqual({ by: s.m().by, title: s.m().title, pos: s.m().pos, at: s.m().at, playing: s.m().playing, dur: s.m().dur }, { by: '3', title: VIDS[0], pos: 0, at: 50000, playing: true, dur: 0 });
+  assert.deepEqual(s.fila(), [VIDS[1], VIDS[2]]);
+  // Tocar agora: o item sai da fila e toca no lugar
+  s.msg('1', { action: 'pular', videoId: VIDS[0], item: s.m().fila[1].id });
+  assert.equal(s.m().videoId, VIDS[2]);
+  assert.deepEqual(s.fila(), [VIDS[1]]);
+  s.msg('1', { action: 'pular', videoId: VIDS[2], item: 999 });
+  assert.equal(s.m().videoId, VIDS[2], 'item que não existe: nada');
+  // De fora não pula
+  s.msg('2', { action: 'pular', videoId: VIDS[2] });
+  assert.equal(s.m().videoId, VIDS[2]);
+  // Acabou (duração conhecida): limparMusicas passa para a próxima
+  s.msg('1', { action: 'duracao', dur: 100, videoId: VIDS[2] });
+  s.t += 105000;
+  assert.equal(limparMusicas(s.musicas, s.members), true);
+  assert.equal(s.m().videoId, VIDS[1]);
+  assert.deepEqual(s.fila(), []);
+  // Fila vazia: o fim tira a música
+  s.msg('1', { action: 'pular', videoId: VIDS[1] });
+  assert.equal(s.m(), undefined);
+});
+
+test('fila: stop com tudo limpa; stop de app antigo perto do fim avança, longe para; trocar mantém a fila', () => {
+  const s = salaComFila();
+  for (const v of VIDS.slice(0, 2)) s.msg('1', { action: 'fila-por', videoId: v });
+  s.msg('1', { action: 'trocar', videoId: VID2 });
+  assert.equal(s.m().videoId, VID2);
+  assert.equal(s.fila().length, 2);
+  // App antigo: stop longe do fim (sem duração) é parar tudo
+  const longe = salaComFila();
+  longe.msg('1', { action: 'fila-por', videoId: VIDS[0] });
+  longe.t = 10000;
+  longe.msg('1', { action: 'stop' });
+  assert.equal(longe.m(), undefined);
+  // App antigo: stop a 2 s do fim, com fila, é o fim
+  const perto = salaComFila();
+  perto.msg('1', { action: 'fila-por', videoId: VIDS[0] });
+  perto.t = 198000;
+  perto.msg('3', { action: 'stop' });
+  assert.equal(perto.m().videoId, VIDS[0]);
+  // App novo: tudo para e limpa, mesmo perto do fim
+  perto.msg('1', { action: 'fila-por', videoId: VIDS[1] });
+  perto.msg('1', { action: 'duracao', dur: 10, videoId: VIDS[0] });
+  perto.t += 9000;
+  perto.msg('1', { action: 'stop', tudo: true });
+  assert.equal(perto.m(), undefined);
+});
+
+test('fila na troca de host: limpa, corta nos limites, renumera; pausada esquecida leva a fila junto', () => {
+  const fila = [{ videoId: VIDS[0], title: 'a\u0000b', by: '4', id: 77 }, { videoId: 'ruim', by: '4' }, { videoId: VIDS[1], by: 'x' },
+    ...Array.from({ length: 12 }, (_, i) => ({ videoId: VIDS[i + 2], by: '5' })), ...Array.from({ length: 40 }, (_, i) => ({ videoId: VIDS[i % 40], by: String(20 + i) }))];
+  const m = createMusicas([{ ch: '', videoId: VID, by: '1', fila }, { ch: '', videoId: VID2, fila }, { ch: '2', videoId: VID2, fila: 'lixo' }]);
+  const f = m.map.get('').fila;
+  assert.equal(f.length, FILA_MAX);
+  assert.deepEqual(f[0], { id: 1, videoId: VIDS[0], title: 'a b', by: '4' });
+  assert.equal(f[1].by, '');
+  assert.equal(f.filter((x) => x.by === '5').length, FILA_POR_PESSOA);
+  assert.deepEqual(f.map((x) => x.id), Array.from({ length: FILA_MAX }, (_, i) => i + 1));
+  assert.deepEqual(m.map.get('2').fila, []);
+  // O próximo item continua a contagem
+  const s = salaComFila([{ ch: '', videoId: VID, by: '1', fila: [{ videoId: VIDS[0], by: '1' }] }]);
+  s.msg('1', { action: 'fila-por', videoId: VIDS[1] });
+  assert.deepEqual(s.m().fila.map((x) => x.id), [1, 2]);
+  // Pausada há 4 min: sai com a fila
+  s.msg('1', { action: 'pause', pos: 3 });
+  s.t += 4 * 60000;
+  assert.equal(limparMusicas(s.musicas, s.members), true);
+  assert.equal(s.m(), undefined);
+});
+
+test('fila: os dois servidores anunciam', async t => {
+  const port = await freePort();
+  assert.equal((await startServer(port)).ok, true);
+  t.after(stopServer);
+  const a = await client(port); t.after(() => a.ws.terminate());
+  assert.ok(a.welcome.features.includes('fila'));
+  a.send({ type: 'musica-set', videoId: VID });
+  await a.wait(m => m.type === 'musicas' && m.list.length === 1);
+  a.send({ type: 'musica-ctl', ch: '', action: 'fila-por', videoId: VID2, title: 'Depois' });
+  const r = await a.wait(m => m.type === 'musicas' && m.list[0]?.fila.length === 1);
+  assert.deepEqual(r.list[0].fila, [{ id: 1, videoId: VID2, title: 'Depois', by: a.welcome.id }]);
 });

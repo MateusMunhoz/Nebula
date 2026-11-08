@@ -21,7 +21,8 @@ paths:
   Semântica: amarelo = você/ao vivo, verde = falando, laranja = cuidado. Sem vermelho.
 - Sem animação contínua: o app roda junto com jogos. Só transições curtas em resposta a uma ação.
   Exceção aprovada: o vinil e as barrinhas do "Ouvindo agora" no perfil (`atvVinil`, `ceu-voz.js`), só com o perfil
-  aberto, só `transform`, parados no modo gamer e com "reduzir movimento". Não abra outras sem pedir.
+  aberto, só `transform`, parados no modo gamer e com "reduzir movimento"; a abertura (logo animada enquanto o app carrega, `styles-abertura.css`,
+  `renderer/abertura.js`) e o mesmo card durante a atualização (`mostrarAtualizando`), parada com "reduzir movimento". Não abra outras sem pedir.
 - Preferência nova: validar em `normalize()` (`renderer/preferencias-modelo.js`) e cobrir em `tests/preferencias.test.js`.
 - A página só fala com o processo principal por `window.api` (`preload.js`). Precisa de algo novo do main? Veja a regra
   de `main.js`/`preload.js` e apresente o plano antes.
@@ -64,6 +65,6 @@ paths:
 - A logo (três estrelas ligadas por pontilhados, cores fixas `--logo-1/2/3`) existe em três lugares que andam
   juntos: o SVG `.app-logo` no `index.html` (barra de título e Início), `LOGO_STARS`/`LOGO_DOTS` em
   `renderer/icone-app.js` (ícone da janela e o `.ico` via `npm run icone`) e `--st-logo` em `styles-estelar.css`
-  (palco vazio). Mudou o desenho? Mude os três e rode `npm run icone` (o `.icns` do Mac não é gerado por ele).
+  (palco vazio), mais a cópia da abertura (`#abertura` no `index.html`, sem os pontos grandes). Mudou o desenho? Mude os três e rode `npm run icone` (o `.icns` do Mac não é gerado por ele).
 - O fundo do tema Padrão é um céu parado: estrelas em `--st-sky` (máscara SVG na cor do texto) e nebulosas nas cores
   da logo, em `styles-estelar.css`. O antigo céu de exemplo da tela inicial (`renderHomeSky`) saiu.

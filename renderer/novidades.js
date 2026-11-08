@@ -3,6 +3,58 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.14",
+    "date": "2026-11-07",
+    "items": [
+      "test(mobile): ponte do iPhone com o escolhedor do YouTube e versão 1.20.12",
+      "fix(abertura): deixar o fundo inert com o card de atualização à vista"
+    ]
+  },
+  {
+    "version": "1.20.13",
+    "date": "2026-11-07",
+    "items": [
+      "build(nativos): versionar bin/foco.exe",
+      "build(nativos): foco.exe em C# compilado pelo csc do Windows",
+      "feat(atividade): generalizar Codando para o que estou fazendo no PC",
+      "feat(atividade): mostrar \"Codando no <editor>\" no perfil",
+      "feat(atualizacao): card da abertura com etapa e barra de progresso"
+    ]
+  },
+  {
+    "version": "1.20.12",
+    "date": "2026-11-07",
+    "items": [
+      "feat(abertura): logo animada enquanto o app carrega",
+      "feat(ver): lista de saída de som, botão de mudo e entrada mais fácil",
+      "fix(ver): som da tela, escolha alto-falante/auricular e voz que retoma"
+    ]
+  },
+  {
+    "version": "1.20.11",
+    "date": "2026-11-03",
+    "items": [
+      "Música: fila por canal; Próxima, painel da fila, pôr na fila pelo YouTube, chat e colar link"
+    ]
+  },
+  {
+    "version": "1.20.10",
+    "date": "2026-11-02",
+    "items": [
+      "commit",
+      "Teste de configurações: servidor sem configuração aparece em cinza no mapa",
+      "feat(ver): botão de saída de som e retomada da tela cheia no iPhone",
+      "feat(ver): link de convite com o código da sala (/ver#ABC234)",
+      "feat(ver): várias telas ao mesmo tempo na página do navegador",
+      "docs: resultado do teste no iPhone e pendências do convidado web",
+      "docs: convidado pelo navegador (spec, README do servidor, guia, roadmap)",
+      "feat(servidor): convidado pelo navegador com voz (role 'convidado' e voz.js)",
+      "docs: assistir pelo navegador (spec v1, README do servidor, roadmap)",
+      "feat(servidor): assistir pelo navegador do celular (espectador e página /ver)",
+      "Sala pelo Nostr: spec e protótipo da fase 0"
+    ]
+  },
+  {
     "version": "1.20.9",
     "date": "2026-10-27",
     "items": [
@@ -48,53 +100,6 @@ const NOVIDADES = [
     "items": [
       "Tempo da call: aparece também com você sozinho no canal",
       "Ajustes na interface: barra da chamada, painéis, transmitir e Início"
-    ]
-  },
-  {
-    "version": "1.20.2",
-    "date": "2026-10-19",
-    "items": [
-      "Docs: roadmap conferido com o código, guia e spec de assistir pelo navegador",
-      "O X da janela minimiza; esconder na bandeja vira opção",
-      "Tempo da call ao lado de cada canal de voz",
-      "Login Google: conta desativada responde account_disabled"
-    ]
-  },
-  {
-    "version": "1.20.1",
-    "date": "2026-10-17",
-    "items": [
-      "Ajustes na voz, mensagens e membros"
-    ]
-  },
-  {
-    "version": "1.20.0",
-    "date": "2026-10-12",
-    "items": [
-      "Apoio com Pix e spec do plano premium"
-    ]
-  },
-  {
-    "version": "1.19.4",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: docs da fase 3 (oferta na primeira entrada e Configurações › Ajuda)"
-    ]
-  },
-  {
-    "version": "1.19.3",
-    "date": "2026-10-12",
-    "items": [
-      "Passo a passo: roteiros da lista de amigos e do convite (fase 2)",
-      "Passo a passo guiado no Início (fase 1)",
-      "Rede: só a Internet por padrão; Radmin, rede local e Razze em \"Outras redes\"",
-      "Perfil › Conta: Trocar de conta",
-      "Perfil: partes Perfil e Conta na barra da esquerda, como em Configurações",
-      "butao sair da conta",
-      "Create protecoes-por-padrao.md",
-      "Identificador: pede para escolher o nome a quem ficou com o gerado",
-      "App instalado: DevTools desligadas em todas as janelas",
-      "Conta: identificador nome#1234, e-mail confirmado e verificação em dois fatores"
     ]
   }
 ];

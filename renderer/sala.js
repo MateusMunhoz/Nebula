@@ -295,6 +295,7 @@ function enterRoom(welcome, owner, host, port, cloud = null) {
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.liderOn = (welcome.features || []).includes('lider'); // o servidor conhece o Modo Líder
   state.musicaOn = (welcome.features || []).includes('musica');
+  state.filaOn = state.musicaOn && (welcome.features || []).includes('fila'); // e a fila de cada canal (musica-fila.js)
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   state.order = [...welcome.members.map((m) => m.id), welcome.id];
   lembrarDaSala();
@@ -359,6 +360,7 @@ function leaveRoom(reason, kind = 'info', endRoom = false) {
   state.subsalas = null;
   state.subsalaMove = false;
   state.musicaOn = false;
+  state.filaOn = false;
   RTC_CONFIG.iceServers = [];
   state.order = [];
   state.rewatch.clear();
@@ -509,6 +511,10 @@ async function rejoin(host, timeoutMs) {
   state.subsalaMove = (welcome.features || []).includes('subsala-move');
   state.liderOn = (welcome.features || []).includes('lider');
   state.musicaOn = (welcome.features || []).includes('musica');
+  // Quem virou host está numa versão sem fila: a fila que havia se perdeu (avisa uma vez)
+  const tinhaFila = state.filaOn && [...state.musicas.values()].some((e) => e.fila.length);
+  state.filaOn = state.musicaOn && (welcome.features || []).includes('fila');
+  if (tinhaFila && !state.filaOn) toast('A fila de músicas se perdeu: quem virou host está numa versão antiga do Nebula.');
   state.senhaOn = (welcome.features || []).includes('senha'); // o servidor sabe mudar a senha da sala
   setSubsalas((welcome.features || []).includes('subsalas') ? welcome.subsalas : null);
   setLider(welcome.lider, true);

@@ -1,0 +1,100 @@
+/* Abertura: a logo animada enquanto o app carrega (docs/spec/abertura.md, renderer/abertura.js).
+   Animação contínua aprovada pelo dono só aqui. Tudo em transform/opacity; parada com "reduzir movimento". */
+
+/* ---------- Abertura: card com a logo; as estrelas do N acendem e um rastro corre pelos pontos ---------- */
+.abertura {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, color-mix(in srgb, var(--logo-2) 10%, var(--bg)), var(--bg) 70%);
+}
+.abertura[hidden] { display: none; }
+.abertura-card {
+  position: relative; width: 168px; height: 168px; border-radius: 40px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--text) 4%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--bg) 80%, transparent), 0 0 80px color-mix(in srgb, var(--logo-3) 10%, transparent);
+}
+/* anel que gira em volta do card, nas três cores da logo (gira o ângulo do gradiente, não a caixa) */
+@property --ab-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.abertura-card::before {
+  content: ""; position: absolute; inset: -2px; border-radius: inherit; padding: 2px;
+  background: conic-gradient(from var(--ab-ang), transparent 0 55%, var(--logo-2) 70%, var(--logo-1) 82%, var(--logo-3) 94%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: ab-gira 2.4s linear infinite;
+}
+.abertura-logo { width: 104px; height: 104px; overflow: visible; }
+.abertura-logo path, .abertura-logo circle { transform-box: fill-box; transform-origin: center; }
+.abertura-logo .logo-dots circle { opacity: .16; animation: ab-rastro 2.4s ease-out infinite; animation-delay: calc(var(--i) * 45ms); }
+.abertura-logo > path { opacity: .35; animation: ab-estrela 2.4s ease-out infinite; }
+.abertura-logo > path:nth-of-type(1) { animation-delay: 0ms; }    /* estrela de baixo, à esquerda: começa o N */
+.abertura-logo > path:nth-of-type(2) { animation-delay: 405ms; }  /* a do alto: o rastro chegou nela */
+.abertura-logo > path:nth-of-type(3) { animation-delay: 990ms; }  /* a grande, embaixo à direita */
+.abertura-nome {
+  position: absolute; top: calc(100% + 22px); left: 50%; translate: -50% 0; margin: 0; white-space: nowrap;
+  font: 600 13px/1 var(--font-display, sans-serif); letter-spacing: .32em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+.abertura.sai { animation: ab-sai .6s cubic-bezier(.5, 0, .2, 1) forwards; pointer-events: none; }
+.abertura.sai .abertura-card { animation: ab-card-sai .6s cubic-bezier(.5, 0, .2, 1) forwards; }
+
+/* ordem dos pontos no caminho do N (a mesma do SVG) */
+.abertura-logo .logo-dots circle:nth-child(1) { --i: 0; }   .abertura-logo .logo-dots circle:nth-child(2) { --i: 1; }
+.abertura-logo .logo-dots circle:nth-child(3) { --i: 2; }   .abertura-logo .logo-dots circle:nth-child(4) { --i: 3; }
+.abertura-logo .logo-dots circle:nth-child(5) { --i: 4; }   .abertura-logo .logo-dots circle:nth-child(6) { --i: 5; }
+.abertura-logo .logo-dots circle:nth-child(7) { --i: 6; }   .abertura-logo .logo-dots circle:nth-child(8) { --i: 7; }
+.abertura-logo .logo-dots circle:nth-child(9) { --i: 8; }   .abertura-logo .logo-dots circle:nth-child(10) { --i: 10; }
+.abertura-logo .logo-dots circle:nth-child(11) { --i: 11; } .abertura-logo .logo-dots circle:nth-child(12) { --i: 12; }
+.abertura-logo .logo-dots circle:nth-child(13) { --i: 13; } .abertura-logo .logo-dots circle:nth-child(14) { --i: 14; }
+.abertura-logo .logo-dots circle:nth-child(15) { --i: 15; } .abertura-logo .logo-dots circle:nth-child(16) { --i: 16; }
+.abertura-logo .logo-dots circle:nth-child(17) { --i: 17; } .abertura-logo .logo-dots circle:nth-child(18) { --i: 18; }
+.abertura-logo .logo-dots circle:nth-child(19) { --i: 19; } .abertura-logo .logo-dots circle:nth-child(20) { --i: 20; }
+.abertura-logo .logo-dots circle:nth-child(21) { --i: 21; } .abertura-logo .logo-dots circle:nth-child(22) { --i: 22; }
+.abertura-logo .logo-dots circle:nth-child(23) { --i: 24; } .abertura-logo .logo-dots circle:nth-child(24) { --i: 25; }
+.abertura-logo .logo-dots circle:nth-child(25) { --i: 26; } .abertura-logo .logo-dots circle:nth-child(26) { --i: 27; }
+.abertura-logo .logo-dots circle:nth-child(27) { --i: 28; } .abertura-logo .logo-dots circle:nth-child(28) { --i: 29; }
+.abertura-logo .logo-dots circle:nth-child(29) { --i: 30; } .abertura-logo .logo-dots circle:nth-child(30) { --i: 31; }
+.abertura-logo .logo-dots circle:nth-child(31) { --i: 32; }
+
+@keyframes ab-gira { to { --ab-ang: 360deg; } }
+@keyframes ab-rastro {
+  0% { opacity: .16; scale: 1; }
+  5% { opacity: 1; scale: 2.4; }
+  28% { opacity: .55; scale: 1.1; }
+  100% { opacity: .16; scale: 1; }
+}
+@keyframes ab-estrela {
+  0% { opacity: .35; scale: .7; rotate: 0deg; }
+  7% { opacity: 1; scale: 1.3; rotate: 45deg; }
+  30% { opacity: .95; scale: 1; rotate: 90deg; }
+  100% { opacity: .45; scale: .85; rotate: 90deg; }
+}
+/* ---------- Atualizando (docs/spec/atualizacao-com-abertura.md): o mesmo card + etapa, barra e MB ---------- */
+.abertura-progresso { display: none; }
+.abertura.atualizando .abertura-nome { display: none; }
+/* abaixo do card, fora do grid: a logo não sai do lugar quando a atualização pega o card da abertura */
+.abertura.atualizando .abertura-progresso {
+  position: absolute; top: calc(50% + 84px + 24px); left: 50%; translate: -50% 0;
+  display: grid; justify-items: center; gap: 10px; width: min(300px, calc(100vw - 32px));
+}
+.abertura-etapa { margin: 0; text-wrap: balance; font: 600 13px/1.3 var(--font-display, sans-serif); color: color-mix(in srgb, var(--text) 80%, transparent); text-align: center; }
+.abertura-detalhe { margin: 0; min-height: 1em; font: 500 11px/1 var(--font-display, sans-serif); font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 45%, transparent); }
+.abertura-barra { position: relative; width: 100%; height: 4px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.abertura-barra > span {
+  position: absolute; inset: 0; border-radius: inherit; transform-origin: left center;
+  background: linear-gradient(90deg, var(--logo-2), var(--logo-1), var(--logo-3));
+  transform: scaleX(var(--p, 0)); transition: transform .2s ease-out;
+}
+/* sem tamanho conhecido: um pedaço da barra corre de um lado ao outro */
+.abertura.indefinido .abertura-barra > span { transform: scaleX(.35); animation: ab-corre 1.2s ease-in-out infinite; }
+@keyframes ab-corre { from { transform: translateX(-40%) scaleX(.35); } to { transform: translateX(110%) scaleX(.35); } }
+
+@keyframes ab-sai { to { opacity: 0; } }
+@keyframes ab-card-sai { to { scale: 1.6; opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .abertura-card::before, .abertura-logo .logo-dots circle, .abertura-logo > path { animation: none !important; }
+  .abertura-logo .logo-dots circle, .abertura-logo > path { opacity: 1; }
+  /* a barra continua mostrando o progresso; sem tamanho, fica cheia e esmaecida (um trecho parado pareceria "35%") */
+  .abertura.indefinido .abertura-barra > span { animation: none; transform: none; opacity: .35; }
+}
+:root[data-gamer="on"] .abertura.indefinido .abertura-barra > span { transform: none; opacity: .35; }
