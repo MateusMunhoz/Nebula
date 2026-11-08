@@ -174,12 +174,18 @@ function createMusicTile(ch, entry) {
   // O player (visível, como pede o YouTube) e, embaixo dele, os controles que valem para todos
   const body = document.createElement('div');
   body.className = 'tile-body music-body';
-  const iframe = document.createElement('iframe');
-  iframe.className = 'music-frame';
-  iframe.allow = 'autoplay; encrypted-media';
-  iframe.title = 'Player do YouTube';
-  // Isolado: o player roda os scripts dele, mas não navega a janela do app nem abre janelas
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+  // O player é criado de novo quando muda de janela (ida e volta da janela flutuante): mover o mesmo iframe
+  // de volta de uma janela fechada deixa ele preto
+  const novoPlayer = (doc) => {
+    const f = doc.createElement('iframe');
+    f.className = 'music-frame';
+    f.allow = 'autoplay; encrypted-media';
+    f.title = 'Player do YouTube';
+    // Isolado: o player roda os scripts dele, mas não navega a janela do app nem abre janelas
+    f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+    return f;
+  };
+  let iframe = novoPlayer(document);
   const overlay = document.createElement('div');
   overlay.className = 'tile-overlay music-overlay';
   overlay.textContent = 'Carregando o YouTube…';
@@ -413,7 +419,17 @@ function createMusicTile(ch, entry) {
   };
   mu.render = () => render();
   mu.iframe = iframe;
-  mu.recarregar = () => { if (mu.videoId) loadVideo(mu.videoId, musicPos(mu.entry)); };
+  // Janela flutuante (renderer/pip.js): destino é onde pôr o player lá; null volta para o quadro. Carrega no ponto da sala
+  mu.moverPlayer = (destino) => {
+    const novo = novoPlayer(destino ? destino.ownerDocument : document);
+    if (destino) {
+      Object.assign(novo.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', border: '0' });
+      destino.prepend(novo);
+    } else ambient.after(novo);
+    iframe.remove();
+    iframe = mu.iframe = novo;
+    if (mu.videoId) loadVideo(mu.videoId, musicPos(mu.entry));
+  };
 
   // ---------- Controles que valem para todos ----------
   playBtn.onclick = () => {
