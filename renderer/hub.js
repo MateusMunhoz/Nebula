@@ -97,6 +97,13 @@ function updateFriendsPresence(live) {
   if (mudou && typeof razzeUser !== 'undefined' && razzeUser) {
     setFriendsData({ ...friendsData, friends: friendsData.friends.filter((f) => byId.has(f.id)) });
     void refreshRazzeLists().catch(() => {}); // quem entrou na lista e os pedidos
+  } else if (!live.error && live.friendRequests && typeof razzeUser !== 'undefined' && razzeUser) {
+    // Pedido de amizade novo (ou cancelado) chega na batida, sem reabrir o app
+    const ids = (l) => (Array.isArray(l) ? l : []).map((p) => p?.id).join(',');
+    const { incoming, outgoing } = live.friendRequests;
+    if (ids(incoming) !== ids(friendsData.incoming) || ids(outgoing) !== ids(friendsData.outgoing)) {
+      setFriendsData({ ...friendsData, incoming: Array.isArray(incoming) ? incoming : [], outgoing: Array.isArray(outgoing) ? outgoing : [] });
+    }
   }
   let salaMudou = false;
   for (const f of friendsData.friends) {

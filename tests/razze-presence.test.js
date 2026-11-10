@@ -27,7 +27,7 @@ test('presença publica salas e amigos, limpa anúncios e reage à revogação s
   failure = new Error('Servidor indisponível'); await presence.tick();
   assert.match(presence.snapshot().error, /indisponível/); assert.equal(authenticated, true);
   failure = null; callback(); await presence.tick(); assert.equal(presence.snapshot().error, '');
-  failure = Object.assign(new Error('Sessão revogada'), { status: 401 }); await presence.tick();
+  failure = Object.assign(new Error('Sessão revogada'), { status: 401, code: 'unauthorized' }); await presence.tick();
   assert.equal(authenticated, false); assert.ok(disconnected > 0);
   assert.equal(presence.snapshot().authenticated, false);
   await presence.stop();
@@ -85,5 +85,29 @@ test('sala do modo Internet e em que sala estou vão na batida; as salas dos ami
   internetRoom = null; salaAtual = null; await presence.tick();
   assert.equal('internetRoom' in sent.at(-1), false);
   assert.equal('salaAtual' in sent.at(-1), false);
+  await presence.stop();
+});
+
+test('presença: só sessão recusada desloga, login novo no meio da batida não cai, e traz os pedidos de amizade', async () => {
+  let geracao = 1, saiu = 0, falha = null, pedidos = { incoming: [{ id: 'p1' }], outgoing: [] };
+  const emitidos = [];
+  const api = {
+    listDevices: async () => ({ peers: [] }),
+    heartbeat: async () => { if (falha) { const f = falha; if (f.trocarSessao) geracao++; throw f; } },
+    listFriends: async () => ({ friends: [] }), listNetworks: async () => ({ networks: [] }), listRooms: async () => ({ rooms: [] }),
+    friendRequests: async () => pedidos, offline: async () => {},
+  };
+  const service = { state: () => ({ authenticated: true }), sessao: () => geracao, api: () => api, logout: async () => { saiu++; },
+    wireguard: { identity: () => ({ deviceId: 'd' }), status: async () => ({ connected: false }), disconnectAll: async () => {} } };
+  const presence = createPresence({ service, getRoom: () => null, publish: (v) => emitidos.push(v), setInterval: () => ({ unref() {} }), clearInterval: () => {} });
+  presence.start(); await presence.tick();
+  assert.deepEqual(emitidos.at(-1).friendRequests, pedidos);
+  falha = Object.assign(new Error('A senha está incorreta.'), { status: 401, code: 'invalid_credentials' }); await presence.tick();
+  falha = Object.assign(new Error('Forbidden'), { status: 403, code: 'request_failed' }); await presence.tick();
+  assert.equal(saiu, 0, '401/403 que não é sessão recusada não desloga');
+  falha = Object.assign(new Error('Sessão inválida'), { status: 401, code: 'unauthorized', trocarSessao: true }); await presence.tick();
+  assert.equal(saiu, 0, 'entrou de novo durante a batida: a sessão nova fica');
+  falha = Object.assign(new Error('Sessão inválida'), { status: 401, code: 'unauthorized' }); await presence.tick();
+  assert.equal(saiu, 1);
   await presence.stop();
 });

@@ -11,6 +11,12 @@ const { loginComGoogle } = require('./google-login');
 // TELA_RAZZE_API troca o padrão; vazia, o app começa sem servidor (os testes de ponta a ponta usam assim).
 const API_PADRAO = process.env.TELA_RAZZE_API ?? 'https://srv2015370.hstgr.cloud';
 
+// O servidor recusou a sessão (vencida, apagada, conta desativada). Outros 401/403 (senha errada numa ação, proxy,
+// Wi-Fi de hotel sem corpo JSON) não deslogam
+function sessaoRecusada(error) {
+  return (error?.status === 401 && error.code === 'unauthorized') || ['account_disabled', 'account_pending'].includes(error?.code);
+}
+
 function createRazzeService(options = {}) {
   const electronApp = options.app || app;
   const storage = options.safeStorage || safeStorage;
@@ -20,11 +26,26 @@ function createRazzeService(options = {}) {
   let accessToken = '';
   let sealedToken = '';
   let client = null;
+  let geracao = 0; // muda a cada login ou saída: a presença só desloga se a sessão ainda é a mesma do começo da batida
 
+  // Sem token aberto, o guardado fica como está: se o cofre do sistema (Keychain, DPAPI) falhou ao abrir, ele volta
+  // quando o cofre abrir. Quem quer apagar (sair, sessão inválida, outro servidor) zera sealedToken antes.
+  // Grava num arquivo ao lado e troca, para o app fechando no meio não deixar o JSON pela metade
   function persist() {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    sealedToken = accessToken && storage.isEncryptionAvailable() ? storage.encryptString(accessToken).toString('base64') : '';
-    fs.writeFileSync(file, JSON.stringify({ baseUrl, secret: sealedToken }), { mode: 0o600 });
+    if (accessToken) sealedToken = storage.isEncryptionAvailable() ? storage.encryptString(accessToken).toString('base64') : '';
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ baseUrl, secret: sealedToken }), { mode: 0o600 });
+    try { fs.renameSync(tmp, file); }
+    catch { // destino preso (antivírus, indexador): grava direto, como antes
+      fs.writeFileSync(file, JSON.stringify({ baseUrl, secret: sealedToken }), { mode: 0o600 });
+      try { fs.rmSync(tmp, { force: true }); } catch {}
+    }
+  }
+  function esquecerSessao() {
+    accessToken = '';
+    sealedToken = '';
+    geracao++;
   }
 
   function load() {
@@ -37,9 +58,14 @@ function createRazzeService(options = {}) {
     recreateClient();
   }
 
+  let avisouCofre = false;
   function unlockSession() {
     if (accessToken || !sealedToken || !storage.isEncryptionAvailable()) return;
-    try { accessToken = storage.decryptString(Buffer.from(sealedToken, 'base64')); } catch { accessToken = ''; }
+    try { accessToken = storage.decryptString(Buffer.from(sealedToken, 'base64')); }
+    catch (error) {
+      accessToken = '';
+      if (!avisouCofre) { avisouCofre = true; console.warn('[razze] não deu para abrir a sessão guardada:', error?.message || error); }
+    }
   }
 
   function recreateClient() {
@@ -62,8 +88,7 @@ function createRazzeService(options = {}) {
 
   function configure(url) {
     const next = new RazzeApiClient(url);
-    if (baseUrl !== next.baseUrl) accessToken = '';
-    if (!accessToken) sealedToken = '';
+    if (baseUrl !== next.baseUrl) esquecerSessao();
     baseUrl = next.baseUrl;
     recreateClient();
     persist();
@@ -78,6 +103,7 @@ function createRazzeService(options = {}) {
   }
   function entrou(result) {
     accessToken = result.accessToken;
+    geracao++;
     pendente.desafio = '';
     recreateClient();
     persist();
@@ -192,7 +218,7 @@ function createRazzeService(options = {}) {
 
   async function logout() {
     try { if (client && accessToken) await client.logout(); } finally {
-      accessToken = '';
+      esquecerSessao();
       Object.assign(pendente, { desafio: '', emailCadastro: '', ticketGoogle: '', ticketMover: '' });
       recreateClient();
       persist();
@@ -203,9 +229,8 @@ function createRazzeService(options = {}) {
   async function me() {
     try { return await requireClient().me(); }
     catch (error) {
-      if (error.status === 401 || error.status === 403) {
-        accessToken = '';
-        sealedToken = '';
+      if (sessaoRecusada(error)) {
+        esquecerSessao();
         recreateClient();
         persist();
       }
@@ -216,7 +241,7 @@ function createRazzeService(options = {}) {
   load();
   const wireguard = options.wireguard || createWireGuardManager({ app: electronApp, safeStorage: storage });
   return {
-    state, configure, register, confirmEmail, resendConfirmation, login, login2fa, logout,
+    state, sessao: () => geracao, configure, register, confirmEmail, resendConfirmation, login, login2fa, logout,
     googleConfig, googleLogin, googleFinish, googleLink, googleLinkPending, googleMove, temGooglePendente,
     googleUnlink: (confirmacao) => requireClient().googleUnlink(confirmacao),
     forgot: (login) => requireClient(false).forgot(login),
@@ -274,4 +299,4 @@ function createRazzeService(options = {}) {
   };
 }
 
-module.exports = { createRazzeService };
+module.exports = { sessaoRecusada, createRazzeService };
