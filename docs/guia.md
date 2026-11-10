@@ -78,11 +78,14 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   sozinho na sala), aparece a música. Quando ela acaba, sai do palco e da sala. A música mostra: a capa, o canal e quem pôs, o título, o canal do YouTube (com a prévia de links ligada em
   Privacidade), barrinhas que se mexem enquanto toca (param com a música pausada, o app fora de foco, no modo gamer e com
   "reduzir movimento"), o ponto em que está e o total (aparece depois que alguém da sala começa a ouvir) e quem está no canal.
-  Clicar ouve junto. Embaixo da música (sem ela, quando há mais gente na sala; sozinho e sem música, fica a decoração do tema), aparece um cartão para cada pessoa da sala, todos juntos (na voz ou não): em cima, a tela de quem transmite (a foto dela ganha um anel azul), a imagem ou o nome do jogo, a música ou a
-  foto; embaixo, o nome, o microfone e o fone desligados e o que está fazendo agora (**Transmitindo**, **Jogando** há
-  quanto tempo, **Ouvindo** a banda, com a faixa na imagem de cima, **Na voz**). Quem fala ganha o anel verde. Clicar no cartão de quem transmite
-  (o mouse em cima mostra **Assistir**) abre a tela.
-- **Barra da chamada:** na voz, mexer o mouse em cima das telas mostra uma barra no pé delas, no meio, numa faixa só
+  Clicar ouve junto. Embaixo da música (sem ela, quando há mais gente na sala; sozinho e sem música, fica a decoração do
+  tema), a **grade** da sua chamada: só quem está na voz no seu canal (fora da voz, quem está na Voz geral; quem está em
+  outra subsala ou fora da voz fica só na lista do painel). Uma tela por pessoa, do maior tamanho que couber: quem transmite vem
+  primeiro, com a tela e o selo **Ao vivo**; os outros com a foto grande no meio, e você por último. No pé de cada uma, o
+  nome, as barrinhas de quem fala e o microfone ou o fone desligados; quem fala ganha a borda verde. Clicar na de quem
+  transmite (o mouse em cima mostra **Assistir**) abre a tela; nas outras, mostra o perfil. Na voz, a barra da chamada
+  fica sempre à vista embaixo da grade.
+- **Barra da chamada:** na voz, mexer o mouse em cima das telas (com a grade de pessoas, sempre) mostra uma barra no pé delas, no meio, numa faixa só
   dela (na voz as telas terminam um pouco acima, para a barra não cobrir a barra de play nem a legenda), só com ícones,
   em blocos: **microfone** e **fone** num, **transmitir** (o monitor) no outro, e **Sair da voz** (o telefone desligando, em
   laranja) sozinho. Transmitindo, o monitor fica cheio na cor de ao vivo e, com o mouse em cima, fica laranja e cortado:
@@ -96,6 +99,14 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   para de falar. O **×** esconde o aviso até você ligar e desligar o microfone de novo (para quem fica no mudo de
   propósito).
 - **Perfil de alguém:** o mesmo cartão em todo lugar (Pessoas da sala, voz em lista e voz no mapa): fundo, foto, nome, onde a pessoa está, as ações (assistir, adicionar como amigo, mandar mensagem para amigos, silenciar e mudar de canal na voz) e o volume.
+- **Coluna do perfil:** na sala, entre as telas e o painel (com o painel recolhido, encostada na barrinha), o perfil
+  inteiro de uma pessoa fica sempre à vista, como no Discord: fundo, foto grande, nome, frase, o que está jogando ou
+  ouvindo, as ações, o volume da voz (e o som da transmissão, se você assiste) e os recentes. Sem escolha, mostra quem
+  transmite (ou alguém da voz). Clicar em qualquer pessoa (na lista da voz, em Pessoas, no chat, no palco) mostra ela
+  na coluna; as fotos de **Na voz** no pé também trocam (só a foto; o nome aparece com o mouse em cima; quem fala acende em verde, quem transmite tem o anel azul, microfone desligado tem o selinho laranja). A seta no
+  canto do fundo recolhe a coluna e devolve o espaço às telas; clicar em alguém abre de novo, e o app lembra. Com a
+  janela estreita (menos de 1160 px) não há coluna: o perfil abre por cima do painel, como antes. O disco da música gira
+  e as barrinhas pulam como no perfil aberto; param com o app fora de foco (num jogo, por exemplo) e no modo gamer.
 - **Barrinha da direita:** em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), **Convidar** (copia o endereço ou o código da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Apoiar** (o coração), **Feedback e bugs** (o balão com exclamação), a engrenagem e, por último, depois de uma linha, **Sair** em vermelho (para o host sozinho, **Encerrar**). Convidar e Sair só aparecem numa sala. No saguão, com a sala aberta, o pé mostra **Voltar para a sala** no lugar do Início, com o número de mensagens novas; sair por ali, sendo o host com gente na sala, volta para a sala para perguntar se passa a sala adiante.
 
 ### Como os PCs se conectam
@@ -728,7 +739,7 @@ enquanto o Nebula fica aberto. Ligado, o controle fica aceso e o app:
 - fica **opaco**, sem o vidro e o desfoque;
 - para todas as animações e esconde o céu estrelado do fundo, o céu em cima da lista da voz e a luz ambiente das
   transmissões;
-- deixa parado o GIF do fundo do perfil das pessoas.
+- deixa parado o GIF do fundo do perfil e da foto das pessoas.
 
 Voz, chat, música, transmitir e assistir continuam funcionando. As suas escolhas de aparência não mudam: desligar
 devolve tudo como era. Fica salvo neste PC.

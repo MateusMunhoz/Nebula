@@ -540,6 +540,7 @@ window.addEventListener('blur', syncPreview);
 setupAmigos();
 setupDm();
 setupWorkspace();
+setupPerfilFixo();
 startClips();
 setupGeneralSettings();
 setupComandoVoz();

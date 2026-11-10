@@ -567,6 +567,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-profile]');
   if (!el || !state.members.has(el.dataset.profile)) return;
   e.stopPropagation();
+  if (mostrarNoPerfilFixo(el.dataset.profile)) return; // com a coluna do perfil (perfil-fixo.js), qualquer foto ou nome abre nela
   if (el.closest('#peoplePop')) { // na lista de Pessoas, o mesmo perfil da voz; a mesma pessoa de novo fecha
     if (skyFocusId === el.dataset.profile && skyFocusFrom === 'pessoas') return closeSkyProfile();
     return openSkyProfile(el.dataset.profile, e.detail === 0 ? el : e, 'pessoas');
@@ -576,6 +577,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches?.('[data-profile]')) return;
   e.preventDefault();
+  if (mostrarNoPerfilFixo(e.target.dataset.profile)) return;
   if (state.members.has(e.target.dataset.profile)) openPersonCard(e.target.dataset.profile, e.target, true);
 });
 function openPersonCard(id, anchor, byKeyboard = false) {

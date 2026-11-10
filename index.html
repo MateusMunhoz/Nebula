@@ -75,6 +75,12 @@
       <button id="leaveBtn" type="button" class="workspace-tab rail-leave" hidden></button>
     </nav>
   </header>
+  <!-- Coluna do perfil (renderer/perfil-fixo.js): na sala, entre as telas e o painel, o perfil de uma pessoa sempre à
+       vista; a lista "Na voz" no pé troca de pessoa -->
+  <aside id="perfilFixo" class="perfil-fixo" aria-label="Perfil" hidden>
+    <div id="perfilFixoCorpo" class="pf-corpo sky-page"></div>
+    <div id="perfilFixoLista" class="pf-lista" role="group" aria-label="Ver o perfil de outra pessoa"></div>
+  </aside>
   <aside id="workspacePanes" aria-label="Painéis selecionados" hidden>
     <section id="profilePane" class="modal global utility-popup" hidden>
       <div class="dialog profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle" tabindex="-1">
@@ -1700,6 +1706,7 @@
   <script src="renderer/subsalas.js"></script>
   <script src="renderer/membros.js"></script>
   <script src="renderer/ceu-voz.js"></script>
+  <script src="renderer/perfil-fixo.js"></script>
   <script src="renderer/musica.js"></script>
   <script src="renderer/musica-fila.js"></script>
   <script src="renderer/youtube-escolher.js"></script>

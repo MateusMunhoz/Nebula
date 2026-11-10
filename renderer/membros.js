@@ -186,11 +186,12 @@ function renderMembers() {
   if (typeof renderHomeCall === 'function') renderHomeCall(); // quem está na sala, na faixa do início
   repaintAllAvatars(); // entrou ou saiu alguém: a cor da estrela de quem não tem foto segue a ordem da sala
   renderPalcoGente(); // os cartões do palco vazio: quem está, microfone, fone e o que está fazendo
+  renderPerfilFixo(); // a coluna do perfil: quem entrou, saiu, transmite, mudou na voz ou no volume (perfil-fixo.js)
 }
 
 // Palco vazio: sozinho e sem música, a decoração do tema e o texto. Senão, em cima a música do seu canal (se tem uma
-// tocando e você não está ouvindo) e embaixo um cartão por pessoa com o que ela está fazendo agora; quem transmite tem
-// o anel azul e clicar no cartão assiste (renderPalcoGente)
+// tocando e você não está ouvindo) e embaixo a grade com todo mundo da sala; quem transmite aparece com a tela e clicar
+// nela assiste (renderPalcoGente)
 function updateStage() {
   const telas = state.in.size > 0 && !state.minimizado; // minimizadas: abertas, mas fora da frente (setMinimizado)
   $('emptyStage').hidden = telas;
@@ -201,6 +202,7 @@ function updateStage() {
   syncCallbarReserva(); // a faixa da barra da chamada só com a música no palco (navegacao.js)
   $('emptyText').textContent = state.sharing ? 'Você está transmitindo.' : 'Ninguém está transmitindo agora.';
   renderPalcoGente();
+  syncCallbarFixa(); // as telas abriram ou fecharam: a grade (e a barra fixa embaixo dela) some ou volta (navegacao.js)
   if (!state.in.size) $('downloadInfo').textContent = '';
 }
 
@@ -257,17 +259,23 @@ function renderPalcoGente() {
     }
     musica = null;
   }
-  const ids = state.members.size ? [state.myId, ...[...state.members].sort((a, b) => Number(b[1].sharing) - Number(a[1].sharing)).map(([id]) => id)] : [];
+  // Na grade, quem transmite vem primeiro e você por último (entre quem não transmite)
+  const transmite = (id) => (id === state.myId ? !!state.sharing : !!state.members.get(id)?.sharing);
+  const ids = state.members.size ? [...state.members.keys(), state.myId].sort((a, b) => Number(transmite(b)) - Number(transmite(a))) : [];
   const pessoa = (id) => {
     const eu = id === state.myId, v = eu ? voice : voice.members.get(id), naVoz = inVoice(id);
     return { id, eu, nome: eu ? getName() : nameOf(id), atv: atvDe(id), sharing: eu ? state.sharing : !!state.members.get(id)?.sharing,
       podeVer: eu || canWatch(id), naVoz, canal: naVoz ? (eu ? ch : channelOfMember(id)) : null,
       mic: naVoz && !!v?.muted, fone: naVoz && !!v?.deafened, assistindo: !eu && state.in.has(id) };
   };
-  // Com música, os cartões vêm embaixo dela, mesmo com você sozinho na sala (aí, só o seu)
+  // Quem está no canal da música conta você mesmo sozinho na sala
   const gente = musica && !ids.length ? [pessoa(state.myId)] : ids.map(pessoa);
+  // A grade é a sua chamada: só quem está na voz no seu canal (fora da voz, no da Voz geral, onde você entraria).
+  // Quem está em outra subsala ou fora da voz fica na lista do painel. Só você no canal: sem grade
+  const chamada = gente.filter((p) => p.naVoz && p.canal === ch);
+  const grade = chamada.some((p) => !p.eu);
   // A tela de quem transmite: a mesma miniatura dos cartões do painel da voz, pedida a cada 15 s (assistir.js)
-  const aoVivo = gente.filter((p) => p.sharing && !p.eu).map((p) => p.id);
+  const aoVivo = grade ? chamada.filter((p) => p.sharing && !p.eu).map((p) => p.id) : [];
   pedirMiniaturas(aoVivo); // sem ninguém ao vivo à vista: para de pedir e solta as imagens
   const previa = musica ? palcoPrevias.get(musica.videoId) : null;
   const key = JSON.stringify([musica && [musica.videoId, musica.title, musica.by, musica.playing, musica.pos, musica.at, musica.dur, ch, previa?.canal], gente]);
@@ -276,43 +284,40 @@ function renderPalcoGente() {
   clearInterval(palcoTempoTimer);
   palcoTempoTimer = 0;
   box.replaceChildren();
-  // Cartão só de quem está fazendo algo (transmitindo, jogando, ouvindo); quem só está na sala ou na voz fica de fora
-  const ativos = gente.filter((p) => p.sharing || p.atv?.jogo || p.atv?.artista);
-  // Ninguém fazendo nada e sem música: a decoração do tema. Senão, a música (se tem) e embaixo os cartões
-  const mostra = !!musica || ativos.length > 0;
+  // Ninguém na chamada e sem música: a decoração do tema. Senão, a música (se tem) e embaixo a grade da chamada
+  const mostra = !!musica || grade;
   $('emptyStage').classList.toggle('com-gente', mostra);
+  $('emptyStage').classList.toggle('com-grade', grade);
   box.hidden = !mostra;
+  syncCallbarFixa(); // com a grade à vista, a barra da chamada fica fixa embaixo dela (navegacao.js)
   if (!mostra) return;
   if (musica) box.append(palcoMusica(musica, gente.filter((p) => p.canal === ch)));
-  if (!ativos.length) return;
-  // Uma seção por atividade (Jogando Deadlock, Spotify…), das maiores para as menores
-  const agora = document.createElement('div');
-  agora.className = 'pg-agora';
-  for (const [titulo, ps] of palcoGrupos(ativos)) {
-    const sec = document.createElement('section');
-    sec.className = 'pg-grupo';
-    const h = document.createElement('h3');
-    h.className = 'pg-grupo-tit';
-    h.append(titulo, Object.assign(document.createElement('span'), { textContent: String(ps.length) }));
-    const lista = document.createElement('div');
-    lista.className = 'pg-cartoes';
-    lista.append(...ps.map(palcoCartao));
-    sec.append(h, lista);
-    agora.append(sec);
-  }
-  box.append(agora);
+  if (!grade) return;
+  const g = document.createElement('div');
+  g.className = 'pg-grade';
+  g.append(...chamada.map(palcoCartao));
+  box.append(g);
+  ajustarPalcoGrade();
 }
 
-// [título, pessoas] na ordem do palco. Quem transmite um jogo conhecido fica com quem joga ele (o cartão mostra a tela);
-// "Transmitindo" é só para a transmissão sem jogo conhecido
-function palcoGrupos(ativos) {
-  const grupos = new Map();
-  for (const p of ativos) {
-    const t = p.atv?.jogo ? `Jogando ${p.atv.jogo}` : p.sharing ? 'Transmitindo' : p.atv.spotify ? 'Spotify' : 'Ouvindo música';
-    if (!grupos.has(t)) grupos.set(t, []);
-    grupos.get(t).push(p);
+// A grade: o número de colunas que deixa as telas maiores (em 7:5) no espaço que sobra; refeita quando o palco muda de
+// tamanho (janela, painel, coluna do perfil). Com muita gente as telas encolhem: a grade sempre cabe, nunca rola
+let palcoGradeObs = null;
+function ajustarPalcoGrade() {
+  const g = $('emptyGente').querySelector('.pg-grade');
+  if (!g) return;
+  palcoGradeObs ??= new ResizeObserver(() => ajustarPalcoGrade());
+  if (palcoGradeObs.alvo !== g) { palcoGradeObs.disconnect(); palcoGradeObs.observe(g); palcoGradeObs.alvo = g; }
+  const n = g.children.length, vao = 8, W = g.clientWidth, H = g.clientHeight;
+  if (!W || !H) return;
+  let melhor = { w: 0, cols: 1 };
+  for (let cols = 1; cols <= n; cols++) {
+    const linhas = Math.ceil(n / cols);
+    const w = Math.min((W - vao * (cols - 1)) / cols, ((H - vao * (linhas - 1)) / linhas) * 7 / 5);
+    if (w > melhor.w) melhor = { w, cols };
   }
-  return [...grupos].sort((a, b) => b[1].length - a[1].length);
+  g.style.setProperty('--cols', String(melhor.cols));
+  g.style.setProperty('--tela-w', `${Math.floor(melhor.w)}px`);
 }
 
 // A música do seu canal, que você ainda não está ouvindo: a capa, o canal e quem pôs, o título, o canal do YouTube,
@@ -380,15 +385,10 @@ function palcoMusica(e, noCanal) {
   return el;
 }
 
-// "1h 12min", "34min" (o tempo no jogo, no cartão)
-function palcoDesde(desde) {
-  const min = Math.max(0, Math.floor((Date.now() - desde) / 60000));
-  return min < 60 ? `${min}min` : `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, '0')}min`;
-}
-
-// Um cartão: em cima, a tela de quem transmite (Ao vivo; o mouse em cima mostra Assistir), a arte do jogo, a da música
-// ou a foto; embaixo, a foto, o nome, microfone e fone e o que está fazendo agora. Só o cartão de
-// quem transmite (e você pode ver) é botão
+// Uma tela da grade: quem transmite aparece com a tela (Ao vivo; o mouse em cima mostra Assistir), os outros com a foto
+// grande no meio. No pé, o nome, as barrinhas de quem fala e o microfone ou o fone desligados; falando, a borda fica
+// verde (o .speaking vem do voz.js, pelo data-person). A de quem transmite (e você pode ver) assiste; as outras mostram
+// o perfil (na coluna do perfil, ou no cartão da pessoa)
 function palcoCartao(p) {
   const { atv } = p, aoVivo = p.sharing && !p.eu;
   const el = document.createElement(aoVivo && p.podeVer ? 'button' : 'div');
@@ -399,26 +399,17 @@ function palcoCartao(p) {
     el.title = p.assistindo ? `Voltar para a tela de ${p.nome}` : `Assistir a tela de ${p.nome}`;
     el.onclick = () => (p.assistindo ? setMinimizado(false, p.id) : watch(p.id));
   } else if (aoVivo) el.title = closedShareText(p.id);
+  else markProfile(el, p.eu ? '' : p.id, p.nome);
 
   const midia = document.createElement('span');
   midia.className = 'pg-midia';
-  const cor = personColor(p.id);
-  midia.style.setProperty('--arte', `linear-gradient(135deg, ${cor}, color-mix(in srgb, ${cor} 22%, #000))`);
-  const img = (src, cls = '') => { const i = document.createElement('img'); i.src = src; i.alt = ''; if (cls) i.className = cls; midia.append(i); };
-  const rotulo = (texto, icone = '') => {
-    const r = document.createElement('span');
-    r.className = 'rot';
-    if (icone) r.innerHTML = icone;
-    r.append(texto);
-    midia.append(r);
-  };
   if (p.sharing) {
     midia.classList.add('tela');
     const src = (aoVivo && minis.get(p.id)?.url) || atv?.jogoImagem;
-    if (src) img(src, 'pg-tela');
+    if (src) { const i = document.createElement('img'); i.src = src; i.alt = ''; i.className = 'pg-tela'; midia.append(i); }
     else midia.insertAdjacentHTML('beforeend', ICON.monitor);
-    // Quem transmite tem o anel azul na foto (CSS: .transmitindo); o selo só diz que você já assiste (minimizado)
-    if (p.assistindo) midia.append(Object.assign(document.createElement('span'), { className: 'pg-chip', textContent: 'Assistindo' }));
+    // O selo: Ao vivo; se você já assiste (com as telas minimizadas), Assistindo
+    midia.append(Object.assign(document.createElement('span'), p.assistindo ? { className: 'pg-chip', textContent: 'Assistindo' } : { className: 'pg-selo', textContent: 'Ao vivo' }));
     if (el.tagName === 'BUTTON') {
       const assistir = document.createElement('span');
       assistir.className = 'pg-assistir';
@@ -428,38 +419,25 @@ function palcoCartao(p) {
       assistir.append(pilula);
       midia.append(assistir);
     }
-  } else if (atv?.jogo) {
-    midia.classList.add('jogo');
-    if (atv.jogoImagem) img(atv.jogoImagem);
-    else rotulo(atv.jogo);
-  } else if (atv?.artista) {
-    midia.classList.add('ouvindo');
-    if (atv.capa) img(atv.capa);
-    rotulo(atv.faixa || atv.artista, ICON.music);
   } else {
-    midia.classList.add('nada');
+    midia.classList.add('foto');
     midia.append(avatar(p.nome, p.eu ? '' : p.id));
   }
 
+  // O pé: a foto pequena só em quem transmite (a tela cobre a grande), o nome, as barrinhas de quem fala e os ícones
   const info = document.createElement('span');
   info.className = 'pg-info';
+  if (p.sharing) info.append(avatar(p.nome, p.eu ? '' : p.id));
   const nome = document.createElement('span');
   nome.className = 'pg-nome';
   nome.textContent = p.nome;
-  paintName(nome, p.eu ? '' : p.id);
-  const icones = document.createElement('span');
-  icones.className = 'pg-icones';
-  if (p.mic) icones.insertAdjacentHTML('beforeend', `<span role="img" aria-label="Microfone desligado">${ICON.micOff}</span>`);
-  if (p.fone) icones.insertAdjacentHTML('beforeend', `<span role="img" aria-label="Fone desligado">${ICON.headphonesOff}</span>`);
-  const fazendo = document.createElement('span');
-  fazendo.className = 'pg-fazendo';
-  const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
-  if (p.sharing) fazendo.append('Transmitindo', ...(atv?.jogo ? [' ', b(atv.jogo)] : []));
-  else if (atv?.jogo) fazendo.append('Jogando ', b(atv.jogo), ...(atv.jogoDesde ? [` · ${palcoDesde(atv.jogoDesde)}`] : []));
-  else if (atv?.artista) fazendo.append('Ouvindo ', b(atv.artista)); // a banda; a faixa já está na imagem em cima
-  else fazendo.append(p.naVoz ? 'Na voz' : 'Na sala');
-  fazendo.title = !p.sharing && !atv?.jogo && atv?.faixa ? `Ouvindo ${atv.faixa} · ${atv.artista}` : fazendo.textContent;
-  info.append(avatar(p.nome, p.eu ? '' : p.id), nome, icones, fazendo);
+  const eq = document.createElement('span');
+  eq.className = 'eq';
+  eq.setAttribute('aria-hidden', 'true');
+  eq.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+  info.append(nome, eq);
+  if (p.mic) info.insertAdjacentHTML('beforeend', `<span class="pg-ic" role="img" aria-label="Microfone desligado">${ICON.micOff}</span>`);
+  if (p.fone) info.insertAdjacentHTML('beforeend', `<span class="pg-ic" role="img" aria-label="Fone desligado">${ICON.headphonesOff}</span>`);
   el.append(midia, info);
   el.classList.toggle('speaking', speaking.has(p.id));
   return el;

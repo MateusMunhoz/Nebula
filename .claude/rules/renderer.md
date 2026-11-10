@@ -21,8 +21,10 @@ paths:
   Semântica: amarelo = você/ao vivo, verde = falando, laranja = cuidado. Sem vermelho.
 - Sem animação contínua: o app roda junto com jogos. Só transições curtas em resposta a uma ação.
   Exceção aprovada: o vinil e as barrinhas do "Ouvindo agora" no perfil (`atvVinil`, `ceu-voz.js`), só com o perfil
-  aberto, só `transform`, parados no modo gamer e com "reduzir movimento"; a abertura (logo animada enquanto o app carrega, `styles-abertura.css`,
-  `renderer/abertura.js`) e o mesmo card durante a atualização (`mostrarAtualizando`), parada com "reduzir movimento". Não abra outras sem pedir.
+  aberto ou na coluna do perfil (lá também param com o app fora de foco, `app-blurred`), só `transform`, parados no
+  modo gamer e com "reduzir movimento"; a abertura (logo animada enquanto o app carrega, `styles-abertura.css`,
+  `renderer/abertura.js`) e o mesmo card durante a atualização (`mostrarAtualizando`), parada com "reduzir movimento".
+  Não abra outras sem pedir.
 - Preferência nova: validar em `normalize()` (`renderer/preferencias-modelo.js`) e cobrir em `tests/preferencias.test.js`.
 - A página só fala com o processo principal por `window.api` (`preload.js`). Precisa de algo novo do main? Veja a regra
   de `main.js`/`preload.js` e apresente o plano antes.
@@ -49,6 +51,10 @@ paths:
 - O perfil da voz (`renderSkyProfile`, `ceu-voz.js`) serve ao mapa e à lista: na lista vira a caixinha `.sky-pop`, solta no
   `body` e com a foto em cima da foto da linha (`placeSkyProfile`). O fundo do perfil (`renderer/fundo-perfil.js`) chega
   por `{ side: 'fundo' }` em pedaços; valide tudo que chega como em `onPhotoSignal`.
+- A **coluna do perfil** (`renderer/perfil-fixo.js`, `#perfilFixo`) usa o mesmo `renderSkyPage` com `fixo: true` e fica
+  entre o palco e o painel (`body.com-perfil-fixo`, `--perfil-w`). Ela pega os cliques em pessoas quando cabe
+  (`mostrarNoPerfilFixo`). Fica aberta o tempo todo: além do vinil e das barrinhas da música (que param com o app fora de
+  foco), nada nela anima sozinho.
 
 ## Temas (aba Tema)
 - Cada tema é um `styles-<tema>.css` sob `:root[data-skin="<id>"]` (Arasaka, E.V.A, Du'Sol, Cloud) + a entrada em `skins`

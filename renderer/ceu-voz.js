@@ -1085,6 +1085,7 @@ function guardarSkyFocus(de) {
   $('voicePane').append(box);
 }
 function openSkyProfile(id, at, from = null) {
+  if (mostrarNoPerfilFixo(id)) return closeSkyPop(); // com a coluna do perfil (perfil-fixo.js), o perfil abre nela
   closeSkyPop();
   skyProfileBack = null;
   skyFocusFrom = from;
@@ -1183,8 +1184,30 @@ function atvHaRelogio() {
     for (const e of els) e.lastElementChild.textContent = atvHa(Number(e.dataset.desde));
   }, 30000);
 }
+// O que o perfil de alguém mostra e a chave que diz se algo mudou desde o último desenho. Serve ao perfil da voz e à
+// coluna do perfil (renderer/perfil-fixo.js); "origem" entra na chave (o mesmo perfil em outro lugar redesenha)
+function dadosDoPerfil(id, origem = '') {
+  const me = id === state.myId, pid = me ? null : id, voiceNow = inVoice(id);
+  const name = me ? getName() : nameOf(id); // no seu perfil, só o nome (sem "(você)")
+  const sharing = me ? state.sharing : !!state.members.get(id)?.sharing;
+  const micOff = me ? voice.muted : !!voice.members.get(id)?.muted;
+  const deafOn = me ? voice.deafened : !!voice.members.get(id)?.deafened;
+  const v = me ? null : volOf(id);
+  const channels = subsalasOn() ? ['', ...state.subsalas.map((s) => s.id)] : [];
+  const here = voiceChannelOf(pid);
+  const canMove = channels.length > 1 && canDragVoice(pid);
+  const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
+  const key = JSON.stringify([origem, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em, (x.imagem || x.capa || '').length]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  return { key, bg, dados: { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove: voiceNow && canMove, voiceNow } };
+}
+// Pinta a caixa do perfil com a cor e o fundo da pessoa (CSS .has-bg); o fundo some ao fechar
+function pintarCaixaDoPerfil(box, pid, bg) {
+  box.style.setProperty('--person', personColor(pid));
+  box.classList.toggle('has-bg', !!bg);
+  if (bg) box.style.setProperty('--fundo', `url("${bg}")`); else box.style.removeProperty('--fundo');
+}
 function renderSkyProfile() {
-  const box = $('skyFocus'), id = skyFocusId, me = id === state.myId, pid = me ? null : id;
+  const box = $('skyFocus'), id = skyFocusId, me = id === state.myId;
   const homeId = SKY_HOMES[skyFocusFrom], voiceNow = inVoice(id);
   if (!id || (!me && !state.members.has(id)) || (homeId ? !$(homeId) || $(homeId).hidden : $('voiceSkyBox').hidden || !voiceNow)) return closeSkyProfile();
   // O mesmo cartão de perfil em todo lugar (.sky-page, renderSkyPage): sobe do pé do painel onde a pessoa foi clicada,
@@ -1196,24 +1219,13 @@ function renderSkyProfile() {
   box.classList.remove('sky-head');
   box.classList.add('sky-page');
   box.style.setProperty('--orbit', '0.62');
-  const name = me ? getName() : nameOf(id); // no seu perfil, só o nome (sem "(você)")
-  const sharing = me ? state.sharing : !!state.members.get(id)?.sharing;
-  const micOff = me ? voice.muted : !!voice.members.get(id)?.muted;
-  const deafOn = me ? voice.deafened : !!voice.members.get(id)?.deafened;
-  const v = me ? null : volOf(id);
-  const channels = subsalasOn() ? ['', ...state.subsalas.map((s) => s.id)] : [];
-  const here = voiceChannelOf(pid);
-  const canMove = channels.length > 1 && canDragVoice(pid);
-  const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([skyFocusFrom, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em, (x.imagem || x.capa || '').length]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  const { key, bg, dados } = dadosDoPerfil(id, skyFocusFrom);
   if (key === skyFocusKey && !box.hidden) return placeSkyProfile();
   skyFocusKey = key;
   box.replaceChildren();
-  box.style.setProperty('--person', personColor(pid));
-  // Fundo do perfil: a imagem cobrindo a caixa, com um véu por cima (CSS .has-bg); some ao fechar
-  box.classList.toggle('has-bg', !!bg);
-  if (bg) box.style.setProperty('--fundo', `url("${bg}")`); else box.style.removeProperty('--fundo');
-  if (list) return renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove: voiceNow && canMove, voiceNow });
+  pintarCaixaDoPerfil(box, dados.pid, bg);
+  if (list) return renderSkyPage(box, dados);
+  const { pid, name, sharing, micOff, deafOn, v, channels, here, canMove } = dados;
 
   const back = document.createElement('button');
   back.type = 'button';
@@ -1296,38 +1308,42 @@ function renderSkyProfile() {
   box.hidden = false;
   placeSkyProfile();
 }
-// Volume da voz dessa pessoa para você (como no cartão): enquanto arrasta só muda o som; ao soltar, salva
-function skyVolumeRow(id, name, v) {
+// Volume da voz (ou, com key 'screen', do som da transmissão) dessa pessoa para você, como no cartão: enquanto arrasta
+// só muda o som; ao soltar, salva. Silenciar para mim cala só a voz
+function skyVolumeRow(id, name, v, key = 'voice') {
+  const voz = key === 'voice', mudo = voz && v.muted;
   const row = document.createElement('label');
   row.className = 'sky-focus-vol';
   const icon = document.createElement('span');
-  icon.innerHTML = ICON.volume;
-  icon.className = v.muted ? 'mic-off-icon' : 'mic-off-icon sky-vol-icon';
+  icon.innerHTML = voz ? ICON.volume : ICON.monitor;
+  icon.className = mudo ? 'mic-off-icon' : 'mic-off-icon sky-vol-icon';
   const input = document.createElement('input');
   input.type = 'range';
-  input.min = '0'; input.max = '200'; input.step = '5';
-  input.value = String(v.voice);
-  input.setAttribute('aria-label', `Volume da voz de ${name}`);
+  input.min = '0'; input.max = voz ? '200' : '100'; input.step = '5';
+  input.value = String(v[key]);
+  input.setAttribute('aria-label', voz ? `Volume da voz de ${name}` : `Som da transmissão de ${name}`);
   const out = document.createElement('output');
-  out.textContent = v.muted ? 'mudo' : `${v.voice}%`;
+  out.textContent = mudo ? 'mudo' : `${v[key]}%`;
   input.oninput = () => {
     out.textContent = `${input.value}%`;
-    volumes[volKey(id)] = { ...volOf(id), voice: Number(input.value), muted: false };
+    volumes[volKey(id)] = { ...volOf(id), [key]: Number(input.value), ...(voz && { muted: false }) };
     mixer.apply(id);
+    if (!voz) applyScreenVolume(id);
   };
-  input.onchange = () => setVol(id, { voice: Number(input.value), muted: false });
+  input.onchange = () => setVol(id, { [key]: Number(input.value), ...(voz && { muted: false }) });
   row.append(icon, input, out);
   return row;
 }
 // Página do perfil (na lista): o painel de voz inteiro vira a pessoa. Em cima, o fundo do perfil (ou a cor dela) com a
-// setinha de voltar; a foto grande sobreposta, o nome e o canal; embaixo, as ações em lista, com nome, e o volume
-function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove, voiceNow = true }) {
+// setinha de voltar; a foto grande sobreposta, o nome e o canal; embaixo, as ações em lista, com nome, e o volume.
+// fixo: a coluna do perfil (renderer/perfil-fixo.js), sempre aberta: o X vira recolher a coluna, no canto do fundo
+function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove, voiceNow = true, fixo = false }) {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
   const banner = el('div', 'sky-page-banner');
   const back = el('button', 'btn small icon ghost sky-page-back');
   back.type = 'button';
-  setIcon(back, 'close', 'Fechar o perfil e voltar para a lista');
-  back.onclick = leaveSkyProfile;
+  if (fixo) { setIcon(back, 'chevron', 'Recolher o perfil'); back.onclick = () => setPerfilFixoAberto(false); }
+  else { setIcon(back, 'close', 'Fechar o perfil e voltar para a lista'); back.onclick = leaveSkyProfile; }
   const av = avatar(me ? getName() : name, pid);
   av.dataset.person = id;
   av.classList.add('sky-page-avatar');
@@ -1342,7 +1358,7 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   }
   const head = el('div', 'sky-page-head');
   const title = el('h3', 'sky-focus-name', name);
-  title.id = 'skyFocusName';
+  if (!fixo) title.id = 'skyFocusName';
   paintName(title, pid);
   const where = el('span', 'sky-focus-where', !voiceNow ? 'Na sala' : subsalasOn() ? channelName(here) : 'Na voz');
   // O estado da voz dos outros vira ícones ao lado do nome; no seu perfil não aparece (os botões de baixo já mostram).
@@ -1409,8 +1425,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
       const add = act('userPlus', label, async () => {
         add.disabled = true;
         await fb.onclick();
-        skyFocusKey = '';
-        renderSkyProfile();
+        if (fixo) renderPerfilFixo(true);
+        else { skyFocusKey = ''; renderSkyProfile(); }
       }, { disabled: done, principal: true });
       add.title = fb.title;
     }
@@ -1420,7 +1436,7 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
     const move = act('moveTo', 'Mudar de canal', () => toggleSkyMoveMenu(move, pid, channels, here));
     move.setAttribute('aria-haspopup', 'menu');
   }
-  head.append(back);
+  if (fixo) banner.append(back); else head.append(back);
   banner.append(face); // a foto fica dentro do fundo, no canto de baixo
   box.append(banner, head);
   // O que a pessoa está ouvindo e jogando (conta.js), numa caixa entre os nomes e as ações
@@ -1517,8 +1533,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
       s.append(el('h4', 'sky-page-hist-t', 'Atividade'));
       const grade = el('div', 'hist-mosaico');
       // A cascata de entrada só ao abrir o perfil (ou trocar de pessoa), não a cada vez que ele é redesenhado
-      if (box.hidden || histVisto !== id) grade.classList.add('entra');
-      histVisto = id;
+      if (fixo ? perfilFixoHistVisto !== id : box.hidden || histVisto !== id) grade.classList.add('entra');
+      if (fixo) perfilFixoHistVisto = id; else histVisto = id;
       itens.forEach((x, i) => {
         const nome = x.jogo ? x.nome : (x.faixa || x.artista);
         const quando = atvQuando(x.em);
@@ -1560,6 +1576,8 @@ Abrir no Spotify`;
   }
   if (list.childElementCount) box.append(list); // no seu perfil, sem outro canal, não sobra ação nenhuma
   if (v && voiceNow) box.append(el('span', 'sky-page-label', 'Volume da voz'), skyVolumeRow(id, name, v));
+  // Na coluna, o som da tela também (no painel ele fica no cartão da pessoa, que a coluna substitui)
+  if (fixo && v && state.in.has(id)) box.append(el('span', 'sky-page-label', 'Som da transmissão'), skyVolumeRow(id, name, v, 'screen'));
   if (liveOther) {
     const watching = state.in.has(id);
     const bar = el('div', 'sky-page-livebar');

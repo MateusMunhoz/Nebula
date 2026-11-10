@@ -1,5 +1,5 @@
-// Painel Voz: quem está transmitindo tem o Assistir na própria linha (os cartões com a tela ficam no palco vazio,
-// membros.js: renderPalcoGente). A miniatura da tela é pedida pela sala para o cartão do palco; clicar no Assistir da
+// Painel Voz: quem está transmitindo tem o Assistir na própria linha (na voz, a tela também fica na grade do palco,
+// membros.js: renderPalcoGente). A miniatura da tela é pedida pela sala para a grade do palco; clicar no Assistir da
 // linha assiste, e ele vira Parar.
 const { openApp, createRoom, joinRoom, check, sleep, run, FAKE } = require('./ajuda');
 FAKE.push('--disable-backgrounding-occluded-windows', '--disable-features=CalculateNativeWinOcclusion'); // para a foto
@@ -25,8 +25,7 @@ run('Assistir pelo painel Voz', 90000, async () => {
   await B.waitFor(`!!${ROW(anaId)}`, 5000);
   check('Ana transmite fora da voz: aparece em "Fora da voz"', await B.eval(`$('voicePaneMembers').querySelector('.members-sub')?.textContent === 'Fora da voz'`));
   check('Sem os cartões "Transmitindo" no painel; a linha da Ana tem o Assistir', await B.eval(`!$('voicePaneMembers').querySelector('.voz-telas-li') && ${BTN(anaId)}?.getAttribute('aria-label') === 'Assistir Ana'`));
-  await B.waitFor(`${CARD(anaId)}?.querySelector('img.pg-tela')?.src.startsWith('blob:')`, 10000);
-  check('A miniatura da tela da Ana chega pela sala e aparece no cartão do palco', await B.eval(`${CARD(anaId)}.querySelector('img.pg-tela').naturalWidth === 320`));
+  check('Fora da voz, a Ana não aparece na grade do palco (ela é da chamada de quem está na voz)', await B.eval(`!${CARD(anaId)}`));
   await B.eval(`${BTN(anaId)}.click()`);
   await B.waitFor(`state.in.size === 1 && [...state.in.values()][0].tile.video.videoWidth > 0`, 20000);
   check('Clicar começa a assistir, e o botão vira Parar', await B.eval(`${BTN(anaId)}?.getAttribute('aria-label') === 'Parar de assistir Ana'`));
@@ -39,5 +38,7 @@ run('Assistir pelo painel Voz', 90000, async () => {
   await B.eval(`${BTN(anaId)}.click()`);
   await sleep(500);
   check('Parar tira a tela e volta o Assistir', await B.eval(`state.in.size === 0 && ${BTN(anaId)}?.getAttribute('aria-label') === 'Assistir Ana'`));
+  await B.waitFor(`${CARD(anaId)}?.querySelector('img.pg-tela')?.src.startsWith('blob:')`, 10000);
+  check('Na Voz geral, a Ana entra na grade do palco, e a miniatura da tela chega pela sala', await B.eval(`${CARD(anaId)}.querySelector('img.pg-tela').naturalWidth === 320`));
   await B.shot('voz-assistir.png');
 });

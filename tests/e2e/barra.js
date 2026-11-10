@@ -72,8 +72,10 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await A.eval(`$('voiceJoin').click()`); await B.eval(`$('voiceJoin').click()`);
   await B.waitFor(`voice.session && voice.members.get([...state.members.keys()][0])?.session`, 15000);
   await sleep(300);
-  check('Na voz: microfone, fone, sair e Voz e atalhos no cartão, e em que canal você está',
-    await B.eval(`${dentro(['voiceMute', 'voiceDeafen', 'voiceJoin', 'voiceSettingsBtn'], 'seuSinal')}`));
+  // Com a grade da chamada no palco, a barra da chamada fica fixa embaixo dela e leva microfone, fone e sair do cartão
+  check('Na voz com a grade: a barra da chamada fixa com microfone, fone e sair; Voz e atalhos fica no cartão',
+    await B.eval(`$('emptyStage').classList.contains('com-grade') && $('callbar').classList.contains('fixa') && ${dentro(['cbMic', 'cbDeafen', 'cbLeave'], 'callbar')}
+      && ${dentro('voiceSettingsBtn', 'seuSinal')} && $('voiceMute').getBoundingClientRect().width === 0`));
   await B.shot('sala-na-voz.png');
 
   // Recolhido: a voz vai para a barrinha
@@ -96,7 +98,7 @@ run('Sala: cabeçalho, abas e Seu sinal', 120000, async () => {
   await sleep(200);
   check('De volta à sala, o painel volta aberto', await B.eval(`!$('room').hidden && !$('workspacePanes').hidden && $('seuSinalMini').hidden`));
 
-  // Palco vazio: um cartão por pessoa; o de quem transmite assiste
+  // Palco vazio: a grade da chamada, uma tela por pessoa; a de quem transmite assiste
   await A.eval(`(() => { navigator.mediaDevices.getDisplayMedia = () => navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 }, audio: false });
     $('soundOn').checked = false; setRadio('encodeMode', 'per'); state.selectedSource = 'teste'; return startSharing(); })()`);
   await A.waitFor(`state.sharing && !$('liveChip').hidden`, 15000);
