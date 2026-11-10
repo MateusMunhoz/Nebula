@@ -202,9 +202,13 @@ todos os clientes do projeto.
 4. As chaves públicas do Google (`https://www.googleapis.com/oauth2/v3/certs`) são buscadas pela VPS e guardadas pelo tempo que o
    Google diz; a VPS precisa de saída HTTPS para o Google (a mesma que o login do PC já usa).
 
-**Sessões:** cada conta tem **uma sessão de PC e uma de Android** (coluna `plataforma` da tabela `sessions`). Entrar no PC derruba só
-a sessão de PC anterior; entrar no celular, só a do celular. Trocar ou redefinir a senha e "revogar sessões" no painel continuam
-derrubando todas.
+**Sessões:** cada conta tem **até 5 sessões de PC e 5 de Android** ao mesmo tempo (`SESSOES_POR_APARELHO` em `control.js`, coluna `plataforma` da tabela
+`sessions`). Entrar em outro PC não derruba o primeiro; passou de 5, cai a usada há mais tempo (`podarSessoes`, `control.js`, que também roda
+quando o servidor sobe: reiniciar não derruba ninguém). Sessão em uso se renova: passou da metade dos 30 dias, ganha o prazo inteiro
+de novo (`requireUser`); só vence quem fica 30 dias sem abrir o app. Antes era uma só, e
+quem usava dois PCs, o painel web ou o `dev:teste` derrubava a si mesmo. Trocar ou redefinir a senha e "revogar sessões" no painel
+continuam derrubando todas. O app só apaga a sessão guardada quando o servidor responde 401 `unauthorized` ou `account_*`
+(`sessaoRecusada`, `main/razze-service.js`); 401/403 de outro tipo (senha errada numa ação, proxy) não deslogam.
 
 ## WireGuard e limites atuais
 

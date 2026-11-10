@@ -13,7 +13,7 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_id')) db.exec('ALTER TABLE sessions ADD COLUMN client_id TEXT');
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'app_version')) db.exec("ALTER TABLE sessions ADD COLUMN app_version TEXT NOT NULL DEFAULT ''");
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'client_name')) db.exec("ALTER TABLE sessions ADD COLUMN client_name TEXT NOT NULL DEFAULT 'Tela P2P'");
-  // De que tipo de aparelho é a sessão: uma de PC e uma de Android por conta (issueToken em server.js)
+  // De que tipo de aparelho é a sessão: até 5 de PC e 5 de Android por conta (podarSessoes, abaixo)
   if (!db.prepare('PRAGMA table_info(sessions)').all().some(c => c.name === 'plataforma')) db.exec("ALTER TABLE sessions ADD COLUMN plataforma TEXT NOT NULL DEFAULT 'pc'");
   db.exec(`
     CREATE TABLE IF NOT EXISTS server_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -33,12 +33,9 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   if (!db.prepare('PRAGMA table_info(live_presence)').all().some(c => c.name === 'sala_atual')) db.exec('ALTER TABLE live_presence ADD COLUMN sala_atual TEXT');
   // Após reiniciar, cada cliente precisa confirmar sua presença novamente.
   db.exec('DELETE FROM live_presence');
-  // Mantém somente a sessão mais recente de cada conta em cada tipo de aparelho (PC e Android).
-  db.exec(`DELETE FROM sessions WHERE rowid NOT IN (
-    SELECT MAX(rowid)
-    FROM sessions
-    GROUP BY user_id, plataforma
-  )`);
+  // Reiniciar não derruba ninguém: só corta o que passou do limite por conta e tipo de aparelho (antes deixava uma só,
+  // e cada deploy deslogava quem tinha mais de um PC)
+  podarSessoes(db, options.tokenTtlMs);
   // googleOnly: só entra e cria conta pelo Google (o administrador continua podendo entrar com senha).
   // legacyPasswordLogin: com googleOnly ligado, quem já tinha conta com senha ainda entra por ela (desligue quando todos tiverem vinculado o Google).
   // onlyAllowlist: só e-mails da lista de convidados criam conta; quem está na lista entra já ativo.
@@ -520,4 +517,18 @@ function createControl({ db, options, now, hash, requireUser, readBody, send, Ap
   return { settings, heartbeat, offline, rooms, friendRooms, salasAtuais, enrichUsers, enrichNetworks, handleAdmin, serveAdmin, measure };
 }
 
-module.exports = { createControl };
+// Até SESSOES_POR_APARELHO sessões por conta em cada tipo de aparelho (pc, android). Passou, cai a usada há mais tempo:
+// o último pedido (client_usage) ou, se nunca usou, o login (expires_at é login + prazo)
+const SESSOES_POR_APARELHO = 5;
+function podarSessoes(db, ttlMs) {
+  const prazo = Number(ttlMs) > 0 ? Math.floor(Number(ttlMs)) : 30 * 24 * 60 * 60 * 1000;
+  db.prepare(`DELETE FROM sessions WHERE rowid IN (
+    SELECT id FROM (
+      SELECT s.rowid AS id, ROW_NUMBER() OVER (PARTITION BY s.user_id, s.plataforma
+        ORDER BY MAX(COALESCE(c.last_request, 0), s.expires_at - ?) DESC, s.rowid DESC) AS n
+      FROM sessions s LEFT JOIN client_usage c ON c.session_hash = s.token_hash
+    ) WHERE n > ?
+  )`).run(prazo, SESSOES_POR_APARELHO);
+}
+
+module.exports = { createControl, podarSessoes, SESSOES_POR_APARELHO };

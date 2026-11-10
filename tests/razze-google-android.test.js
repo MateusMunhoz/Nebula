@@ -97,16 +97,16 @@ test('conta nova pelo Android e a mesma conta no PC: os dois ficam logados junto
   assert.equal((await request('/v1/me', {}, tokenAndroid)).status, 200);
   assert.equal((await request('/v1/me', {}, pc.body.accessToken)).status, 200);
 
-  // Outro login no Android derruba só a sessão de Android anterior
+  // Outro login no Android (outro celular) não derruba o primeiro (até 5 por tipo de aparelho, razze-sessoes.test.js)
   const android2 = await entrarAndroid();
   assert.equal(android2.status, 200);
-  assert.equal((await request('/v1/me', {}, tokenAndroid)).status, 401);
+  assert.equal((await request('/v1/me', {}, tokenAndroid)).status, 200);
   assert.equal((await request('/v1/me', {}, android2.body.accessToken)).status, 200);
   assert.equal((await request('/v1/me', {}, pc.body.accessToken)).status, 200);
 
-  // E outro login no PC derruba só a de PC
+  // E outro login no PC também não derruba o PC anterior
   const pc2 = await entrarPc('codigo-ana-pc');
-  assert.equal((await request('/v1/me', {}, pc.body.accessToken)).status, 401);
+  assert.equal((await request('/v1/me', {}, pc.body.accessToken)).status, 200);
   assert.equal((await request('/v1/me', {}, pc2.body.accessToken)).status, 200);
   assert.equal((await request('/v1/me', {}, android2.body.accessToken)).status, 200);
 });
