@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.17",
+    "date": "2026-11-10",
+    "items": [
+      "Atalho de mutar aceita uma tecla sozinha",
+      "Música: reenvio do \"ouvindo\" de todos os canais e subsala recriada sem herdar o \"sozinha desde\"",
+      "Coluna do perfil fixa e modo dev sem loop de atualização"
+    ]
+  },
+  {
     "version": "1.20.16",
     "date": "2026-11-10",
     "items": [
@@ -90,15 +99,6 @@ const NOVIDADES = [
       "iOS: barra de título abaixo do relógio e guia para compilar no Mac",
       "Desktop: palco com música e cartões, convite com QR, minimizar, duração da música",
       "iOS: app Nebula para iPhone via sideload (Capacitor), ponte window.api, CSS do iPhone e CI do .ipa"
-    ]
-  },
-  {
-    "version": "1.20.7",
-    "date": "2026-10-20",
-    "items": [
-      "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
-      "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
-      "README: apresentação do app com imagens das telas"
     ]
   }
 ];
