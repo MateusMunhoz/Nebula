@@ -85,7 +85,10 @@ function clearMusicas() {
   if (typeof fecharEscolhedor === 'function') fecharEscolhedor(false);
 }
 // Ao entrar (ou o servidor da sala trocar), conta de novo que você está ouvindo
-function resendListening() { const l = listenedMusic(); if (l) send({ type: 'musica-ouvindo', ch: l.ch, on: true }); }
+// (todas as que estão abertas: dá para ouvir a de mais de um canal)
+function resendListening() {
+  for (const [key, link] of state.in) if (link.music) send({ type: 'musica-ouvindo', ch: key.slice('musica:'.length), on: true });
+}
 function musicCtl(e, action, extra = {}) { send({ type: 'musica-ctl', ch: e.ch, action, ...extra }); }
 // A música acabou: com fila no servidor, "pular" (anda uma vez, mesmo que vários PCs vejam o fim); senão, tirar
 const musicaFim = (videoId) => (state.filaOn ? ['pular', { videoId }] : ['stop']);

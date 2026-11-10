@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer } = require('../signaling');
-const { createMusicas, cleanVideoId, limparMusicas, handleMemberMessage, FILA_MAX, FILA_POR_PESSOA, FILA_SALA_MAX } = require('../sala-protocolo');
+const { createMusicas, createSubsalas, cleanVideoId, limparMusicas, handleMemberMessage, FILA_MAX, FILA_POR_PESSOA, FILA_SALA_MAX } = require('../sala-protocolo');
 
 async function freePort() {
   const probe = net.createServer();
@@ -136,6 +136,32 @@ test('músicas esquecidas: pausada 4 min sai; sem ninguém no canal nem ouvindo,
   // Ouvindo só vale para música que existe
   msg('3', { type: 'musica-ouvindo', ch: '2', on: true });
   assert.equal(members.get('3').ouvindo.size, 0);
+});
+
+test('subsala apagada e recriada com o mesmo número: a música nova não herda o "sozinha desde" da antiga', () => {
+  let t = 0;
+  const subsalas = createSubsalas([{ id: '1' }, { id: '2' }]);
+  const musicas = createMusicas([{ ch: '2', videoId: VID, by: '1' }], () => t);
+  const members = new Map([['1', { ws: null, voiceSession: 's', voiceChannel: '' }]]);
+  const msg = (m) => handleMemberMessage({ members, broadcast() {}, chat: null, subsalas, musicas }, '1', members.get('1'), m);
+  // A música da subsala 2 está sozinha desde o instante 0; a subsala é apagada antes de dar 1 min
+  assert.equal(limparMusicas(musicas, members), false);
+  t = 30000;
+  msg({ type: 'subsala-delete', id: '2' });
+  assert.equal(musicas.map.size, 0);
+  // Bem depois, o número 2 volta numa subsala nova; alguém põe música nela e sai da voz
+  t = 100000;
+  msg({ type: 'subsala-create' });
+  assert.equal(subsalas.has('2'), true);
+  msg({ type: 'voice-state', session: 's', channel: '2' });
+  msg({ type: 'musica-set', videoId: VID2 });
+  msg({ type: 'voice-state', session: '' });
+  assert.equal(limparMusicas(musicas, members), false, 'o minuto conta a partir de agora');
+  t += 59999;
+  assert.equal(limparMusicas(musicas, members), false);
+  t += 1;
+  assert.equal(limparMusicas(musicas, members), true);
+  assert.equal(musicas.map.size, 0);
 });
 
 test('duração: vale a primeira que o player contar, só do vídeo do canal; inválida não entra; trocar zera', () => {
