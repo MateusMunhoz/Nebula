@@ -44,7 +44,8 @@ window.addEventListener('keydown', async (e) => {
   if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return; // espera a tecla principal
   const a = accelFromEvent(e);
   if (!a) return toast('Essa tecla não pode ser usada como atalho.', 'error');
-  if (!a.strong && !a.fkey) return toast('Use Ctrl ou Alt junto (ou uma tecla de F1 a F24), para não atrapalhar quando você digita.', 'error');
+  // Mutar aceita uma tecla só (fica registrada apenas enquanto você está numa sala); as outras exigem Ctrl/Alt ou F1-F24
+  if (!a.strong && !a.fkey && c.action !== 'mute') return toast('Use Ctrl ou Alt junto (ou uma tecla de F1 a F24), para não atrapalhar quando você digita.', 'error');
   stopCapture();
   await applyShortcut(c.action, a.accel);
 }, true);

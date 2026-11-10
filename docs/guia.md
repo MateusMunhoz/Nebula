@@ -662,7 +662,7 @@ Ficam nas **Configurações** (a engrenagem), nos grupos **Voz** e **Atalhos**. 
   | Ajustar/travar as janelas por cima do jogo | Ctrl+Shift+E |
   | Esconder/mostrar o chat por cima do jogo | Ctrl+Shift+O |
 
-  O app recusa combinações sem Ctrl ou Alt (menos F1 a F24), para não atrapalhar quando você digita, e avisa se outro programa já usa a combinação.
+  O app recusa combinações sem Ctrl ou Alt (menos F1 a F24), para não atrapalhar quando você digita; só o atalho de mutar aceita uma tecla sozinha, e avisa se outro programa já usa a combinação.
 
 ## Diagnóstico
 
