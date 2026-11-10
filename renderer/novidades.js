@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.16",
+    "date": "2026-11-10",
+    "items": [
+      "feat(chamada): qualquer pessoa da ligação convida, e ela continua oculta",
+      "fix(conta): sessão só cai quando o servidor recusa; pedidos de amizade na hora",
+      "fix(razze-api): até 5 sessões por conta e renovação com o uso"
+    ]
+  },
+  {
     "version": "1.20.15",
     "date": "2026-11-08",
     "items": [
@@ -90,16 +99,6 @@ const NOVIDADES = [
       "fix(janela): ícone do tema volta a aparecer na barra de tarefas",
       "feat(tema): Renascença sem moldura, com folhas douradas e a obra assinada",
       "README: apresentação do app com imagens das telas"
-    ]
-  },
-  {
-    "version": "1.20.5",
-    "date": "2026-10-19",
-    "items": [
-      "Voz: atraso de cada pessoa no Mapa de conexões; conexão lenta é refeita sozinha",
-      "Música: o menu (volume, Pausar, Sair) abre na pílula do canal",
-      "Painel: a divisória entre o chat e a voz acompanha o mouse; sem as setinhas de recolher",
-      "Chat: prévia dos vídeos do YouTube, com capa, título, canal e Tocar na voz"
     ]
   }
 ];
