@@ -738,3 +738,35 @@ test('serve a página /ver com CSP e só os arquivos da lista', async (t) => {
   for (const caminho of ['/server.js', '/ver/', '/ver.html', '/package.json', '/vps/instalar.sh']) assert.equal((await fetch(base + caminho)).status, 404, caminho);
   assert.equal((await fetch(`${base}/health`)).status, 200);
 });
+
+// Ligação (chamada.js): todo mundo que entra fica sabendo que é ligação, até quem entra pelo passe da sala ou digitando
+// a senha, e por isso não anuncia a sala aos amigos (docs/spec/entrar-pelos-amigos.md)
+test('ligação: a marca chamada vem no welcome de todos; sala comum não tem', async (t) => {
+  const { url } = await start(t);
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client(), chamada: true, entendeChamada: true });
+  t.after(() => a.ws.terminate());
+  assert.equal(a.first.chamada, true);
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', passe: a.first.passeSala, client: client() });
+  t.after(() => b.ws.terminate());
+  assert.equal(b.first.chamada, true, 'quem entrou pelo passe da sala');
+  const c = await connect(url, { room: a.first.sala, name: 'Cris', password: 'pizza-azul', client: client() });
+  t.after(() => c.ws.terminate());
+  assert.equal(c.first.chamada, true, 'quem digitou a senha');
+  const comum = await connect(url, { create: true, name: 'Duda', password: 'pizza-azul', client: client(), chamada: 'sim' });
+  t.after(() => comum.ws.terminate());
+  assert.equal(comum.first.chamada, undefined, 'só true liga');
+});
+
+test('ligação: app antigo (sem entendeChamada) não recebe o passe da sala, para não anunciar a ligação', async (t) => {
+  const { url } = await start(t);
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client(), chamada: true, entendeChamada: true });
+  t.after(() => a.ws.terminate());
+  assert.ok(a.first.features.includes('chamada'));
+  assert.match(a.first.passeSala, /^[A-Za-z0-9_-]{43}$/);
+  const velho = await connect(url, { room: a.first.sala, name: 'Velho', password: 'pizza-azul', client: client() });
+  t.after(() => velho.ws.terminate());
+  assert.equal(velho.first.passeSala, null, 'app antigo fica sem o passe da ligação');
+  const novo = await connect(url, { room: a.first.sala, name: 'Novo', password: 'pizza-azul', client: client(), entendeChamada: true });
+  t.after(() => novo.ws.terminate());
+  assert.equal(novo.first.passeSala, a.first.passeSala);
+});

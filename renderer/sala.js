@@ -101,7 +101,7 @@ async function connectRoom(url, hello, timeoutMs = 8000) {
     ws.onopen = () => {
       const razze = contaSala(); // a conta Razze (perfil e Adicionar dos outros)
       contaAnunciada = JSON.stringify(razze);
-      ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont, razze, lider: true }));
+      ws.send(JSON.stringify({ type: 'hello', ...hello, client: clientId(), addrs, version: update.myVersion, avatar: fotos.mine?.hash || '', avatarFull: fotos.mineFull?.hash || '', nameFont: appPreferences.nameFont, razze, lider: true, entendeChamada: true })); // entendeChamada: recebe o passe da ligação (não a anuncia)
     };
     // Servidor que responde ao ping: sem notícia dele por um tempo, a conexão morreu (a internet caiu e o Windows
     // ainda não avisou). O app larga ela e tenta voltar, em vez de ficar numa sala que já não o vê
@@ -276,6 +276,7 @@ async function joinInternetRoom() {
 function enterRoom(welcome, owner, host, port, cloud = null) {
   state.cloud = cloud;
   if (cloud) cloud.passeOn = (welcome.features || []).includes('passe'); // servidor antigo: os amigos entram com a senha
+  if (cloud && welcome.chamada === true) cloud.chamada = true; // ligação: não anuncia a sala aos amigos (salas-amigos.js)
   receberPasseSala(welcome, welcome.features || []); // o passe da sala inteira (salas-amigos.js)
   salasAmigos.alvo = null;
   RTC_CONFIG.iceServers = cloud && Array.isArray(welcome.iceServers) ? welcome.iceServers : [];

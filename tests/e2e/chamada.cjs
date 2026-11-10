@@ -23,10 +23,10 @@ app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Entra no servidor Internet direto, sem app (para conferir a senha)
-function tentarEntrar(url, sala, password) {
+function tentarEntrar(url, sala, password, passe) {
   return new Promise((resolve) => {
     const ws = new WebSocket(url);
-    ws.on('open', () => ws.send(JSON.stringify({ type: 'hello', room: sala, password, name: 'Teste', client: crypto.randomBytes(16).toString('hex') })));
+    ws.on('open', () => ws.send(JSON.stringify({ type: 'hello', room: sala, ...(passe ? { passe } : { password }), name: 'Teste', client: crypto.randomBytes(16).toString('hex') })));
     ws.on('message', (raw) => { const m = JSON.parse(raw); if (m.type === 'welcome' || m.type === 'error') { ws.terminate(); resolve(m.type); } });
     ws.on('error', () => resolve('erro'));
   });
@@ -103,6 +103,17 @@ app.whenReady().then(async () => {
     check('O Beto entra na sala e na voz', await beto.until('!!state.myId && !!voice.session', 10000));
     check('O Beto tem a senha e está no modo Internet', await beto.run('state.password') === senha && await beto.run('selectedNetworkProvider()') === 'internet');
     check('Os dois se veem na sala', await ana.until(`[...state.members.values()].some((m) => m.name === 'Beto')`) && await beto.until(`[...state.members.values()].some((m) => m.name === 'Ana')`));
+
+    // ---------- Qualquer membro convida (docs/spec/entrar-pelos-amigos.md, opção B de 09/11) ----------
+    check('A ligação nasce com "amigos dos membros" ligado', await ana.run('state.cloud.amigosMembros') === true);
+    const passeSala = await beto.run('state.cloud.passeSala');
+    check('O Beto recebe o passe da sala', /^[A-Za-z0-9_-]{43}$/.test(passeSala || ''));
+    check('O convite do Beto leva o passe', (await beto.run('conviteDaSala()'))?.passe === passeSala);
+    check('Com o passe da sala, o convidado do Beto entra sem senha', await tentarEntrar(URL_INTERNET, await ana.run('state.cloud.code'), '', passeSala) === 'welcome');
+    check('O servidor marca a ligação no welcome', await ana.run('state.cloud.chamada') === true);
+    const lido = await beto.run('lerConvite(textoConvite(conviteDaSala()))');
+    check('O convite de dentro da ligação vai marcado como oculto', lido?.oculta === true && lido.passe === passeSala, JSON.stringify(lido));
+    check('A ligação continua fora da lista dos amigos', await ana.run('state.cloud.amigos') === false && await beto.run('salasAmigos.enviado') === '');
 
     // ---------- Senha no Painel da sala ----------
     await ana.run('renderSenhaSala()');

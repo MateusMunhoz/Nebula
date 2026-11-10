@@ -205,7 +205,7 @@ test('servidor da internet: hello e mensagens estranhas não derrubam nem travam
   // hello estranho, de gente nova: nenhum vira sala nem derruba
   for (const valor of [null, 0, -1, NaN, [], {}, 'x'.repeat(500), '__proto__', { __proto__: 1 }, true]) {
     const x = await mk();
-    for (const campo of ['room', 'password', 'name', 'create', 'client', 'resume', 'passe', 'senha', 'addrs', 'amigosMembros']) {
+    for (const campo of ['room', 'password', 'name', 'create', 'client', 'resume', 'passe', 'senha', 'addrs', 'amigosMembros', 'chamada']) {
       if (x.ws.readyState !== 1) break;
       x.manda({ type: 'hello', [campo]: valor });
       await new Promise((r) => setTimeout(r, 3));

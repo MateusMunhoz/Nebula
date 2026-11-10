@@ -31,7 +31,7 @@ autoridades) precisa ser confirmado com um advogado antes de publicar os termos.
 | Hoje | Passa a ser |
 |---|---|
 | Rede Razze pode ser **pública** (qualquer conta vê e entra). | A opção **Pública** some ao criar e editar. Redes públicas que já existem viram **Amigos** na migração, e o dono recebe um aviso uma vez. O servidor recusa `visibility: 'public'` com 400. |
-| **Amigos de quem estiver na sala também podem entrar** vem marcado em Criar sala. | Vem **desmarcado**. Quem marca vê a frase: "Pessoas que você não conhece vão poder entrar sem senha." A escolha não fica salva para a próxima sala. |
+| **Amigos de quem estiver na sala também podem entrar** vem marcado em Criar sala. | **Decidido em 09/11/2026: continua marcado** (e a ligação também nasce com ela ligada), porque desmarcado só o líder conseguia convidar e os usuários reclamaram. O host desliga no painel da sala. Reavaliar quando a fiscalização da ANPD começar (jan/2027). |
 | Pedido de amizade sem limite. | No máximo 20 pedidos enviados por dia e 50 pendentes por conta. Passou, o servidor responde 429 com "Muitos pedidos hoje. Tente amanhã." |
 | Quem tem o identificador sempre pode mandar pedido. | Nova opção em **Conta e segurança**, **Quem pode me mandar pedido de amizade**: **Quem tiver meu identificador** (padrão) ou **Só por link de convite**. Com a segunda, o servidor responde ao remetente o mesmo "Pedido enviado." de sempre, sem criar o pedido, para não confirmar que a conta existe. |
 
@@ -122,7 +122,7 @@ Mensagens diretas, ligações, convites para a sala e "em que sala estou" contin
 
 ## Critérios de aceitação
 - [ ] Não dá para criar nem editar rede Razze **Pública**. As que existiam viraram **Amigos**, e o dono foi avisado.
-- [ ] **Amigos de quem estiver na sala** vem desmarcado e avisa ao marcar.
+- [x] **Amigos de quem estiver na sala**: mantido marcado (decisão de 09/11/2026, acima).
 - [ ] O 21º pedido do dia recebe 429. Com **Só por link de convite**, o pedido pelo identificador não chega, e o remetente vê a resposta normal.
 - [ ] Numa instalação nova, a atividade de jogo e música vem desligada. Quem já usava não mudou.
 - [ ] Bloquear desfaz a amizade e impede pedido, mensagem, ligação, convite, presença e o passe da sala, nos dois sentidos, sem avisar.

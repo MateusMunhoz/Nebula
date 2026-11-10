@@ -17,7 +17,8 @@
 //                                          o app anuncia o passe só para os amigos, pela RazzeAPI
 //   senha { password }                  -> o host muda a senha; quem entrou com a senha recebe a nova, os passes caem
 //                                          (e o passe da sala troca)
-//   hello { create: true, amigosMembros } -> com amigosMembros !== false, a sala nasce com um passe da sala
+//   hello { create: true, amigosMembros, chamada } -> com amigosMembros !== false, a sala nasce com um passe da sala;
+//                                          chamada: true marca a ligação (vem no welcome de todos como chamada: true)
 //   amigos-membros { on }               -> o host liga ou desliga o passe da sala
 //   passe-sala { passe, amigosMembros } (do servidor) -> o passe da sala mudou ou caiu (null); também vem no welcome.
 //                                          Vale para todos da sala e não cai quando quem criou sai
@@ -216,16 +217,26 @@ function createInternetServer(options = {}) {
     return list;
   }
 
-  function createRoomState(password, amigosMembros = true) {
+  function createRoomState(password, amigosMembros = true, chamada = false) {
     const code = (() => { for (;;) { const c = makeCode(); if (!rooms.has(c)) return c; } })();
     const room = {
       code, check: passwordCheck(password), passes: createPasses(), members: new Map(), away: new Map(), hostId: null, nextId: 1,
       chat: createChat(), subsalas: createSubsalas(), musicas: createMusicas(null, cfg.now), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
       amigosMembros,
+      chamada, // ligação (chamada.js): todo mundo fica sabendo pelo welcome e ninguém anuncia a sala aos amigos
     };
     if (amigosMembros) room.passes.trocarSala();
     // O passe da sala mudou ou caiu: avisa todos (quem está fora no tempo de espera recebe no welcome ao voltar)
-    room.avisarPasseSala = () => room.broadcast({ type: 'passe-sala', passe: room.passes.sala(), amigosMembros: room.amigosMembros });
+    // Na ligação, só quem entende a marca chamada (app novo) recebe o passe: app antigo anunciaria a ligação aos amigos
+    room.passeSalaPara = (m) => (room.chamada && !m?.entendeChamada ? null : room.passes.sala());
+    room.avisarPasseSala = () => {
+      for (const [mid, m] of room.members) {
+        if (room.away.has(mid)) continue;
+        const msg = { type: 'passe-sala', passe: room.passeSalaPara(m), amigosMembros: room.amigosMembros };
+        const out = m.espectador ? paraEspectador(msg) : m.convidado ? paraConvidado(msg) : msg;
+        if (out) send(m.ws, out);
+      }
+    };
     room.broadcast = (msg, exceptId) => {
       for (const [mid, m] of room.members) {
         if (mid === exceptId || room.away.has(mid)) continue;
@@ -385,7 +396,7 @@ function createInternetServer(options = {}) {
         if (rooms.size >= cfg.maxRooms) { send(ws, { type: 'error', message: 'O servidor está cheio agora. Tente daqui a pouco.' }); return ws.close(); }
         if (creates.blocked(ip)) { send(ws, { type: 'error', message: 'Muitas salas criadas daqui. Espere um pouco.' }); return ws.close(); }
         creates.hit(ip);
-        room = createRoomState(password, msg.amigosMembros !== false);
+        room = createRoomState(password, msg.amigosMembros !== false, msg.chamada === true);
         cfg.log(`sala ${room.code} criada`);
       } else {
         const code = cleanCode(msg.room);
@@ -434,6 +445,7 @@ function createInternetServer(options = {}) {
       const nomeLimpo = String(msg.name ?? '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g, '').trim();
       const nomeConvidado = `${nomeLimpo.slice(0, 20) || 'Visitante'} (convidado)`;
       me = newMember(ws, convidado ? { name: nomeConvidado, client: msg.client } : msg, resuming ? resume : '', room.subsalas);
+      me.entendeChamada = msg.entendeChamada === true;
       me.addrs = []; // pela internet não tem por que espalhar os IPs de casa de ninguém
       if (convidado) { me.convidado = true; me.alvos = new Set(); } // alvos: quem transmite e recebeu o subscribe dele
       if (joinedViaPasse) { me.viaPasse = true; me.passeDigest = room.passes.digest(msg.passe); room.passes.remove(id); }
@@ -463,9 +475,10 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid, m]) => mid !== id && !m.espectador).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping'],
-        passeSala: room.passes.sala(),
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping', 'chamada'],
+        passeSala: room.passeSalaPara(me),
         amigosMembros: room.amigosMembros,
+        ...(room.chamada ? { chamada: true } : {}),
         chat: room.chat.log,
         subsalas: room.subsalas.list,
         lider: room.subsalas.liderMsg(),

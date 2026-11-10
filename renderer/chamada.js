@@ -143,10 +143,12 @@ async function abrirSalaChamada(modo, senha) {
 async function abrirSalaChamadaJa(modo, senha) {
   if (modo === 'internet') {
     const url = internetServerUrl();
-    const welcome = await connectRoom(url, { name: getName(), password: senha, create: true, amigosMembros: false });
+    const welcome = await connectRoom(url, { name: getName(), password: senha, create: true, amigosMembros: true, chamada: true }); // qualquer membro convida; a marca chamada mantém a ligação oculta para todos
     state.password = senha;
     try { enterRoom(welcome, false, url, 0, { url, code: welcome.sala, criador: true, amigos: false, chamada: true }); }
     catch (err) { dropHalfJoin(); throw err; }
+    // Servidor ainda sem a marca da ligação: quem entrasse pelo código anunciaria a ligação, então fica sem o passe da sala
+    if (!(welcome.features || []).includes('chamada') && welcome.amigosMembros) { try { state.ws.send(JSON.stringify({ type: 'amigos-membros', on: false })); } catch {} }
     return;
   }
   const port = parseInt($('roomPort').value, 10) || 8765;
