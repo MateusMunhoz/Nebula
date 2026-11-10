@@ -525,6 +525,7 @@ function onAtvhSignal(from, data) {
   const antes = JSON.stringify(atvhDaSala.get(from) || null);
   atvhDaSala.set(from, h);
   if (JSON.stringify(h) !== antes && typeof skyFocusId !== 'undefined' && skyFocusId === from) { skyFocusKey = ''; renderSkyProfile(); }
+  if (JSON.stringify(h) !== antes && typeof perfilFixoMudou === 'function') perfilFixoMudou(from);
 }
 
 // Os amigos no Início: recarrega só a atividade deles, sem mexer no resto da lista
@@ -565,6 +566,7 @@ function onBioSignal(from, data) {
   const texto = limparBio(data.text);
   if (texto) biosDaSala.set(from, texto); else biosDaSala.delete(from);
   if (texto !== antes && typeof skyFocusId !== 'undefined' && skyFocusId === from) { skyFocusKey = ''; renderSkyProfile(); }
+  if (texto !== antes && typeof perfilFixoMudou === 'function') perfilFixoMudou(from);
 }
 function resetBiosDaSala() { biosDaSala.clear(); biosPedidas.clear(); }
 

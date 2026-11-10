@@ -3633,55 +3633,58 @@ button.home-chip:hover { color: var(--text); }
 .palco-gente[hidden] { display: none; }
 .palco-gente svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-/* Os cartões */
-.pg-agora { display: grid; gap: 28px; width: min(900px, 100%); }
-.pg-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 260px)); gap: 14px; justify-content: center; }
-/* Uma seção por atividade: o título discreto em cima dos cartões, com quantos estão nela */
-.pg-grupo { display: grid; gap: 10px; }
-.pg-grupo > .pg-cartoes { justify-content: start; } /* alinhados ao título da seção */
-.pg-grupo-tit { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--muted); }
-.pg-grupo-tit > span { font-weight: 600; letter-spacing: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* A grade (renderPalcoGente, ajustarPalcoGrade): todo mundo da sala, uma tela por pessoa, do tamanho que couber.
+   O palco fica com uma margem fina; embaixo, o espaço da barra da chamada (fixa com a grade à vista) */
+#room .empty-stage.com-grade, .na-sala #room .empty-stage.com-grade { padding: 16px 16px 72px; }
+.palco-gente:has(> .pg-grade) { display: flex; flex-direction: column; align-items: center; gap: 16px; height: 100%; align-self: stretch; overflow: hidden; }
+.pg-grade {
+  flex: 1 1 0; min-height: 0; align-self: stretch; display: grid; gap: 8px; overflow: hidden;
+  grid-template-columns: repeat(var(--cols, 2), var(--tela-w, 1fr)); justify-content: center; align-content: safe center;
+}
 .pg-cartao {
-  display: block; padding: 0; overflow: hidden; text-align: left; font: inherit; color: var(--text);
-  border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent);
+  position: relative; display: block; aspect-ratio: 7 / 5; padding: 0; overflow: hidden; text-align: left; font: inherit; color: var(--text);
+  border-radius: 8px; border: 1px solid var(--line); background: var(--panel);
 }
-button.pg-cartao { cursor: pointer; transition: border-color .15s, translate .15s; }
-button.pg-cartao:is(:hover, :focus-visible) { border-color: var(--accent); translate: 0 -2px; }
-.pg-midia { position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; overflow: hidden; background: var(--sunken); }
+button.pg-cartao { cursor: pointer; transition: border-color .15s; }
+.pg-cartao[data-profile] { cursor: pointer; }
+:is(button.pg-cartao, .pg-cartao[data-profile]):is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--text) 25%, var(--line)); }
+.pg-cartao:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Falando: a borda verde, como nas telas */
+.pg-cartao.speaking, .pg-cartao.speaking:is(:hover, :focus-visible) { border-color: var(--ok); }
+.pg-midia { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
 .pg-midia > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.pg-midia .rot {
-  position: relative; z-index: 1; display: flex; gap: 8px; align-items: center; padding: 0 12px; text-align: center;
-  font-size: 15px; font-weight: 700; line-height: 1.1; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
-}
-.pg-midia .rot svg { width: 16px; height: 16px; flex: none; }
-.pg-midia.jogo, .pg-midia.ouvindo { background: var(--arte); }
-.pg-midia.jogo::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(transparent 40%, rgba(0, 0, 0, .55)); }
-.pg-midia.ouvindo .rot { font-size: 13px; }
-.pg-midia.ouvindo > img { filter: brightness(.55); }
-.pg-midia.nada .avatar { width: 48px; height: 48px; font-size: 20px; opacity: .55; }
+.pg-midia.tela { background: var(--sunken); }
 .pg-midia.tela > svg { width: 30px; height: 30px; color: var(--muted); opacity: .7; }
-/* "Assistindo": a tela de quem você assiste, com as telas minimizadas */
-.pg-chip {
-  position: absolute; left: 8px; top: 8px; z-index: 2; padding: 4px 7px; border-radius: 4px; background: var(--ok-soft); color: var(--ok);
-  font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: .12em; text-transform: uppercase;
+/* A foto grande no meio: cresce com a tela, até 96 px; falando, o anel verde */
+.pg-cartao { container-type: inline-size; }
+.pg-midia.foto .avatar { width: clamp(48px, 24cqi, 96px); height: auto; aspect-ratio: 1; font-size: clamp(18px, 9cqi, 34px); }
+.pg-cartao.speaking .pg-midia.foto .avatar { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--ok); }
+/* Os selos de cima: Ao vivo (na cor de destaque) e Assistindo (verde) */
+:is(.pg-selo, .pg-chip) {
+  position: absolute; left: 8px; top: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; line-height: 1;
 }
+.pg-selo { background: var(--accent); color: var(--bg); }
+.pg-selo::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.pg-chip { background: var(--ok-soft); color: var(--ok); letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
 .pg-assistir { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(5, 8, 14, .55); opacity: 0; transition: opacity .15s; }
 .pg-assistir span { display: inline-flex; gap: 8px; align-items: center; padding: 9px 16px; border-radius: 18px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; line-height: 1; }
 .pg-assistir svg { width: 16px; height: 16px; }
 button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
-.pg-info { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 10px 12px; }
-.pg-info > .avatar { grid-row: 1 / 3; width: 30px; height: 30px; font-size: 13px; }
-/* Transmitindo: anel azul (a cor de destaque) em volta da foto; falando, o verde vem por fora dele */
-.pg-cartao.transmitindo .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
-.pg-cartao.speaking .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ok); }
-.pg-cartao.transmitindo.speaking .pg-info > .avatar { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent), 0 0 0 6px var(--ok); }
-.pg-nome { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pg-cartao.eu .pg-nome { color: var(--accent); }
-.pg-icones { grid-row: 1 / 3; grid-column: 3; display: flex; gap: 6px; color: var(--warn); }
-.pg-icones svg { width: 14px; height: 14px; display: block; }
-.pg-fazendo { grid-column: 2; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pg-fazendo b { color: var(--text-2); font-weight: 500; }
+/* O pé: uma pílula escura com o nome, no canto de baixo */
+.pg-info {
+  position: absolute; left: 8px; bottom: 8px; z-index: 2; max-width: calc(100% - 16px); display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 999px; background: rgb(0 0 0 / .6); color: #fff;
+}
+.pg-info:has(> .avatar) { padding-left: 3px; }
+.pg-info > .avatar { width: 20px; height: 20px; font-size: 9px; }
+/* Transmitindo: anel azul (a cor de destaque) em volta da foto pequena; falando, o verde vem por fora dele */
+.pg-cartao.transmitindo .pg-info > .avatar { box-shadow: 0 0 0 1.5px var(--accent); }
+.pg-cartao.transmitindo.speaking .pg-info > .avatar { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 3px var(--ok); }
+.pg-nome { font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pg-info .eq { margin-left: 0; height: 10px; }
+.pg-ic { display: inline-flex; color: var(--warn); }
+.pg-ic svg { width: 13px; height: 13px; display: block; }
 
 /* A música do seu canal que você não está ouvindo; clicar ouve junto */
 .pg-musica {
@@ -3775,6 +3778,98 @@ button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
 .na-sala #room .tiles { gap: 2px; }
 .na-sala #room .tiles.column { gap: 2px; }
 
+/* ---------- Coluna do perfil (renderer/perfil-fixo.js): na sala, entre as telas e o painel (recolhido o painel,
+   encostada na barrinha), o perfil de uma pessoa sempre à vista. O desenho é o do perfil da voz (.sky-page-*): aqui
+   o lugar, o tamanho, a ordem e o acabamento do protótipo A (prototipo-ui/perfil-chamada.html): o tom do painel, uma
+   linha fina de cada lado, o que está fazendo num cartão, títulos de seção em versalete e a lista "Na voz" no pé */
+:root { --perfil-w: 320px; }
+.perfil-fixo { --text: var(--surface-text); --text-2: var(--surface-text-2); --muted: var(--surface-muted); --pf-bg: var(--panel);
+  position: fixed; top: 0; bottom: 0; right: var(--rail-w); z-index: 4; width: var(--perfil-w); box-sizing: border-box; display: flex; flex-direction: column;
+  border-inline: 1px solid var(--line); background: var(--pf-bg); color: var(--text); }
+.perfil-fixo[hidden] { display: none; }
+.has-workspace-pane:not(.workspace-wide) .perfil-fixo { right: calc(var(--rail-w) + var(--workspace-width)); }
+.na-sala.com-perfil-fixo:not(.has-workspace-pane) main { padding-right: var(--perfil-w); }
+.na-sala.com-perfil-fixo.has-workspace-pane:not(.workspace-wide) main { padding-right: calc(var(--workspace-width) + var(--perfil-w)); }
+.com-perfil-fixo:not(.has-workspace-pane) .dm-bar { right: calc(var(--rail-w) + var(--perfil-w)); }
+.workspace-in-room.com-perfil-fixo.has-workspace-pane:not(.workspace-wide) .dm-bar { right: calc(var(--rail-w) + var(--workspace-width) + var(--perfil-w)); }
+/* Interface espelhada: a barrinha e o painel à esquerda, e a coluna logo depois deles */
+:root[data-mirror="on"] .perfil-fixo { right: auto; left: var(--rail-w); }
+:root[data-mirror="on"] .has-workspace-pane:not(.workspace-wide) .perfil-fixo { right: auto; left: calc(var(--rail-w) + var(--workspace-width)); }
+:root[data-mirror="on"] .na-sala.com-perfil-fixo:not(.has-workspace-pane) main { padding-right: 0; padding-left: var(--perfil-w); }
+:root[data-mirror="on"] .na-sala.com-perfil-fixo.has-workspace-pane:not(.workspace-wide) main { padding-right: 0; padding-left: calc(var(--workspace-width) + var(--perfil-w)); }
+:root[data-mirror="on"] .com-perfil-fixo:not(.has-workspace-pane) .dm-bar { left: calc(var(--rail-w) + var(--perfil-w)); right: 0; }
+:root[data-mirror="on"] .workspace-in-room.com-perfil-fixo.has-workspace-pane:not(.workspace-wide) .dm-bar { left: calc(var(--rail-w) + var(--workspace-width) + var(--perfil-w)); right: 0; }
+
+.pf-corpo { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; background: var(--pf-bg); }
+/* A ordem na coluna: quem é, o que está fazendo, as ações e o volume; os recentes por último, e o Assistir preso no pé */
+.pf-corpo > .sky-page-head { order: 1; }
+.pf-corpo > .sky-page-atv { order: 2; }
+.pf-corpo > .sky-page-actions { order: 3; }
+.pf-corpo > :is(.sky-page-label, .sky-focus-vol) { order: 4; }
+.pf-corpo > .sky-page-hist { order: 5; }
+.pf-corpo > .sky-page-livebar { order: 6; }
+/* Topo: o fundo mais alto e a foto grande saindo dele, com o nome logo embaixo */
+.pf-corpo .sky-page-banner { height: 120px; place-items: end start; }
+.pf-corpo .sky-page-banner > :is(.avatar.sky-page-avatar, .sky-page-face) { margin-bottom: -44px; }
+.pf-corpo .avatar.sky-page-avatar { width: 88px; height: 88px; font-size: 34px; box-shadow: 0 0 0 5px var(--pf-bg); }
+.pf-corpo .avatar.sky-page-avatar.speaking { box-shadow: 0 0 0 4px var(--pf-bg), 0 0 0 7px var(--ok); }
+.pf-corpo .avatar.sky-page-avatar.live { box-shadow: 0 0 0 4px var(--pf-bg), 0 0 0 7px var(--live); }
+.pf-corpo .sky-page-live-tag { box-shadow: 0 0 0 3px var(--pf-bg); }
+.pf-corpo .sky-page-head, .pf-corpo .sky-page-banner:has(.sky-page-face) + .sky-page-head { padding: 56px 16px 0; }
+.pf-corpo .sky-page-head > .sky-focus-where { display: none; } /* "Na voz" já é o título da lista embaixo */
+.pf-corpo .sky-focus-name { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+.pf-corpo .sky-page-tags { margin-top: 2px; font-size: 12.5px; }
+.pf-corpo .sky-focus-bio { margin-top: 12px; font-size: 13px; font-style: normal; line-height: 1.45; color: var(--text-2); }
+/* O que está fazendo: um cartão afundado, com a capa (ou o ícone) de 40 px */
+.pf-corpo .sky-page-atv { gap: 6px; margin: 14px 16px 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunken); }
+.pf-corpo .sky-page-atv .atv-item { gap: 10px; padding: 0; }
+.pf-corpo .sky-page-atv button.atv-item { width: calc(100% + 12px); margin: -6px; padding: 6px; }
+.pf-corpo .sky-page-atv .atv-icon:not(.atv-vinil) { width: 40px; height: 40px; border-radius: 6px; }
+.pf-corpo .sky-page-atv .atv-icon.atv-vinil { width: 58px; height: 40px; }
+.pf-corpo .sky-page-atv .atv-item.pausada .atv-icon.atv-vinil { width: 40px; }
+.pf-corpo .atv-vinil .vinil-capa { width: 40px; height: 40px; border-radius: 6px; }
+.pf-corpo .atv-vinil .vinil-sai { left: 3px; top: 3px; width: 34px; height: 34px; translate: 0; transform: translateX(18px); }
+.pf-corpo .atv-item.pausada .vinil-sai { transform: translateX(0); }
+.pf-corpo .sky-page-atv .atv-title { font-size: 13px; font-weight: 600; }
+.pf-corpo .sky-page-atv .atv-sub { font-size: 12px; color: var(--muted); }
+.pf-corpo .sky-page-actions { gap: 8px; padding: 14px 16px 0; }
+.pf-corpo .sky-page-act { width: 36px; height: 36px; }
+.pf-corpo .sky-page-act.principal { width: auto; font-size: 13px; }
+/* Títulos de seção (Volume, Som da transmissão, Atividade) como no protótipo: pequenos, em versalete, espaçados */
+.pf-corpo :is(.sky-page-label, .sky-page-hist-t) { font: 600 11px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pf-corpo .sky-page-label { margin: 16px 16px 0; }
+.pf-corpo .sky-focus-vol { gap: 10px; margin: 8px 16px 0; }
+.pf-corpo .sky-focus-vol output { font-variant-numeric: tabular-nums; }
+.pf-corpo .sky-page-hist { gap: 8px; margin: 16px 16px 16px; }
+.pf-corpo .sky-page-livebar { margin-top: auto; }
+:root[data-mirror="on"] .pf-corpo .sky-page-back svg { transform: scaleX(-1); } /* recolher aponta para o lado do painel */
+/* O vinil e as barrinhas da música mexem como no perfil aberto (parados no modo gamer e em "reduzir movimento"). Como a
+   coluna fica sempre à vista, também param com o app fora de foco (num jogo, por exemplo) */
+.app-blurred .pf-corpo :is(.atv-vinil .vinil-disco, .sky-page-atv .atv-eq > span) { animation-play-state: paused; }
+/* A lista do pé ("Na voz · 4"): uma linha por pessoa, com a foto, o nome e o que está fazendo. A escolhida tem o fundo
+   mais claro e o traço do destaque à esquerda; quem fala ganha o anel verde e as barrinhas (paradas); quem transmite,
+   o anel "ao vivo"; microfone desligado em laranja */
+/* Só as fotos, lado a lado (o nome fica na dica do mouse). A escolhida tem o fundo; quem transmite, o anel ao vivo; quem
+   fala, o verde; microfone desligado, o selinho laranja no canto da foto */
+.pf-lista { flex: none; max-height: 42%; overflow-y: auto; scrollbar-width: none; padding: 14px 12px 12px; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+.pf-lista:empty { display: none; } /* ninguém na voz */
+.pf-lista-t { flex: 0 0 100%; margin: 0 0 4px; padding: 0 4px; font: 600 11px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pf-linha + .pf-lista-t { margin-top: 10px; }
+.pf-linha { position: relative; width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text); cursor: pointer; }
+.pf-linha:hover .avatar { outline: 2px solid color-mix(in srgb, var(--text) 30%, transparent); outline-offset: 5px; }
+/* A escolhida: só um contorno redondo em volta da foto (por fora dos anéis de ao vivo e de quem fala) */
+.pf-linha[aria-current="true"] .avatar { outline: 2px solid var(--text); outline-offset: 5px; }
+.pf-linha:focus-visible { outline: none; }
+.pf-linha:focus-visible .avatar { outline: 2px solid var(--accent); outline-offset: 5px; }
+.pf-linha .avatar { width: 36px; height: 36px; font-size: 15px; }
+.pf-linha.live .avatar { box-shadow: 0 0 0 2px var(--pf-bg), 0 0 0 4px var(--live); }
+.pf-linha.speaking .avatar { box-shadow: 0 0 0 2px var(--pf-bg), 0 0 0 4px var(--ok); }
+.pf-mudo { position: absolute; right: 3px; bottom: 3px; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--pf-bg); color: var(--warn); }
+.pf-mudo svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
 /* ---------- Barra da chamada (setupCallbar, navegacao.js): no pé das telas, no meio; só na voz ---------- */
 .callbar { --text: var(--surface-text); --muted: var(--surface-muted);
   /* Centralizada pela margem (não por translate -50%): fica sempre no pixel inteiro e os ícones não embaçam */
@@ -3815,6 +3910,8 @@ button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
 .callbar .cb.leave { border-color: var(--warn); background: transparent; box-shadow: none; color: var(--warn); }
 .callbar .cb.leave:hover { background: var(--warn); color: var(--bg); }
 .callbar .cb.leave svg { width: 15px; height: 15px; }
+/* Fixa embaixo da grade de pessoas: só os blocos de botões, sem a caixa em volta */
+.callbar.fixa, :root[data-gamer="on"] .callbar.fixa { padding: 0; border: 0; background: none; box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .callbar, .callbar.on { transition: none; } }
 :root[data-gamer="on"] .callbar { backdrop-filter: none; background: var(--panel); transition: none; }
 /* Com a barra à vista, os botões que ela repete saem do Seu sinal (microfone, fone, sair, quem pode assistir, trocar e parar):

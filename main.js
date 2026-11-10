@@ -255,6 +255,7 @@ function endSession(endRoom) {
 // DevTools só no código desta pasta (npm run dev). No app instalado ficam desligadas em todas as janelas (a principal,
 // a flutuante e o chat do jogo, que herdam dela): o atalho Ctrl+Shift+I e o menu não abrem nada, e se algo abrir, fecha
 const DEVTOOLS = !app.isPackaged;
+const DEV_LOCAL = process.argv.includes('--local');
 if (!DEVTOOLS) app.on('web-contents-created', (_e, wc) => wc.on('devtools-opened', () => wc.closeDevTools()));
 
 function createWindow() {
@@ -572,10 +573,11 @@ if (hasSingleInstance) app.whenReady().then(() => {
   ipcMain.handle('window-icon', (_e, png) => setWindowIcon(png));
   ipcMain.handle('capture-region', (_e, x, y, w, h) => captureRegion(Number(x) || 0, Number(y) || 0, Number(w) || 0, Number(h) || 0));
   ipcMain.handle('get-own-pack', () => updater.readCurrentPack());
-  ipcMain.handle('install-update', (_e, pack, sig) => updater.install(pack, sig));
+  ipcMain.handle('install-update', (_e, pack, sig) => DEV_LOCAL ? { ok: false, error: 'modo dev (--local)' } : updater.install(pack, sig));
   ipcMain.handle('github-check', () => github.check());
   // update-progresso: a barra da atualização (renderer/abertura.js); só bytes, nada do conteúdo
-  ipcMain.handle('github-install', (e) => github.install(updater, (feito, total) => {
+  // `npm run dev` (--local) sempre reabre o código desta pasta: instalar e reiniciar viraria um loop
+  ipcMain.handle('github-install', (e) => DEV_LOCAL ? { ok: false, error: 'modo dev (--local)' } : github.install(updater, (feito, total) => {
     if (!e.sender.isDestroyed()) e.sender.send('update-progresso', { feito, total });
   }));
   ipcMain.handle('open-github', (_e, url) => github.openPage(url));

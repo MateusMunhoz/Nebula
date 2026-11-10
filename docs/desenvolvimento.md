@@ -80,6 +80,7 @@ isso (chamam `watch`, `state`, `speaking`... direto na página).
 | 22 | `subsalas.js` | Subsalas de voz: criar e apagar (Subsala_1, Subsala_2…), entrar numa subsala e a lista por canal no painel de voz |
 | 23 | `membros.js` | Painel da sala: endereço e lista de pessoas |
 | — | `musica.js`, `musica-fila.js`, `youtube-escolher.js` | Música junto (YouTube): a tela da música, a pílula do canal e o balão de colar; o painel da fila (`#filaPop`, `porNaFila`); o escolhedor do YouTube dentro do app (modos pôr, trocar e fila) ([spec](spec/musica-youtube-e-fila.md)) |
+| 23b | `perfil-fixo.js` (depois do `ceu-voz.js`) | Coluna do perfil: entre as telas e o painel, o perfil de uma pessoa sempre à vista (`renderSkyPage` no modo `fixo`, com `dadosDoPerfil` do `ceu-voz.js`), a lista "Na voz" no pé e o recolher (`perfilFixo.v1`). Pega os cliques em pessoas (`openSkyProfile` e `[data-profile]`) quando a janela tem 1160 px ou mais |
 | 24 | `clipe-mp4.js`, `clipes.js` | Clipe dos últimos segundos com som: buffer dos pedaços H.264 (do modo "uma vez só", ou recodificados no "uma por pessoa"), som em AAC/Opus, MP4 com o `mp4-muxer` de `vendor/`, duração, atalho, tesoura e aviso ([spec](spec/clipes.md)) |
 | 25 | `assistir.js` | Quadros de vídeo, ver a própria transmissão, destaque, tela cheia |
 | 26 | `palco.js` | Como as telas assistidas se arrumam no palco |

@@ -284,6 +284,7 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
       m.voiceDesde = Date.now();
       broadcast(voiceStateOf(mid, m));
     }
+    musicas?.sozinha.delete(sub); // o número pode voltar numa subsala nova: ela não herda o "sozinha desde"
     if (musicas?.map.delete(sub)) broadcast(musicas.msg()); // a música da subsala apagada para
     broadcast({ type: 'subsalas', list: subsalas.list });
     broadcast(subsalas.liderMsg());

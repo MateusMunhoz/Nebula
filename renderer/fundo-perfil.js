@@ -75,6 +75,7 @@ function requestProfileBg(id) {
 // O fundo de alguém mudou ou chegou: redesenha o perfil aberto, se for dela
 function fundoChanged(id) {
   if (typeof skyFocusId !== 'undefined' && skyFocusId === id) { skyFocusKey = ''; renderSkyProfile(); }
+  if (typeof perfilFixoMudou === 'function') perfilFixoMudou(id || state.myId); // e a coluna do perfil, se mostra essa pessoa
 }
 
 // Mensagens diretas do fundo: alguém pede o meu, ou chega o de alguém

@@ -46,6 +46,22 @@ app.whenReady().then(async () => {
     await run(`enterRoom({ id: '1', features: ['chat', 'voice', 'handoff'], members: [{ id: '2', name: 'Ana', sharing: true, version: '1.9.2' }], chat: [{ id: '1', from: '2', name: 'Ana', ts: Date.now(), text: 'oi' }] }, false, '127.0.0.1', 8765)`);
     await sleep(300);
     check('Entra na sala de mentira: lista e chat', await run(`!$('room').hidden && document.querySelectorAll('#members .member').length === 2 && $('chatList').querySelectorAll('.msg').length === 1`));
+    check('Coluna do perfil: na sala mostra quem transmite, as fotos do pé são só de quem está na voz e trocam de pessoa, recolher devolve o espaço e clicar em alguém abre de novo', await run(`(() => {
+      const corpo = $('perfilFixoCorpo');
+      const on = !$('perfilFixo').hidden && document.body.classList.contains('com-perfil-fixo') && corpo.dataset.for === '2'
+        && !!corpo.querySelector('.sky-page-banner') && !corpo.querySelector('#skyFocusName') && !$('perfilFixoLista').hidden;
+      const ninguem = !$('perfilFixoLista').querySelector('[data-person]'); // fora da voz não entra
+      voice.members.set('2', { session: 'teste', channel: '' });
+      mostrarNoPerfilFixo(state.myId);
+      const so = [...$('perfilFixoLista').querySelectorAll('[data-person]')].map((b) => b.dataset.person).join() === '2';
+      $('perfilFixoLista').querySelector('[data-person="2"]').click();
+      voice.members.delete('2');
+      const trocou = so && ninguem && corpo.dataset.for === '2' && $('perfilFixoLista').querySelector('[aria-current="true"]').dataset.person === '2';
+      corpo.querySelector('.sky-page-back').click();
+      const fechou = $('perfilFixo').hidden && !document.body.classList.contains('com-perfil-fixo');
+      const voltou = mostrarNoPerfilFixo('2') && !$('perfilFixo').hidden && corpo.dataset.for === '2' && $('skyFocus').hidden;
+      return on && trocou && fechou && voltou;
+    })()`));
     check('Barra da chamada: fora da voz não aparece', await run(`(() => { callbarAcordar(); return !$('callbar').classList.contains('on'); })()`));
     check('Barra da chamada: na voz aparece, com microfone, fone, transmitir e sair, e esses somem do painel; ao vivo, o monitor vira parar', await run(`(() => {
       const antes = voice.session; voice.session = 'teste';

@@ -154,6 +154,8 @@ function syncWorkspace() {
   $('seuSinalMini').hidden = !inCall || any;
   if (inRoom) syncIncomingVideo(); // telas escondidas não baixam vídeo (o som continua)
   if (mapFocus.on && !mapFocusFits()) setMapFocus(false); // o mapa em foco só existe com chat e voz lado a lado
+  syncPerfilFixo(); // a coluna do perfil, entre as telas e o painel (perfil-fixo.js)
+  syncCallbarFixa(); // a sala apareceu ou sumiu: a barra fixa embaixo da grade vai junto
   $('workspaceContext').textContent = inRoom ? 'Na sala' : 'Início';
   $('dockHome').hidden = !inRoom; // no menu, o Voltar para a sala fica no lugar do Início (renderHomeCall)
   $('dockAddr').hidden = !inCall || !state.roomAddr;
@@ -290,8 +292,17 @@ function setupSeuSinal() {
 // Na voz, com a tela da sala à vista: mexer o mouse em cima das telas mostra a barra no pé delas, no meio; ela some
 // sozinha (TILE_IDLE_MS) e fica enquanto o mouse ou o foco está nela. Microfone, fone, transmitir e sair da voz: os
 // botões só clicam nos de verdade (os do Seu sinal), que somem do painel enquanto a barra está à vista.
-const callbar = { timer: 0 };
+// Com a grade de pessoas no palco (renderPalcoGente, membros.js), ela fica fixa, embaixo da grade.
+const callbar = { timer: 0, fixa: false };
 function callbarPode() { return !!voice.session && !!state.myId && !$('room').hidden; }
+function callbarFixa() { return callbarPode() && !$('emptyStage').hidden && $('emptyStage').classList.contains('com-grade'); }
+function syncCallbarFixa() {
+  const fixa = callbarFixa();
+  if (fixa) setCallbar(true);
+  else if (callbar.fixa) callbarAcordar(); // a grade saiu (alguém abriu uma tela): volta a sumir sozinha
+  callbar.fixa = fixa;
+  $('callbar').classList.toggle('fixa', fixa);
+}
 function setCallbar(on) {
   on = on && callbarPode();
   clearTimeout(callbar.timer);
@@ -302,6 +313,7 @@ function setCallbar(on) {
 function callbarAcordar() {
   if (!callbarPode()) return setCallbar(false);
   setCallbar(true);
+  if (callbarFixa()) return;
   callbar.timer = setTimeout(function dormir() {
     if ($('callbar').matches(':hover, :focus-within')) callbar.timer = setTimeout(dormir, TILE_IDLE_MS);
     else setCallbar(false);
@@ -317,6 +329,7 @@ function syncCallbarReserva() {
 function renderCallbar() {
   if (!callbarPode()) setCallbar(false);
   syncCallbarReserva();
+  syncCallbarFixa(); // entrou ou saiu da voz
   setIcon($('cbMic'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
   $('cbMic').setAttribute('aria-pressed', String(voice.muted));
   $('cbMic').classList.toggle('off', voice.muted);
@@ -335,7 +348,7 @@ function renderCallbar() {
 function setupCallbar() {
   const area = $('streamArea');
   area.addEventListener('pointermove', (e) => { if (!e.target.closest?.('.modal')) callbarAcordar(); }, { passive: true });
-  area.addEventListener('pointerleave', () => setCallbar(false));
+  area.addEventListener('pointerleave', () => { if (!callbarFixa()) setCallbar(false); });
   $('callbar').addEventListener('focusin', () => setCallbar(true));
   $('callbar').addEventListener('focusout', () => setTimeout(() => { if (!$('callbar').matches(':hover, :focus-within')) callbarAcordar(); }));
   // Só a transição da própria barra (os botões dentro dela também animam e o evento sobe deles)
