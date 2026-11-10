@@ -86,7 +86,7 @@ test('administradores, aprovação, banimento, auditoria e consulta sanitizada a
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.match(await page.text(), /Clientes/);
 });
-test('clientes: uma conta mantém somente uma sessão ativa', async t => {
+test('clientes: a mesma conta em dois PCs aparece como dois clientes, os dois logados', async t => {
   const { req, register } = await fixture(t);
   const a = await register('Alice');
 
@@ -102,11 +102,11 @@ test('clientes: uma conta mantém somente uma sessão ativa', async t => {
 
   const clients = (await req('admin/clients', 'GET', undefined, ROOT)).clients;
 
-  assert.equal(clients.length, 1);
-  assert.equal(clients.filter(c => c.online).length, 1);
+  assert.equal(clients.length, 2);
+  assert.equal(clients.filter(c => c.online).length, 2);
 
   const overview = await req('admin/overview', 'GET', undefined, ROOT);
-  assert.equal(overview.connectedClients, 1);
+  assert.equal(overview.connectedClients, 2);
   assert.equal(overview.online, 1);
 
   const statuses = [
@@ -114,7 +114,7 @@ test('clientes: uma conta mantém somente uma sessão ativa', async t => {
     (await req('me', 'GET', undefined, second.accessToken)).status
   ].sort();
 
-  assert.deepEqual(statuses, [200, 401]);
+  assert.deepEqual(statuses, [200, 200]);
 });
 test('configurações persistem após reiniciar e presença exige nova confirmação', async t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-control-'));

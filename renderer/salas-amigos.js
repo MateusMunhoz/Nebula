@@ -189,7 +189,7 @@ async function entrarSalaAmigoAgora(s) {
   try {
     const welcome = await connectRoom(s.servidor, { name: getName(), passe: s.passe, room: s.codigo });
     state.password = '';
-    try { enterRoom(welcome, false, s.servidor, 0, { url: s.servidor, code: welcome.sala || s.codigo, passe: s.passe }); }
+    try { enterRoom(welcome, false, s.servidor, 0, { url: s.servidor, code: welcome.sala || s.codigo, passe: s.passe, ...(s.oculta ? { chamada: true } : {}) }); }
     catch (err) { dropHalfJoin(); throw err; }
   } catch (err) {
     if (err.cancelada) return;
@@ -228,7 +228,8 @@ function conviteDaSala(semPasse = false) {
   const pessoas = state.members.size + 1;
   if (state.cloud) {
     const passe = semPasse ? '' : garantirPasse();
-    return { v: 1, modo: 'internet', servidor: state.cloud.url, codigo: state.cloud.code, ...(passe ? { passe } : {}), pessoas };
+    return { v: 1, modo: 'internet', servidor: state.cloud.url, codigo: state.cloud.code, ...(passe ? { passe } : {}), pessoas,
+      ...(state.cloud.chamada ? { oculta: true } : {}) }; // de dentro de uma ligação: quem entra também não anuncia
   }
   const endereco = state.roomAddr || (state.host && state.host !== '127.0.0.1' ? `${state.host}:${state.port}` : '');
   if (!endereco) return null;
@@ -259,7 +260,7 @@ function lerConvite(text) {
     if (String(cv.servidor).length > 200 || !['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) return null;
     if (typeof cv.codigo !== 'string' || !/^[A-HJ-NP-Z2-9]{6}$/.test(cv.codigo)) return null;
     const passe = typeof cv.passe === 'string' && /^[A-Za-z0-9_-]{43}$/.test(cv.passe) ? cv.passe : '';
-    return { modo: 'internet', servidor: String(cv.servidor), codigo: cv.codigo, passe, pessoas, ...chamadaInfo };
+    return { modo: 'internet', servidor: String(cv.servidor), codigo: cv.codigo, passe, pessoas, ...(cv.oculta === true ? { oculta: true } : {}), ...chamadaInfo };
   }
   if (typeof cv.endereco !== 'string' || !/^\d{1,3}(\.\d{1,3}){3}:\d{2,5}$/.test(cv.endereco)) return null;
   const rede = cv.modo === 'razze' && typeof cv.rede === 'string' && cv.rede.length <= 80 ? cv.rede : '';
@@ -298,7 +299,7 @@ async function aceitarConvite(cv, quem) {
     leaveRoom();
   }
   show('home');
-  if (cv.modo === 'internet') return entrarSalaAmigo({ host: quem, codigo: cv.codigo, servidor: cv.servidor, passe: cv.passe });
+  if (cv.modo === 'internet') return entrarSalaAmigo({ host: quem, codigo: cv.codigo, servidor: cv.servidor, passe: cv.passe, oculta: !!cv.oculta });
   const [endereco, porta] = cv.endereco.split(':');
   enterSession({ host: quem, endereco, porta: Number(porta), senha: cv.senha });
 }

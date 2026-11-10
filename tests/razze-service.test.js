@@ -57,3 +57,55 @@ test('Perfil novo já vem com a RazzeAPI da equipe; endereço salvo continua val
     fs.rmSync(profile, { recursive: true, force: true });
   }
 });
+
+// Sessão que caía sem motivo (docs/razze-api.md, Sessões): falha ao decifrar não apaga o token guardado
+test('decifrar falhou (Keychain negou): continua guardado e volta quando o cofre abre', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-service-'));
+  const app = { getPath: () => profile };
+  const bom = { isEncryptionAvailable: () => true, encryptString: (v) => Buffer.from('sealed:' + v), decryptString: (v) => v.toString().slice(7) };
+  const negado = { ...bom, decryptString: () => { throw new Error('Keychain negou'); } };
+  const arquivo = path.join(profile, 'razze', 'session.json');
+  try {
+    fs.mkdirSync(path.dirname(arquivo), { recursive: true });
+    fs.writeFileSync(arquivo, JSON.stringify({ baseUrl: 'http://127.0.0.1:9', secret: Buffer.from('sealed:' + 't'.repeat(43)).toString('base64') }));
+    const falhou = createRazzeService({ app, safeStorage: negado, wireguard: {} });
+    assert.equal(falhou.state().authenticated, false);
+    falhou.configure('http://127.0.0.1:9'); // regrava o arquivo (mesmo endereço)
+    assert.notEqual(JSON.parse(fs.readFileSync(arquivo, 'utf8')).secret, '', 'não apagou o token guardado');
+    const semCofre = createRazzeService({ app, safeStorage: { isEncryptionAvailable: () => false }, wireguard: {} });
+    semCofre.configure('http://127.0.0.1:9');
+    assert.notEqual(JSON.parse(fs.readFileSync(arquivo, 'utf8')).secret, '', 'cofre indisponível também não apaga');
+    assert.equal(createRazzeService({ app, safeStorage: bom, wireguard: {} }).state().authenticated, true);
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+test('só "sessão inválida" do servidor desloga: 403 de proxy ou senha errada numa ação não', async () => {
+  const http = require('node:http');
+  let resposta = { status: 403, corpo: '<html>Forbidden</html>' };
+  const srv = http.createServer((req, res) => { res.writeHead(resposta.status, { 'Content-Type': 'application/json' }); res.end(resposta.corpo); });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-service-'));
+  const app = { getPath: () => profile };
+  const safeStorage = { isEncryptionAvailable: () => true, encryptString: (v) => Buffer.from('sealed:' + v), decryptString: (v) => v.toString().slice(7) };
+  const url = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    fs.mkdirSync(path.join(profile, 'razze'), { recursive: true });
+    fs.writeFileSync(path.join(profile, 'razze', 'session.json'), JSON.stringify({ baseUrl: url, secret: Buffer.from('sealed:' + 't'.repeat(43)).toString('base64') }));
+    const s = createRazzeService({ app, safeStorage, wireguard: {} });
+    const geracao = s.sessao();
+    await assert.rejects(s.me());
+    assert.equal(s.state().authenticated, true, '403 sem código (proxy, Wi-Fi) não desloga');
+    resposta = { status: 401, corpo: JSON.stringify({ error: { code: 'invalid_credentials', message: 'A senha está incorreta.' } }) };
+    await assert.rejects(s.me());
+    assert.equal(s.state().authenticated, true, '401 de senha errada não desloga');
+    resposta = { status: 401, corpo: JSON.stringify({ error: { code: 'unauthorized', message: 'Sessão inválida ou expirada.' } }) };
+    await assert.rejects(s.me());
+    assert.equal(s.state().authenticated, false, 'sessão inválida desloga');
+    assert.notEqual(s.sessao(), geracao, 'trocar a sessão muda a geração (presença não desloga um login novo)');
+  } finally {
+    srv.close();
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});

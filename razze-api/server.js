@@ -10,12 +10,13 @@ const { DatabaseSync } = require('node:sqlite');
 const { createHash, createPublicKey, randomBytes, randomInt, scrypt, timingSafeEqual, verify: verifySignature } = require('node:crypto');
 const { promisify } = require('node:util');
 const scryptAsync = promisify(scrypt);
-const { createControl } = require('./control');
+const { createControl, podarSessoes } = require('./control');
 const ident = require('./identificador');
 const totp = require('./totp');
 const { enviarSmtp, configDoAmbiente, criarCorreio, EMAIL_RE } = require('./email');
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 const MAX_BODY_BYTES = 32 * 1024;
 // Mensagens diretas entre amigos: o servidor guarda por 30 dias (para chegar a quem está offline e aos outros PCs da
 // mesma conta); o histórico completo fica no PC de cada um
@@ -418,13 +419,13 @@ function createApiServer(options = {}) {
     }
     return () => { record.count++; };
   };
-  // Uma sessão por conta em cada tipo de aparelho: entrar no PC derruba só a sessão de PC anterior; entrar no celular,
-  // só a do celular (o PC e o celular da mesma pessoa ficam logados juntos)
+  // Até 5 sessões por conta em cada tipo de aparelho (podarSessoes, control.js): entrar em outro PC não derruba o
+  // primeiro (antes era uma só, e quem usava dois PCs, o painel admin ou o dev:teste vivia deslogado). Passou do limite,
+  // cai a usada há mais tempo; o celular conta à parte
   const issueToken = (userId, plataforma = 'pc') => {
     const token = randomBytes(32).toString('base64url');
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.prepare('DELETE FROM sessions WHERE user_id = ? AND plataforma = ?').run(userId, plataforma);
       db.prepare(
         'INSERT INTO sessions(token_hash, user_id, expires_at, plataforma) VALUES(?, ?, ?, ?)'
       ).run(
@@ -433,6 +434,7 @@ function createApiServer(options = {}) {
         now() + (options.tokenTtlMs || TOKEN_TTL_MS),
         plataforma
       );
+      podarSessoes(db, options.tokenTtlMs || TOKEN_TTL_MS);
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');
@@ -506,6 +508,9 @@ function createApiServer(options = {}) {
     }
     const account = db.prepare('SELECT status FROM users WHERE id=?').get(session.userId);
     if (account?.status !== 'active') throw new ApiError(403, 'account_disabled', 'Esta conta está desativada ou aguarda aprovação.');
+    // Sessão em uso se renova: passou da metade do prazo, ganha o prazo inteiro de novo (só quem fica parado vence)
+    const prazo = options.tokenTtlMs || TOKEN_TTL_MS;
+    if (session.expiresAt - now() < prazo / 2) db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(now() + prazo, tokenHash);
     req.authSessionHash = tokenHash;
     return session.userId;
   };

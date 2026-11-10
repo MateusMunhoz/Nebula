@@ -188,6 +188,8 @@ Quando há uma sala aberta (de amigo ou, nos outros modos, na sua rede), ela sob
 - **Amigos de quem estiver na sala também podem entrar** (Criar sala, marcado por padrão): os amigos de qualquer
   pessoa da sala entram com um clique, mesmo que você não os conheça. O host liga e desliga no painel da sala (ao lado
   da senha); desligar não tira ninguém, só impede que entre gente nova sem a senha. Mudar a senha troca o passe.
+  Numa **ligação** pela internet, a opção vem ligada: qualquer pessoa da ligação convida um amigo pelo **Convidar**,
+  sem precisar da senha. A ligação continua escondida da lista de salas dos amigos.
 - **Fechar a sala para os seus amigos sem sumir:** em **Configurações › Privacidade**, desligue **Deixar meus amigos
   entrarem na sala em que estou**. Eles continuam vendo "Na sala de Ciclano", sem o Entrar.
 - **Quanto tempo fica:** enquanto você está na sala. Saiu (ou fechou o app), ela some da lista dos amigos na hora;

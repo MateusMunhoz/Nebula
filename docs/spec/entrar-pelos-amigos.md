@@ -29,7 +29,11 @@ aparece só "Na sala de X", sem Entrar. A ideia é: logou, viu o amigo numa sala
 ## Comportamento esperado
 1. **Criar sala (modo Internet):** a tela Criar sala ganha, embaixo de "Mostrar esta sala para meus amigos",
    **Amigos de quem estiver na sala também podem entrar** (marcada por padrão, preferência `salaAmigosMembros`).
-   A chamada (`chamada.js`) cria sempre com ela desmarcada.
+   A chamada (`chamada.js`) cria sempre com ela **ligada** (09/11/2026, opção B): qualquer membro da ligação convida
+   pelas mensagens com o passe da sala. A ligação continua oculta: nenhum membro a anuncia (`publicarSalaInternet`
+   ignora `chamada`), e o host pode desligar no painel da sala. A marca chega a todos: o servidor devolve `chamada: true` no
+   `welcome` de quem entra (pelo passe ou pela senha), e o convite feito de dentro da ligação leva `oculta: true`, que
+   quem entra por ele guarda (cobre o servidor ainda sem a marca). App antigo de quem é convidado ainda anuncia.
 2. **Dentro da sala:** com a opção ligada, todo membro logado na conta e com os dois interruptores de Perfil ›
    Atividade ligados ("Mostrar aos amigos em que sala estou" e "Deixar meus amigos entrarem na sala em que estou",
    decisão 2) anuncia a sala. Os amigos dele veem:

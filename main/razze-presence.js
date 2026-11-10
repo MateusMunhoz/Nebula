@@ -1,4 +1,5 @@
 'use strict';
+const { sessaoRecusada } = require('./razze-service');
 
 // Sala do modo Internet que o app anuncia aos amigos: confere o que vem da janela antes de mandar à RazzeAPI
 function cleanInternetRoom(v) {
@@ -35,6 +36,7 @@ function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () =
     if (running) { queued = true; return running; }
     running = (async () => {
       if (!service.state().authenticated) { emit({ friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: snapshot.error, authenticated: false }); return; }
+      const sessao = service.sessao?.(); // a de agora: um 401 que chega depois de um login novo não derruba o novo
       try {
         const api = service.api();
         const connections = [];
@@ -60,13 +62,16 @@ function createPresence({ service, clientName = 'Tela P2P', getAppVersion = () =
         const appVersion = String(getAppVersion() || '');
         const salaAtual = getSalaAtual() || undefined;
         await api.heartbeat({ clientName, connections, room, ...(internetRoom ? { internetRoom } : {}), ...(salaAtual ? { salaAtual } : {}), ...(appVersion ? { appVersion } : {}) });
-        const [friends, listed, rooms] = await Promise.all([api.listFriends(), api.listNetworks(), api.listRooms()]);
-        if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, internetRooms: Array.isArray(rooms.internet) ? rooms.internet : [], updatedAt: Date.now(), error: '' });
+        // Os pedidos de amizade vêm junto: sem isso, o pedido novo só aparecia ao reabrir o app
+        const [friends, listed, rooms, pedidos] = await Promise.all([api.listFriends(), api.listNetworks(), api.listRooms(),
+          api.friendRequests ? api.friendRequests().catch(() => null) : null]);
+        const friendRequests = pedidos ? { incoming: Array.isArray(pedidos.incoming) ? pedidos.incoming : [], outgoing: Array.isArray(pedidos.outgoing) ? pedidos.outgoing : [] } : undefined;
+        if (!stopped) emit({ friends: friends.friends, networks: listed.networks, rooms: rooms.rooms, internetRooms: Array.isArray(rooms.internet) ? rooms.internet : [], ...(friendRequests ? { friendRequests } : {}), updatedAt: Date.now(), error: '' });
       } catch (e) {
-        if (e.status === 401 || ['account_disabled', 'account_pending'].includes(e.code)) {
+        if (sessaoRecusada(e)) { // os túneis caem sempre; sair da conta só se ninguém entrou de novo durante a batida
           networks.clear();
           await service.wireguard.disconnectAll().catch(() => {});
-          await service.logout().catch(() => {});
+          if (service.sessao?.() === sessao) await service.logout().catch(() => {});
         }
         if (!stopped) emit({ friends: [], networks: [], rooms: [], internetRooms: [], updatedAt: null, error: e.message, authenticated: service.state().authenticated });
       }
