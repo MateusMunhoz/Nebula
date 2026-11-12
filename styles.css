@@ -1941,6 +1941,7 @@ body { height: calc(100% - var(--titlebar)); margin-top: var(--titlebar); contai
 .titlebar .logo-dots-p { display: inline; }
 .titlebar { gap: 0; }
 .titlebar svg + .brand-name { margin-left: -2px; transform: translateY(5px); font-size: 14px; font-weight: 400; }
+html[data-platform=darwin] .titlebar { padding-left: 78px; } /* macOS: fechar/minimizar/maximizar ficam à esquerda */
 :is(html[data-glass=clear], html[data-glass=liquid]) .titlebar { background: transparent; }
 
 /* Temas prontos (Aparência) */

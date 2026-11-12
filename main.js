@@ -270,6 +270,7 @@ function createWindow() {
     // minimizar, maximizar e fechar, nas cores que a página manda (setTitleBar)
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#22271E', symbolColor: '#FFFFFF', height: TITLEBAR_HEIGHT },
+    trafficLightPosition: { x: 12, y: (TITLEBAR_HEIGHT - 14) / 2 }, // macOS: os três botões no meio da barra; a página guarda o espaço (data-platform)
     title: 'Nebula',
     // Até a página mandar o da cor do tema: o mesmo desenho na cor padrão (npm run icone)
     icon: path.join(__dirname, 'assets', 'icone', process.platform === 'win32' ? 'tela-p2p.ico' : 'tela-p2p.png'),
