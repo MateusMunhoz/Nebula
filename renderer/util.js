@@ -2,6 +2,8 @@
 // Utilidades: $, telas, aviso (toast), preferências, mandar para a sala, ícones.
 // Script clássico: divide o escopo global com os outros (ordem no index.html). Usa de: estado, overlay, chat, atualizacao.
 
+document.documentElement.dataset.platform = window.api.platform; // o CSS guarda o lugar dos botões da janela no macOS
+
 const $ = (id) => document.getElementById(id);
 
 // ---------- Utilidades ----------
