@@ -112,7 +112,7 @@ humano para subir o ramo, e o CI do macOS compila. No Windows dá para fazer tud
      sala e a RazzeAPI); `frame-src` continua só o YouTube. **O `index.html` do desktop não muda.**
    - empacota `mobile/ponte/index.js` com esbuild (formato IIFE) em `www/ponte.js`.
 3. Ponte com todos os stubs e `platform: 'ios'`.
-4. `.github/workflows/ios.yml` (só `workflow_dispatch` e PRs que mexem em `mobile/**`; o `mac.yml` já usa `macos-14`):
+4. `.github/workflows/ios.yml` (só `workflow_dispatch` e PRs que mexem em `mobile/**`; o `mac.yml` já usa `macos-15`):
    `npm ci` (raiz e mobile) → `node mobile/scripts/montar-www.mjs` → `npx cap sync ios` → `xcodebuild archive
    -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO` → `Payload/App.app` zipado como `Nebula-<versão>.ipa` →
    artefato do workflow. Sem assinar: quem instala assina (SideStore/AltStore/Sideloadly).
@@ -182,7 +182,7 @@ humano para subir o ramo, e o CI do macOS compila. No Windows dá para fazer tud
 
 ## Dependências
 - `servidor-internet/` com TURN (já existe); RazzeAPI por HTTPS (já existe).
-- Um Mac só no CI (GitHub `macos-14`). Ninguém precisa de Mac em casa para o v1.
+- Um Mac só no CI (GitHub `macos-15`; o `macos-14` foi aposentado). Ninguém precisa de Mac em casa para o v1.
 - Conta Apple: gratuita basta para o v1. Paga só se a Decisão 3 pedir.
 
 ## Riscos (testar cedo, já na Fase 1)

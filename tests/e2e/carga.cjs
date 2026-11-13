@@ -43,6 +43,10 @@ app.whenReady().then(async () => {
     check('Nomes globais existem', missing.length === 0, missing.join(', '));
     check('Tela inicial à vista, com os botões ligados', await run(`!$('home').hidden && typeof $('goCreate').onclick === 'function' && typeof $('chatForm').onsubmit === 'function'`));
     check('Ícones colocados na carga', await run(`$('chatSend').innerHTML.includes('<svg') && $('openStatsRoom').innerHTML.includes('<svg')`));
+    // A coluna do perfil só aparece com 1160 px; a tela do runner Windows do GitHub tem 1024 e encolhe a janela.
+    // Afasta o zoom até caber (só para a sala e a coluna; volta a 1 logo depois)
+    const largura = await run('innerWidth');
+    if (largura < 1200) { win.webContents.setZoomFactor(largura / 1240); await sleep(300); }
     await run(`enterRoom({ id: '1', features: ['chat', 'voice', 'handoff'], members: [{ id: '2', name: 'Ana', sharing: true, version: '1.9.2' }], chat: [{ id: '1', from: '2', name: 'Ana', ts: Date.now(), text: 'oi' }] }, false, '127.0.0.1', 8765)`);
     await sleep(300);
     check('Entra na sala de mentira: lista e chat', await run(`!$('room').hidden && document.querySelectorAll('#members .member').length === 2 && $('chatList').querySelectorAll('.msg').length === 1`));
@@ -62,6 +66,7 @@ app.whenReady().then(async () => {
       const voltou = mostrarNoPerfilFixo('2') && !$('perfilFixo').hidden && corpo.dataset.for === '2' && $('skyFocus').hidden;
       return on && trocou && fechou && voltou;
     })()`));
+    if (win.webContents.getZoomFactor() !== 1) { win.webContents.setZoomFactor(1); await sleep(300); }
     check('Barra da chamada: fora da voz não aparece', await run(`(() => { callbarAcordar(); return !$('callbar').classList.contains('on'); })()`));
     check('Barra da chamada: na voz aparece, com microfone, fone, transmitir e sair, e esses somem do painel; ao vivo, o monitor vira parar', await run(`(() => {
       const antes = voice.session; voice.session = 'teste';
