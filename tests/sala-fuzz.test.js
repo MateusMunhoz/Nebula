@@ -6,13 +6,13 @@ const assert = require('node:assert/strict');
 const net = require('node:net');
 const { WebSocket } = require('ws');
 const { startServer, stopServer } = require('../signaling');
-const { createChat, createSubsalas, createMusicas, newMember, handleMemberMessage, memberInfo, MAX_MEMBERS } = require('../sala-protocolo');
+const { createChat, createSilencio, createSubsalas, createMusicas, newMember, handleMemberMessage, memberInfo, MAX_MEMBERS } = require('../sala-protocolo');
 
 const TIPOS = ['ping', 'voice-state', 'subsala-create', 'subsala-delete', 'subsala-move', 'lider-pedir', 'lider-cancelar', 'lider-devolver',
   'lider-responder', 'lider-tirar', 'musica-set', 'musica-ouvindo', 'musica-ctl', 'share', 'chat', 'signal', 'avatar', 'razze', 'name-font',
-  'leave', 'hello', 'info', 'senha', 'passe', 'amigos-membros', 'tipo-que-nao-existe'];
+  'leave', 'hello', 'info', 'senha', 'passe', 'amigos-membros', 'mute-room', 'tipo-que-nao-existe'];
 const CAMPOS = ['id', 'to', 'ch', 'channel', 'session', 'text', 'file', 'name', 'size', 'mime', 'videoId', 'action', 'pos', 'dur', 'title', 'modo', 'ok',
-  'sharing', 'info', 'hash', 'full', 'font', 'data', 'muted', 'deafened', 'on', 'targetSession', 'resume', 'client', 'addrs', 'password', 'item', 'para', 'tudo'];
+  'sharing', 'info', 'hash', 'full', 'font', 'data', 'muted', 'deafened', 'on', 'targetSession', 'resume', 'client', 'addrs', 'password', 'item', 'para', 'tudo', 'target', 'surdo'];
 const grande = 'x'.repeat(100000);
 const VALORES = [null, undefined, true, false, 0, -1, 1.5, 1e308, NaN, Infinity, '', ' ', '0', '999999', 'a'.repeat(70), grande, [], [1, 2], ['a'], {}, { a: 1 },
   { id: 'x'.repeat(10), size: 5 }, { side: 'voice', session: 5 }, { side: 'lider', role: 'ouvrir' }, '__proto__', 'constructor', 'toString',
@@ -25,7 +25,7 @@ function sala() {
   const subsalas = createSubsalas(); subsalas.create(); subsalas.create('lider');
   const musicas = createMusicas([{ ch: '', videoId: 'dQw4w9WgXcQ', by: '1', dur: 100 }]);
   const chat = createChat();
-  const ctx = { members, broadcast: (m) => enviados.push(['*', JSON.stringify(m)]), chat, subsalas, musicas };
+  const ctx = { members, broadcast: (m) => enviados.push(['*', JSON.stringify(m)]), chat, subsalas, musicas, silencio: createSilencio() };
   return { ctx, members, enviados };
 }
 

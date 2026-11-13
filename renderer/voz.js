@@ -199,7 +199,7 @@ const mixer = {
     if (!n) return;
     const lider = id.startsWith('lider:'), v = volOf(lider ? id.slice(6) : id);
     // O volume da pessoa vezes o volume geral das vozes (Voz e atalhos › Volume das vozes); da Líder, vezes o volume dela
-    n.gain.gain.value = this.deafened || v.muted ? 0 : (v.voice / 100) * (voiceCfg.vozes / 100) * (lider ? liderVolume / 100 : 1);
+    n.gain.gain.value = this.deafened || v.muted || silencioDe(lider ? id.slice(6) : id) ? 0 : (v.voice / 100) * (voiceCfg.vozes / 100) * (lider ? liderVolume / 100 : 1);
   },
   level(an) {
     const buf = new Float32Array(an.fftSize);
@@ -249,11 +249,80 @@ function renderSpeaking() {
   updateDuck();
 }
 
+// ---------- Silenciar para a sala (sala-protocolo.js › mute-room) ----------
+// Qualquer pessoa silencia (ou ensurdece, surdo) outra para a sala toda; qualquer outra libera, e a própria pessoa se
+// libera ligando o microfone. Aqui: o estado que o servidor manda, o microfone de quem foi silenciado (desliga uma vez
+// por sessão de voz) e o volume zerado de quem está silenciado (defesa contra app modificado: cada um zera do seu lado).
+function silencioDe(id) { return id ? state.silencio.find((e) => e.ids.includes(id)) || null : null; }
+// O microfone (fone) desligado de alguém (null = você): com cadeado quando foi a sala que silenciou
+const silOf = (id) => silencioDe(id || state.myId);
+function micOffIcon(id) { return silOf(id) ? 'micLock' : 'micOff'; }
+function foneOffIcon(id) { return silOf(id)?.surdo ? 'headphonesLock' : 'headphonesOff'; }
+function micOffLabel(id, base = 'Microfone desligado', meu = false) {
+  const s = silOf(id);
+  if (!s) return base;
+  const quem = `${s.surdo ? 'Ensurdecido' : 'Silenciado'} para a sala por ${s.por || 'alguém'}`;
+  return meu ? `${quem}: clique para ${s.surdo ? 'voltar a ouvir e falar' : 'ligar o microfone'}` : quem;
+}
+let silencioAplicado = ''; // a sessão de voz em que o meu microfone já foi desligado pelo silêncio
+function setSilencio(lista) {
+  const antes = silencioDe(state.myId);
+  state.silencio = (Array.isArray(lista) ? lista : []).slice(0, 100).filter((e) => e && typeof e.chave === 'string')
+    .map((e) => ({ chave: e.chave.slice(0, 66), ids: (Array.isArray(e.ids) ? e.ids : []).slice(0, 50).filter((x) => typeof x === 'string' && /^\d{1,6}$/.test(x)), por: String(e.por || '').slice(0, 32), surdo: e.surdo === true }));
+  const agora = silencioDe(state.myId);
+  if (!agora) silencioAplicado = '';
+  else if (!antes || antes.surdo !== agora.surdo) silencioAplicado = ''; // silêncio novo (ou virou ensurdecer): aplica de novo
+  if (agora && (!antes || antes.surdo !== agora.surdo)) toast(`${agora.por || 'Alguém'} ${agora.surdo ? 'ensurdeceu' : 'silenciou'} você para a sala. Ligue o microfone quando voltar.`);
+  if (antes && !agora && voice.session) voice.announce(); // liberado: os outros voltam a ver o meu estado de verdade
+  for (const id of state.members.keys()) mixer.apply(id);
+  conferirMeuSilencio();
+  renderVoice();
+  renderMembers();
+}
+// Chamado a cada mudança da voz: desliga o meu microfone (ou o fone) quando o silêncio chega; se depois eu ligo de
+// volta, por qualquer botão ou atalho, é a liberação (o servidor também não aceita desmutar sem ela)
+function conferirMeuSilencio() {
+  const s = silencioDe(state.myId);
+  if (!s || !voice.session) { if (!voice.session) silencioAplicado = ''; return; }
+  if (silencioAplicado !== voice.session) {
+    silencioAplicado = voice.session;
+    if (s.surdo && !voice.deafened) voice.deafen();
+    else if (!voice.muted) voice.mute();
+    return;
+  }
+  if ((!voice.muted || (s.surdo && !voice.deafened)) && !s.liberando) {
+    s.liberando = true;
+    send({ type: 'mute-room', target: state.myId, on: false });
+  }
+}
+// Silenciar, ensurdecer (surdo) ou liberar outra pessoa. O servidor conta o limite de verdade; aqui só some o botão
+const silencioHits = [];
+function silenciarParaSala(id, on, surdo = false) {
+  silencioHits.push(Date.now());
+  send({ type: 'mute-room', target: id, on: !!on, surdo: !!surdo });
+}
+// As ações do perfil de quem está na voz: [ícone, texto, clique, { disabled, title }]. Ficam ao lado do Silenciar para mim
+function acoesSilencioSala(id) {
+  if (!state.muteRoomOn || id === state.myId || !inVoice(id)) return [];
+  const agora = Date.now();
+  while (silencioHits.length && agora - silencioHits[0] >= 60000) silencioHits.shift();
+  const s = silencioDe(id);
+  const trava = silencioDe(state.myId) ? 'Você está silenciado para a sala: ligue o seu microfone para poder silenciar ou liberar alguém.'
+    : silencioHits.length >= 3 ? 'Muitas ações seguidas: espere um minuto para silenciar ou liberar de novo.' : '';
+  const op = { disabled: !!trava, title: trava };
+  const fim = () => closePersonCard();
+  if (s?.surdo) return [['headphones', 'Liberar áudio', () => { silenciarParaSala(id, false); fim(); }, op]];
+  const lista = s ? [['mic', 'Liberar microfone', () => { silenciarParaSala(id, false); fim(); }, op]]
+    : [['micLock', 'Silenciar para a sala', () => { silenciarParaSala(id, true); fim(); }, op]];
+  lista.push(['headphonesLock', 'Ensurdecer para a sala', () => { silenciarParaSala(id, true, true); fim(); }, op]);
+  return lista;
+}
+
 const inVoice = (id) => (id === state.myId ? !!voice.session : !!voice.members.get(id)?.session);
 
 // Entrar e sair da voz: o som toca para você mesmo e, de quem mais, só se você estiver na voz (quem só está
 // na sala, assistindo, não precisa ouvir cada entrada e saída da conversa)
-const voice = new VoiceChat({ send, changed: () => { lider.sync(); liderPedirPendente(); renderVoice(); }, error: message => toast(message, 'error'), mixer,
+const voice = new VoiceChat({ send, changed: () => { lider.sync(); liderPedirPendente(); conferirMeuSilencio(); renderVoice(); }, error: message => toast(message, 'error'), mixer,
   activity: (event, id) => { if (id === voice.id || voice.session) void appSounds.play(event); } });
 // A voz da subsala Líder para a sala toda (voice.js › LiderAudio; o canal dela vem de setSubsalas, em subsalas.js)
 const lider = new LiderAudio({ voice, send, mixer, changed: () => scheduleVoiceLists() });
@@ -290,9 +359,9 @@ function renderVoice() {
     closeVoiceJoinPop();
   } else renderVoiceJoin();
   $('voiceMute').hidden = $('voiceDeafen').hidden = $('voiceMe').hidden = !active;
-  setIcon($('voiceMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  setIcon($('voiceMute'), voice.muted ? micOffIcon() : 'mic', voice.muted ? micOffLabel(null, 'Ligar o microfone', true) : 'Desligar o microfone');
   $('voiceMute').setAttribute('aria-pressed', String(voice.muted));
-  setIcon($('voiceDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  setIcon($('voiceDeafen'), voice.deafened ? foneOffIcon() : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('voiceDeafen').setAttribute('aria-pressed', String(voice.deafened));
   if (state.myId) $('voiceMe').dataset.person = state.myId;
   if (active) paintAvatar($('voiceMeAvatar')); // a sua foto no Seu sinal (repaintAllAvatars a troca depois)
@@ -518,7 +587,7 @@ function renderVoiceStackPop() {
     av.classList.toggle('speaking', speaking.has(id));
     row.append(av, paintName(el('span', 'vs-name', nameOf(id)), id));
     if (!voice.session && subsalasOn()) row.append(el('span', 'vsp-where', channelName(voiceChannelOf(id))));
-    for (const [on, icon, label] of [[m?.muted, 'micOff', 'Microfone desligado'], [m?.deafened, 'headphonesOff', 'Fone silenciado']]) {
+    for (const [on, icon, label] of [[m?.muted, micOffIcon(id), micOffLabel(id)], [m?.deafened, foneOffIcon(id), 'Fone silenciado']]) {
       if (!on) continue;
       const s = el('span', 'vs-state');
       s.innerHTML = ICON[icon];
@@ -703,7 +772,8 @@ function renderPersonCard() {
     who.append(c);
   }
   // Silenciada para você é escolha sua, não da pessoa: fica cinza, não laranja
-  const where = v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
+  const sil = silencioDe(id);
+  const where = sil ? `${sil.surdo ? 'Ensurdecido' : 'Silenciado'} para a sala por ${sil.por || 'alguém'}` : v.muted ? 'Silenciada para você' : [inVoice(id) && 'Na voz', sharing && 'Transmitindo'].filter(Boolean).join(' · ') || 'Na sala';
   head.append(who, el('span', 'pc-where' + (v.muted ? ' off' : ''), where));
   card.append(head);
   // O volume: silenciar, o controle (com a marca do padrão na voz) e o valor, numa linha só
@@ -806,6 +876,22 @@ function renderPersonCard() {
     setIcon(open, 'user', `Abrir o perfil de ${name}`);
     open.onclick = () => { closePersonCard(); openSkyProfile(id, open, from); };
     actions.append(open);
+  }
+  // Silenciar para a sala (laranja: cuidado), numa linha própria abaixo
+  const salaActs = acoesSilencioSala(id);
+  if (salaActs.length) {
+    const row = el('div', 'pc-actions pc-sala');
+    for (const [icon, label, onclick, { disabled, title }] of salaActs) {
+      const b = el('button', 'pc-act-sala');
+      b.type = 'button';
+      b.innerHTML = ICON[icon];
+      b.append(label);
+      b.disabled = disabled;
+      if (title) b.title = title;
+      b.onclick = onclick;
+      row.append(b);
+    }
+    card.append(row);
   }
   if (actions.childElementCount) card.append(actions);
   if (focused) card.querySelector(`[aria-label="${CSS.escape(focused)}"]`)?.focus();

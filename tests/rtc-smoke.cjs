@@ -12,7 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 app.whenReady().then(async () => {
   try {
-    for (const id of ['1', '2']) {
+    for (const id of ['1', '2', '3']) { // 3 pessoas: cada uma com duas conexões de voz
       const w = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: false } });
       windows.push(w);
       await w.loadFile(path.join(__dirname, 'rtc-smoke.html'));
@@ -46,9 +46,7 @@ app.whenReady().then(async () => {
     let reports;
     for (let tries = 0; tries < 100; tries++) {
       await pump();
-      reports = await Promise.all(windows.map(w => run(w, `(async () => {
-        const p = [...voice.peers.values()][0];
-        if (!p) return {};
+      reports = (await Promise.all(windows.map(w => run(w, `Promise.all([...voice.peers.values()].map(async (p) => {
         const stats = [...(await p.pc.getStats()).values()];
         const inbound = stats.find(s => s.type === 'inbound-rtp' && s.kind === 'audio');
         return { connected: p.pc.connectionState === 'connected', bytes: inbound?.bytesReceived || 0,
@@ -56,13 +54,13 @@ app.whenReady().then(async () => {
           signaling: p.pc.signalingState, ice: p.pc.iceConnectionState,
           local: p.pc.localDescription?.type, remote: p.pc.remoteDescription?.type,
           candidates: stats.filter(s => s.type === 'local-candidate').map(s => s.address) };
-      })()`)));
-      if (reports.every(r => r.connected && r.bytes > 0 && r.energy > 0)) break;
+      }))`)))).flat();
+      if (reports.length === 6 && reports.every(r => r.connected && r.bytes > 0 && r.energy > 0)) break;
       await sleep(100);
     }
-    assert.ok(reports.every(r => r.connected && r.bytes > 0 && r.energy > 0), JSON.stringify(reports));
+    assert.ok(reports.length === 6 && reports.every(r => r.connected && r.bytes > 0 && r.energy > 0), JSON.stringify(reports));
     assert.ok(reports.every(r => r.errors.length === 0));
-    console.log('PASS: áudio WebRTC bidirecional com energia e bytes recebidos:', JSON.stringify(reports));
+    console.log('PASS: áudio WebRTC entre 3 pessoas (6 conexões) com energia e bytes recebidos');
     const controls = await run(windows[0], `(() => {
       voice.mute(); voice.deafen();
       return { enabled: voice.stream.getAudioTracks()[0].enabled, muted: [...voice.peers.values()][0].audio.muted };
@@ -70,7 +68,7 @@ app.whenReady().then(async () => {
     assert.deepEqual(controls, { enabled: false, muted: true });
     await run(windows[0], 'voice.leave()');
     await pump();
-    assert.equal(await run(windows[1], 'voice.peers.size'), 0);
+    assert.equal(await run(windows[1], "voice.peers.has('1')"), false); // a conexão com quem saiu fecha; a com a 3 continua
     assert.equal(await run(windows[0], 'destination.stream.getTracks()[0].readyState'), 'ended');
     console.log('PASS: mute, saída e liberação do microfone/conexões');
     // Carrega a interface real e o preload real; serviços nativos ficam simulados.
@@ -100,6 +98,22 @@ app.whenReady().then(async () => {
         sound: $('voiceDeafen').getAttribute('aria-pressed'), visible: !$('room').hidden };
     })()`);
     assert.deepEqual(result, { joined: 'Sair da voz', mic: 'true', sound: 'true', visible: true });
+    // Silenciar para a sala: o silêncio desliga o meu microfone, o botão diz quem silenciou, e ligar o microfone de
+    // volta é a minha liberação (manda mute-room on:false); outra pessoa silenciada tem o volume zerado do meu lado
+    const sil = await run(ui, `(() => {
+      const sent = []; state.ws = { readyState: WebSocket.OPEN, send: (s) => sent.push(JSON.parse(s)), close() {} };
+      $('voiceDeafen').click(); if (voice.muted) $('voiceMute').click(); // volta a ouvir e falar
+      const antes = voice.muted;
+      state.muteRoomOn = true;
+      state.members.set('2', { name: 'Ana', muteRoom: true });
+      onRoomMessage({ type: 'mute-room-state', lista: [{ chave: 'n:teste local', ids: [state.myId], por: 'Ana', surdo: false }, { chave: 'n:bia', ids: ['2'], por: 'Ana', surdo: false }] });
+      const silenciado = voice.muted, label = $('voiceMute').getAttribute('aria-label');
+      const zeraOutro = !!silencioDe('2');
+      $('voiceMute').click();
+      return { antes, silenciado, label, zeraOutro, liberou: sent.some((m) => m.type === 'mute-room' && m.target === state.myId && m.on === false), ligado: !voice.muted };
+    })()`);
+    assert.deepEqual(sil, { antes: false, silenciado: true, label: 'Silenciado para a sala por Ana: clique para ligar o microfone', zeraOutro: true, liberou: true, ligado: true });
+    console.log('PASS: silenciar para a sala (trava, rótulo, liberação própria)');
     await sleep(100);
     const screenshot = await ui.webContents.capturePage();
     fs.writeFileSync(path.join(app.getPath('userData'), 'voice-preview.png'), screenshot.toPNG());

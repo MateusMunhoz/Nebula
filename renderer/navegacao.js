@@ -217,7 +217,13 @@ function setRoomMenuOpen(open) {
   if (menu.hidden === !open) return;
   menu.hidden = !open;
   $('roomMenuBtn').setAttribute('aria-expanded', String(open));
-  if (open) menu.querySelector('button, input')?.focus();
+  if (open) {
+    // Silenciar para a sala: quem está numa versão antiga continua ouvindo quem foi silenciado
+    const antigos = state.muteRoomOn ? [...state.members.values()].filter((m) => !m.muteRoom).length : 0;
+    $('roomSilencioAntigos').hidden = !antigos;
+    $('roomSilencioAntigos').textContent = antigos === 1 ? '1 pessoa numa versão que não respeita o silenciar para a sala.' : `${antigos} pessoas numa versão que não respeita o silenciar para a sala.`;
+    menu.querySelector('button, input')?.focus();
+  }
 }
 function setupRoomHead() {
   $('roomMenuBtn').onclick = () => setRoomMenuOpen($('roomMenu').hidden);
@@ -244,9 +250,9 @@ function renderSeuSinal() {
   $('seuSinal').classList.toggle('na-voz', na);
   $('seuSinal').classList.toggle('ao-vivo', !!state.sharing);
   $('miniMute').hidden = $('miniDeafen').hidden = !na;
-  setIcon($('miniMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  setIcon($('miniMute'), voice.muted ? micOffIcon() : 'mic', voice.muted ? micOffLabel(null, 'Ligar o microfone', true) : 'Desligar o microfone');
   $('miniMute').setAttribute('aria-pressed', String(voice.muted));
-  setIcon($('miniDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  setIcon($('miniDeafen'), voice.deafened ? foneOffIcon() : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('miniDeafen').setAttribute('aria-pressed', String(voice.deafened));
   setIcon($('miniVoice'), na || voice.pending ? 'phoneOff' : 'phone', na ? 'Sair da voz' : voice.pending ? 'Cancelar entrada na voz' : 'Entrar na voz');
   $('miniVoice').disabled = !voice.supported;
@@ -330,10 +336,10 @@ function renderCallbar() {
   if (!callbarPode()) setCallbar(false);
   syncCallbarReserva();
   syncCallbarFixa(); // entrou ou saiu da voz
-  setIcon($('cbMic'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  setIcon($('cbMic'), voice.muted ? micOffIcon() : 'mic', voice.muted ? micOffLabel(null, 'Ligar o microfone', true) : 'Desligar o microfone');
   $('cbMic').setAttribute('aria-pressed', String(voice.muted));
   $('cbMic').classList.toggle('off', voice.muted);
-  setIcon($('cbDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  setIcon($('cbDeafen'), voice.deafened ? foneOffIcon() : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('cbDeafen').setAttribute('aria-pressed', String(voice.deafened));
   $('cbDeafen').classList.toggle('off', voice.deafened);
   // O monitor: parado, transmite; ao vivo, cheio de azul, e com o mouse em cima vira o monitor cortado (parar)
@@ -424,9 +430,9 @@ function renderHomeCall() {
   // No saguão a barra flutuante não aparece: aqui ficam microfone, fone e sair da voz (sair da sala é pela barrinha)
   $('homeCallMute').hidden = $('homeCallDeafen').hidden = $('homeCallLeave').hidden = !voice.session;
   setIcon($('homeCallLeave'), 'phoneOff', 'Sair da voz');
-  setIcon($('homeCallMute'), voice.muted ? 'micOff' : 'mic', voice.muted ? 'Ligar o microfone' : 'Desligar o microfone');
+  setIcon($('homeCallMute'), voice.muted ? micOffIcon() : 'mic', voice.muted ? micOffLabel(null, 'Ligar o microfone', true) : 'Desligar o microfone');
   $('homeCallMute').setAttribute('aria-pressed', String(voice.muted));
-  setIcon($('homeCallDeafen'), voice.deafened ? 'headphonesOff' : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
+  setIcon($('homeCallDeafen'), voice.deafened ? foneOffIcon() : 'headphones', voice.deafened ? 'Ouvir as vozes' : 'Silenciar as vozes');
   $('homeCallDeafen').setAttribute('aria-pressed', String(voice.deafened));
   const n = chat.unread;
   $('homeCallBack').textContent = n ? `Voltar para a sala · ${n > 99 ? '99+' : n} ${n === 1 ? 'nova' : 'novas'}` : 'Voltar para a sala';

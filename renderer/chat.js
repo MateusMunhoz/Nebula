@@ -138,6 +138,22 @@ function textWithLinks(p, text) {
 
 // Mensagens seguidas da mesma pessoa (em até 5 min) ficam juntas, sem repetir nome e hora
 function appendMessage(m, live) {
+  // Linha de sistema (Silenciar para a sala, sala-protocolo.js): "Fulano silenciou Ciclano para a sala", fora dos grupos
+  if (m.sistema === true) {
+    const li = document.createElement('li');
+    li.className = 'msg sistema';
+    const d = new Date(m.ts);
+    const when = document.createElement('time');
+    when.className = 'msg-time';
+    when.textContent = `${two(d.getHours())}:${two(d.getMinutes())}`;
+    const line = document.createElement('p');
+    line.className = 'msg-line';
+    line.textContent = `${m.name || 'Alguém'} ${m.text || ''}`;
+    li.append(when, line);
+    $('chatList').append(li);
+    chat.lastMsg = null;
+    return;
+  }
   const mine = m.from === state.myId;
   const prev = chat.lastMsg;
   const grouped = !!prev && prev.from === m.from && m.ts - prev.ts < 5 * 60 * 1000;

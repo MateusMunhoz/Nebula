@@ -557,6 +557,14 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .person-card .hint { flex: 1; margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
 .pc-actions { display: flex; gap: 8px; padding: 0 16px 16px; }
 .pc-actions .pc-round { width: 38px; height: 38px; margin-left: auto; }
+/* Silenciar para a sala no cartão: laranja (cuidado), nunca vermelho */
+.pc-actions.pc-sala { flex-wrap: wrap; padding-top: 0; }
+.pc-act-sala { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; font-size: 12px;
+  color: var(--warn); background: transparent; border: 1px solid currentColor; cursor: pointer; }
+.pc-act-sala:hover:not(:disabled) { background: var(--warn-soft); }
+.pc-act-sala:disabled { opacity: .5; cursor: not-allowed; }
+.pc-act-sala svg { width: 16px; height: 16px; }
+.sky-page-act.sala { color: var(--warn); }
 .pc-act-main { flex: 1; min-width: 0; height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--primary);
   border-radius: 999px; background: var(--primary); color: var(--primary-ink); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
@@ -736,6 +744,8 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .msg.grouped { margin-top: 1px; }
 .msg-time { flex: none; width: 36px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .msg.grouped .msg-time { visibility: hidden; }
+/* Linha de sistema do chat (Silenciar para a sala): discreta, em itálico */
+.msg.sistema .msg-line { color: var(--muted); font-style: italic; }
 .msg.grouped .msg-who, .msg.grouped .msg-sep { display: none; }
 .msg-line { margin: 0; overflow-wrap: anywhere; }
 .msg-who { color: var(--person, var(--text)); font-weight: 700; }

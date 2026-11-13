@@ -208,12 +208,13 @@ function newMember(ws, msg, resume, subsalas = null) {
     voiceSession, voiceChannel, voiceDesde: voiceSession ? Date.now() : 0, muted: !!voiceSession && msg.muted === true, deafened: !!voiceSession && msg.deafened === true, shareInfo,
     avatar: cleanHash(msg.avatar), avatarFull: cleanHash(msg.avatarFull), nameFont: cleanNameFont(msg.nameFont), razze: cleanRazze(msg.razze),
     lider: msg.lider === true, // o app conhece o Modo Líder (quem não conhece não ouve a Líder de fora dela)
+    muteRoom: msg.muteRoom === true, // o app respeita o Silenciar para a sala (quem não respeita continua ouvindo)
   };
 }
 
 // O que os outros ficam sabendo de cada pessoa
 function memberInfo(id, m) {
-  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', voiceIdade: idadeNaVoz(m), muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null, lider: !!m.lider };
+  return { id, name: m.name, sharing: m.sharing, version: m.version, addrs: m.addrs, voiceSession: m.voiceSession, voiceChannel: m.voiceChannel || '', voiceIdade: idadeNaVoz(m), muted: m.muted, deafened: m.deafened, shareInfo: m.shareInfo, avatar: m.avatar, avatarFull: m.avatarFull, nameFont: m.nameFont, razze: m.razze || null, lider: !!m.lider, muteRoom: !!m.muteRoom };
 }
 
 // Conversa da sala: guarda as últimas mensagens e numera as novas
@@ -229,6 +230,63 @@ function createChat(seedChat) {
       return full;
     },
   };
+}
+
+// Silenciar para a sala: quem a sala silenciou (ou ensurdeceu). A chave é a conta ou, sem conta, o nome, para valer
+// para quem sai e volta; as duas já são públicas na sala, então o estado inteiro pode ir na troca de host.
+// Falso positivo (outro "Anônimo" que entra) não faz mal: a própria pessoa se libera.
+const SILENCIO_POR_MINUTO = 3;
+const SILENCIO_MAX = 100;
+// Teto da sala inteira: a conta e o nome vêm do app de cada um, então trocar de nome zera o limite por pessoa;
+// este não zera (silenciar a sala toda trocando de identidade fica lento)
+const SILENCIO_SALA_POR_MINUTO = 10;
+const chaveDe = (m) => (m?.razze?.id ? `c:${m.razze.id}` : `n:${String(m?.name || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().toLowerCase()}`);
+function createSilencio(seed) {
+  const regs = new Map(); // chave -> { por, surdo }
+  const hits = new Map(); // chave de quem agiu -> horários das ações do último minuto
+  let sala = []; // horários das ações da sala inteira no último minuto
+  for (const e of Array.isArray(seed) ? seed : []) {
+    if (regs.size >= SILENCIO_MAX) break;
+    if (!e || typeof e.chave !== 'string' || !/^(c:[a-f0-9]{32}|n:[^\u0000-\u001f\u007f]{0,32})$/.test(e.chave)) continue;
+    regs.set(e.chave, { por: typeof e.por === 'string' ? e.por.slice(0, 32) : '', surdo: e.surdo === true });
+  }
+  return {
+    de: (m) => regs.get(chaveDe(m)) || null,
+    // Pode agir agora? (limite por pessoa; registrar() conta a ação)
+    pode(m) {
+      const agora = Date.now();
+      sala = sala.filter((t) => agora - t < 60000);
+      const h = (hits.get(chaveDe(m)) || []).filter((t) => agora - t < 60000);
+      if (h.length) hits.set(chaveDe(m), h); else hits.delete(chaveDe(m)); // nada de guardar quem não age mais
+      return h.length < SILENCIO_POR_MINUTO && sala.length < SILENCIO_SALA_POR_MINUTO;
+    },
+    registrar(m) {
+      const agora = Date.now();
+      sala.push(agora);
+      hits.set(chaveDe(m), [...(hits.get(chaveDe(m)) || []), agora]);
+      if (hits.size > 500) hits.delete(hits.keys().next().value);
+    },
+    poe(m, por, surdo) {
+      regs.delete(chaveDe(m));
+      regs.set(chaveDe(m), { por, surdo });
+      if (regs.size > SILENCIO_MAX) regs.delete(regs.keys().next().value); // o mais antigo sai
+    },
+    tira: (m) => regs.delete(chaveDe(m)),
+    // Para mandar a todos (e para o seed): ids = números de todos que estão na sala agora com essa chave (vazio se saíram);
+    // todos, não só o primeiro: com dois "Anônimo", o silêncio não pode cair só no mais antigo
+    lista(members) {
+      const ids = new Map();
+      for (const [id, m] of members || []) if (!m.espectador) { const c = chaveDe(m); if (regs.has(c)) ids.set(c, [...(ids.get(c) || []), id]); }
+      return [...regs].map(([chave, r]) => ({ chave, ids: ids.get(chave) || [], por: r.por, surdo: r.surdo }));
+    },
+  };
+}
+const silencioMsg = (silencio, members) => ({ type: 'mute-room-state', lista: silencio.lista(members) });
+// Quem entra (ou volta) já silenciado chega mudo. Os dois servidores chamam depois do newMember; true = estava silenciado
+function entraSilenciado(silencio, m) {
+  const sil = silencio?.de(m);
+  if (sil && m.voiceSession) { m.muted = true; if (sil.surdo) m.deafened = true; }
+  return !!sil;
 }
 
 // Há quantos ms a pessoa está neste canal de voz (0 fora da voz). Vai a idade, e não a hora, para o contador da call
@@ -255,7 +313,7 @@ function memberGone({ subsalas, broadcast }, id) {
 
 // Mensagem de quem já está na sala. members: Map id -> pessoa; broadcast(msg, exceptId).
 // subsalas (opcional): sem ele, a sala não tem subsalas e todo mundo fica na Voz geral.
-function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null }, id, me, msg) {
+function handleMemberMessage({ members, broadcast, chat, subsalas = null, musicas = null, silencio = null }, id, me, msg) {
   // O app pergunta se a conexão está viva (sem resposta, ele sabe que caiu e tenta voltar). Responde só para ele
   if (msg.type === 'ping') {
     send(me.ws, { type: 'pong' });
@@ -266,8 +324,9 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     me.voiceChannel = msg.session && subsalas?.has(cleanChannel(msg.channel)) ? cleanChannel(msg.channel) : '';
     if (!me.voiceSession) me.voiceDesde = 0;
     else if (antes !== me.voiceChannel) me.voiceDesde = Date.now(); // entrou na voz ou chegou noutro canal
-    me.muted = !!msg.session && msg.muted === true;
-    me.deafened = !!msg.session && msg.deafened === true; // fone silenciado: os outros veem na lista da voz
+    const sil = silencio?.de(me); // silenciado para a sala: só sai do mudo liberando (mute-room)
+    me.muted = !!msg.session && (msg.muted === true || !!sil);
+    me.deafened = !!msg.session && (msg.deafened === true || !!sil?.surdo); // fone silenciado: os outros veem na lista da voz
     broadcast(voiceStateOf(id, me));
     liderConfere(subsalas, broadcast, id, me);
   } else if (msg.type === 'subsala-create' && subsalas) {
@@ -407,9 +466,14 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     me.avatarFull = me.avatar ? cleanHash(msg.full) : ''; // a foto inteira (sem o corte), para o perfil
     broadcast({ type: 'avatar-state', id, hash: me.avatar, full: me.avatarFull }, id);
   } else if (msg.type === 'razze') {
-    // Entrou ou saiu da conta Razze no meio da sala
+    // Entrou ou saiu da conta Razze no meio da sala. A chave do silêncio muda junto: quem estava silenciado leva o
+    // silêncio para a chave nova (senão ficaria mudo para os outros sem ter como se liberar)
+    const sil = silencio?.de(me);
+    if (sil) silencio.tira(me);
     me.razze = cleanRazze(msg.conta);
+    if (sil) silencio.poe(me, sil.por, sil.surdo);
     broadcast({ type: 'razze-state', id, conta: me.razze }, id);
+    if (sil || silencio?.de(me)) broadcast(silencioMsg(silencio, members));
   } else if (msg.type === 'name-font') {
     me.nameFont = cleanNameFont(msg.font);
     broadcast({ type: 'name-font-state', id, font: me.nameFont }, id);
@@ -425,6 +489,33 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
     if (text) entry.text = text;
     if (file) entry.file = file;
     broadcast({ type: 'chat', ...chat.add(entry) }); // para todos, inclusive quem mandou
+  } else if (msg.type === 'mute-room' && silencio) {
+    // Silenciar (ou ensurdecer, surdo) para a sala: qualquer um faz em outra pessoa; libera qualquer outro ou a própria
+    const alvo = typeof msg.target === 'string' && members.has(msg.target) && !members.get(msg.target).espectador && !members.get(msg.target).convidado ? members.get(msg.target) : null; // convidado não teria como se liberar
+    if (!alvo || typeof msg.on !== 'boolean') return;
+    const atual = silencio.de(alvo);
+    const surdo = msg.surdo === true;
+    let text;
+    if (msg.target === id) {
+      if (msg.on || !atual) return;
+      silencio.tira(alvo);
+      text = atual.surdo ? 'liberou o próprio áudio' : 'liberou o próprio microfone';
+    } else {
+      if (silencio.de(me) || !silencio.pode(me)) return; // silenciado não age nos outros; limite por pessoa
+      if (msg.on) {
+        if (atual && atual.surdo === surdo) return;
+        silencio.poe(alvo, me.name, surdo);
+        text = `${surdo ? 'ensurdeceu' : 'silenciou'} ${alvo.name} para a sala`;
+      } else {
+        if (!atual) return;
+        silencio.tira(alvo);
+        text = `liberou o ${atual.surdo ? 'áudio' : 'microfone'} de ${alvo.name}`;
+      }
+      silencio.registrar(me);
+    }
+    broadcast(silencioMsg(silencio, members));
+    // Linha no chat com o autor da ação: no app antigo aparece como mensagem dele, e continua legível
+    broadcast({ type: 'chat', ...chat.add({ from: id, name: me.name, ts: Date.now(), text, sistema: true }) });
   } else if (msg.type === 'signal' && msg.to !== id && members.has(msg.to)) {
     const target = members.get(msg.to);
     if (msg.data?.side === 'voice' && (!me.voiceSession ||
@@ -442,4 +533,5 @@ function handleMemberMessage({ members, broadcast, chat, subsalas = null, musica
 module.exports = {
   MAX_MEMBERS, CHAT_KEEP, SUBSALAS_MAX, send, cleanShareInfo, cleanHash, cleanNameFont, cleanRazze, cleanAddrs, cleanSessao, cleanClient, cleanSenha,
   cleanChannel, createSubsalas, memberGone, cleanVideoId, createMusicas, limparMusicas, FILA_MAX, FILA_POR_PESSOA, FILA_SALA_MAX, newMember, memberInfo, createChat, handleMemberMessage,
+  createSilencio, silencioMsg, entraSilenciado, SILENCIO_POR_MINUTO, SILENCIO_SALA_POR_MINUTO,
 };

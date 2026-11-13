@@ -143,7 +143,7 @@ test('conta Razze: vai no hello, no welcome e na troca; id ou nome fora do forma
   // Saiu da conta no meio da sala; depois entrou de novo, com um nome cheio de controle (limpo)
   a.send({ type: 'razze', conta: null });
   assert.deepEqual(await b.wait(m => m.type === 'razze-state'), { type: 'razze-state', id: a.welcome.id, conta: null });
-  a.send({ type: 'razze', conta: { id: 'b'.repeat(32), nome: ' Cris ' } });
+  a.send({ type: 'razze', conta: { id: 'b'.repeat(32), nome: ' Cris\u0007 ' } });
   assert.deepEqual((await b.wait(m => m.type === 'razze-state')).conta, { id: 'b'.repeat(32), nome: 'Cris' });
 });
 
@@ -335,4 +335,39 @@ test('conexão que cai e não volta sai depois da espera; quem sai de propósito
   await host.wait(m => m.type === 'member-left' && m.id === ana.welcome.id);
   assert.ok(Date.now() - t0 >= 280, 'caiu: sai só depois da espera');
   assert.equal(roomInfo()?.pessoas ?? 1, 1);
+});
+
+test('silenciar para a sala: estado para todos, quem entra depois já vê, e o seed da troca de host mantém', async t => {
+  const port = await freePort();
+  await startServer(port);
+  t.after(stopServer);
+  const a = await client(port, { name: 'Ana', muteRoom: true });
+  const b = await client(port, { name: 'Beto', muteRoom: true });
+  t.after(() => { a.ws.close(); b.ws.close(); });
+  assert.ok(a.welcome.features.includes('mute-room'));
+  assert.deepEqual(a.welcome.silencio, []);
+  b.send({ type: 'voice-state', session: 'sb', muted: false });
+  a.send({ type: 'mute-room', target: b.welcome.id, on: true });
+  const est = await a.wait(m => m.type === 'mute-room-state');
+  assert.deepEqual(est.lista, [{ chave: 'n:beto', ids: [b.welcome.id], por: 'Ana', surdo: false }]);
+  assert.equal((await b.wait(m => m.type === 'chat')).text, 'silenciou Beto para a sala');
+  const c = await client(port, { name: 'Caio' });
+  t.after(() => c.ws.close());
+  assert.deepEqual(c.welcome.silencio[0].ids, [b.welcome.id]);
+  assert.equal(c.welcome.members.find(m => m.id === a.welcome.id).muteRoom, true);
+  assert.equal(c.welcome.members.find(m => m.id === c.welcome.id), undefined);
+  // Beto sai e volta: o silêncio continua, e os outros ligam ao número novo
+  b.ws.close();
+  await a.wait(m => m.type === 'member-left');
+  const b2 = await client(port, { name: 'Beto' });
+  t.after(() => b2.ws.close());
+  assert.deepEqual(b2.welcome.silencio[0].ids, [b2.welcome.id]);
+  assert.deepEqual((await a.wait(m => m.type === 'mute-room-state')).lista[0].ids, [b2.welcome.id]);
+
+  // Troca de host: o novo servidor nasce com o estado que o novo host tinha
+  const port2 = await freePort();
+  await startServer(port2, '', { silencio: est.lista, hostId: '1', nextId: 5 });
+  const d = await client(port2, { name: 'beto' });
+  t.after(() => d.ws.close());
+  assert.deepEqual(d.welcome.silencio[0].ids, [d.welcome.id]);
 });

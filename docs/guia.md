@@ -339,6 +339,19 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 
   No pé, **Mandar mensagem** (para amigos) e o botão que abre o perfil inteiro. Só muda o que você ouve ("Só para
   você"). O volume só muda com esse cartão aberto: a roda do mouse no botão ou no nome não mexe nele. O app lembra o volume de cada pessoa para a próxima sala: pela conta Razze dela (vale mesmo se ela trocar o nome na sala ou o nick da conta); sem conta, pelo nome da sala.
+- **Silenciar para a sala:** para quem saiu do PC e deixou o microfone ligado (como o "silenciar no servidor" do Discord,
+  mas sem cargos). No cartão de volume e na página da pessoa (lista e coluna do perfil) de quem está na voz, ao lado do
+  **Silenciar para mim**, ficam em laranja **Silenciar para a sala** (ninguém mais ouve o microfone dela) e
+  **Ensurdecer para a sala** (também corta o que ela ouve da call). Qualquer pessoa da sala pode usar, sem ser host.
+  - Quem foi silenciado recebe um aviso, e o microfone (ou o fone) dele fica com um cadeadinho, na lista, no palco e no
+    perfil, para diferenciar de quem só se mutou. Ao voltar, é só ligar o microfone: isso libera. Qualquer outra pessoa
+    também libera, com **Liberar microfone** (ou **Liberar áudio**) no mesmo lugar.
+  - Cada ação entra no chat da sala ("Fulano silenciou Ciclano para a sala"): a transparência substitui a hierarquia.
+  - Contra abuso: no máximo 3 ações por minuto por pessoa e 10 na sala inteira (contado no servidor da sala); quem está silenciado não
+    silencia nem libera os outros; o silêncio continua para quem sai e volta na sala (pela conta Razze ou, sem conta,
+    pelo nome) e na troca de host. Contra um app modificado, cada um zera do seu lado o volume de quem está silenciado.
+  - Quem está numa versão antiga do Nebula continua ouvindo quem foi silenciado; o menu da sala mostra quantas pessoas
+    estão assim. O **Silenciar para mim** continua igual e separado: só muda o que você ouve.
 - **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o perfil, com o volume), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
 - **Roda do mouse:** em cima do controle do cartão de volume, muda de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela, com um balãozinho mostrando o valor. A voz de alguém só muda com o cartão aberto.
 - **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações** (a engrenagem no topo).
