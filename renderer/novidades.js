@@ -3,6 +3,17 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.18",
+    "date": "2026-11-13",
+    "items": [
+      "feat(sala): silenciar e ensurdecer para a sala",
+      "chore(ios): MARKETING_VERSION na versão do desktop (1.20.17)",
+      "test(carga): coluna do perfil cabe na tela de 1024 do runner Windows",
+      "ci(mac): trocar runner macos-14 aposentado por macos-15",
+      "fix(mac): botões da janela não cobrem a logo; spec de usabilidade e silenciar para a sala"
+    ]
+  },
+  {
     "version": "1.20.17",
     "date": "2026-11-10",
     "items": [
@@ -85,20 +96,6 @@ const NOVIDADES = [
     "date": "2026-10-27",
     "items": [
       "Barra da chamada: faixa embaixo das telas só com a música da sala no palco"
-    ]
-  },
-  {
-    "version": "1.20.8",
-    "date": "2026-10-27",
-    "items": [
-      "Palco e voz: cartões só de quem faz algo, em seções por atividade; prévia de quem transmite na voz; arrastar entre canais compacto e com rolagem",
-      "Atualização obrigatória: no máximo uma versão atrás; abaixo disso, tela no Início sem Depois",
-      "Atualização: instala sozinho ao abrir e com o app parado; nunca na sala, transmitindo ou jogando",
-      "Atividade: vídeo no Media Player não aparece mais no perfil",
-      "iOS: versão 1.20.7, a mesma do desktop",
-      "iOS: barra de título abaixo do relógio e guia para compilar no Mac",
-      "Desktop: palco com música e cartões, convite com QR, minimizar, duração da música",
-      "iOS: app Nebula para iPhone via sideload (Capacitor), ponte window.api, CSS do iPhone e CI do .ipa"
     ]
   }
 ];
