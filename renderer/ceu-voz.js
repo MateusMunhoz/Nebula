@@ -941,8 +941,8 @@ function skyCard(ch, sub) {
       row.append(open);
       if (id ? voice.members.get(id)?.muted : voice.muted) {
         const mic = el('span', 'sky-card-mic');
-        mic.innerHTML = ICON.micOff;
-        mic.title = 'Microfone desligado';
+        mic.innerHTML = ICON[micOffIcon(id)];
+        mic.title = micOffLabel(id);
         mic.setAttribute('role', 'img');
         mic.setAttribute('aria-label', 'Microfone desligado');
         row.append(mic);
@@ -1197,7 +1197,10 @@ function dadosDoPerfil(id, origem = '') {
   const here = voiceChannelOf(pid);
   const canMove = channels.length > 1 && canDragVoice(pid);
   const bg = profileBgOf(pid); // o fundo do perfil da pessoa (renderer/fundo-perfil.js), se já chegou
-  const key = JSON.stringify([origem, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em, (x.imagem || x.capa || '').length]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
+  // O silêncio para a sala muda os botões e o cadeado sem mexer no micOff (alvo já mutado, liberado mas ainda mudo)
+  const agora = Date.now();
+  const sil = [silOf(me ? null : id)?.surdo ?? null, !!silOf(null), !!state.muteRoomOn, silencioHits.filter((t) => agora - t < 60000).length >= 3];
+  const key = JSON.stringify([origem, voiceNow, id, name, sharing, state.in.has(id), micOff, deafOn, sil, v?.muted, v?.voice, v?.screen, bg.length, bg.slice(-40), here, canMove, channels.map(channelName), photoHashOf(pid), bioDe(pid), atvDe(pid), [...(atvhDe(pid)?.jogos || []), ...(atvhDe(pid)?.musicas || [])].map((x) => [x.nome || x.artista, x.faixa, x.em, (x.imagem || x.capa || '').length]), contaDe(id), typeof friendsData === 'object' ? [friendsData.friends.length, friendsData.outgoing.length, friendsData.incoming.length] : 0]);
   return { key, bg, dados: { id, me, pid, name, sharing, micOff, deafOn, v, channels, here, canMove: voiceNow && canMove, voiceNow } };
 }
 // Pinta a caixa do perfil com a cor e o fundo da pessoa (CSS .has-bg); o fundo some ao fechar
@@ -1290,8 +1293,8 @@ function renderSkyProfile() {
     live.title = 'Transmitindo';
     orbit.append(live);
   }
-  if (micOff) seal('mic', 'micOff', 'Microfone desligado');
-  if (deafOn) seal('fone', 'headphonesOff', 'Fone silenciado');
+  if (micOff) seal('mic', micOffIcon(me ? null : id), micOffLabel(me ? null : id));
+  if (deafOn) seal('fone', foneOffIcon(me ? null : id), 'Fone silenciado');
   if (v?.muted) seal('mudo', 'muted', 'Silenciada para você');
   // O canal, pequeno, em cima do nome
   const where = document.createElement('span');
@@ -1363,7 +1366,7 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
   const where = el('span', 'sky-focus-where', !voiceNow ? 'Na sala' : subsalasOn() ? channelName(here) : 'Na voz');
   // O estado da voz dos outros vira ícones ao lado do nome; no seu perfil não aparece (os botões de baixo já mostram).
   // Silenciada para você é escolha sua, não da pessoa: fica cinza, não laranja
-  const states = voiceNow && !me ? [micOff && ['micOff', 'Microfone desligado', 'warn'], deafOn && ['headphonesOff', 'Fone silenciado', 'warn'],
+  const states = voiceNow && !me ? [micOff && [micOffIcon(id), micOffLabel(id), 'warn'], deafOn && [foneOffIcon(id), 'Fone silenciado', 'warn'],
     v?.muted && ['muted', 'Silenciada para você', '']].filter(Boolean) : [];
   const who = el('div', 'sky-page-who');
   const tags = el('div', 'sky-page-tags');
@@ -1431,6 +1434,8 @@ function renderSkyPage(box, { id, me, pid, name, sharing, micOff, deafOn, v, cha
       add.title = fb.title;
     }
     if (voiceNow) act(v.muted ? 'muted' : 'volume', v.muted ? 'Ouvir de novo' : 'Silenciar para mim', () => setVol(id, { muted: !v.muted }), { pressed: v.muted });
+    // Silenciar para a sala, ao lado (voz.js › acoesSilencioSala)
+    if (voiceNow) for (const [icon, label, onclick, { disabled, title }] of acoesSilencioSala(id)) { const b = act(icon, label, onclick, { disabled }); b.classList.add('sala'); if (title) b.title = title; }
   }
   if (canMove && !me) { // no seu perfil não: você muda de canal clicando no canal da lista
     const move = act('moveTo', 'Mudar de canal', () => toggleSkyMoveMenu(move, pid, channels, here));

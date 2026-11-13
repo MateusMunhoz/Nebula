@@ -123,7 +123,7 @@ function memberRow(id, name, sharing) {
     jogo.setAttribute('aria-label', `Jogando ${atv.jogo}`);
     li.append(jogo);
   }
-  for (const [on, icon, title] of [[micOff, 'micOff', 'Microfone desligado'], [deafOn, 'headphonesOff', 'Fone silenciado: não está ouvindo a voz']]) {
+  for (const [on, icon, title] of [[micOff, micOffIcon(id), micOffLabel(id)], [deafOn, foneOffIcon(id), 'Fone silenciado: não está ouvindo a voz']]) {
     if (!on) continue;
     const mo = document.createElement('span');
     mo.className = 'mic-off-icon';
@@ -436,8 +436,16 @@ function palcoCartao(p) {
   eq.setAttribute('aria-hidden', 'true');
   eq.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
   info.append(nome, eq);
-  if (p.mic) info.insertAdjacentHTML('beforeend', `<span class="pg-ic" role="img" aria-label="Microfone desligado">${ICON.micOff}</span>`);
-  if (p.fone) info.insertAdjacentHTML('beforeend', `<span class="pg-ic" role="img" aria-label="Fone desligado">${ICON.headphonesOff}</span>`);
+  const pid = p.eu ? null : p.id; // o nome de quem silenciou vem de outro PC: só como texto
+  for (const [on, icon, label] of [[p.mic, micOffIcon(pid), micOffLabel(pid)], [p.fone, foneOffIcon(pid), 'Fone desligado']]) {
+    if (!on) continue;
+    const ic = document.createElement('span');
+    ic.className = 'pg-ic';
+    ic.setAttribute('role', 'img');
+    ic.setAttribute('aria-label', label);
+    ic.innerHTML = ICON[icon];
+    info.append(ic);
+  }
   el.append(midia, info);
   el.classList.toggle('speaking', speaking.has(p.id));
   return el;

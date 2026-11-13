@@ -119,7 +119,7 @@ function renderPerfilFixoLista(atual) {
       // Só a foto: o nome e o que faz ficam na dica do mouse (e no perfil, em cima)
       b.title = [p.me ? `${p.nome} (você)` : p.nome, p.sub].filter(Boolean).join(' · ');
       b.append(avatar(p.nome, p.me ? null : p.id));
-      if (p.micOff) { const m = document.createElement('span'); m.className = 'pf-mudo'; m.setAttribute('aria-hidden', 'true'); m.innerHTML = ICON.micOff; b.append(m); }
+      if (p.micOff) { const m = document.createElement('span'); m.className = 'pf-mudo'; m.setAttribute('aria-hidden', 'true'); m.innerHTML = ICON[micOffIcon(p.me ? null : p.id)]; b.append(m); }
       b.onclick = () => { perfilFixo.escolhido = p.id; renderPerfilFixo(); };
       lista.append(b);
     }

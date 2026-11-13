@@ -770,3 +770,38 @@ test('ligação: app antigo (sem entendeChamada) não recebe o passe da sala, pa
   t.after(() => novo.ws.terminate());
   assert.equal(novo.first.passeSala, a.first.passeSala);
 });
+
+test('silenciar para a sala pela internet: estado no welcome, a pessoa se libera, sair e voltar mantém', async (t) => {
+  const { url } = await start(t);
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client(), muteRoom: true });
+  t.after(() => a.ws.terminate());
+  const sala = a.first.sala;
+  const b = await connect(url, { room: sala, name: 'Beto', password: 'pizza-azul', client: client() });
+  t.after(() => b.ws.terminate());
+  assert.ok(a.first.features.includes('mute-room'));
+  assert.deepEqual(a.first.silencio, []);
+  a.send({ type: 'mute-room', target: b.first.id, on: true, surdo: true });
+  const est = await b.wait((m) => m.type === 'mute-room-state');
+  assert.deepEqual(est.lista, [{ chave: 'n:beto', ids: [b.first.id], por: 'Ana', surdo: true }]);
+  // O próprio Beto se libera
+  b.send({ type: 'mute-room', target: b.first.id, on: false });
+  assert.deepEqual((await a.wait((m) => m.type === 'mute-room-state' && m.lista.length === 0)).lista, []);
+  assert.equal((await a.wait((m) => m.type === 'chat' && m.from === b.first.id)).text, 'liberou o próprio áudio');
+  // Sair e voltar mantém: silencia de novo, Beto sai e entra com outro número
+  a.send({ type: 'mute-room', target: b.first.id, on: true });
+  await a.wait((m) => m.type === 'mute-room-state' && m.lista.length === 1);
+  const c = await connect(url, { room: sala, name: 'Caio', password: 'pizza-azul', client: client() });
+  t.after(() => c.ws.terminate());
+  assert.deepEqual(c.first.silencio[0].ids, [b.first.id]);
+});
+
+test('convidado não silencia ninguém nem é silenciado (não teria como se liberar)', async (t) => {
+  const { url, a } = await sala(t);
+  const c = await convidado(t, url, a);
+  await a.wait((m) => m.type === 'member-joined' && m.id === c.first.id);
+  c.send({ type: 'mute-room', target: a.first.id, on: true });
+  a.send({ type: 'mute-room', target: c.first.id, on: true });
+  a.send({ type: 'chat', text: 'marcador' });
+  await a.wait((m) => m.type === 'chat' && m.text === 'marcador');
+  assert.equal(a.messages.some((m) => m.type === 'mute-room-state'), false); // os dois pedidos foram ignorados
+});

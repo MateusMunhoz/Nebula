@@ -34,6 +34,7 @@ const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const {
   MAX_MEMBERS, send, cleanSessao, cleanClient, cleanSenha, newMember, memberInfo, createChat, createSubsalas, memberGone, createMusicas, limparMusicas, handleMemberMessage,
+  createSilencio, silencioMsg, entraSilenciado,
 } = require('../sala-protocolo');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I, que confundem
@@ -221,7 +222,7 @@ function createInternetServer(options = {}) {
     const code = (() => { for (;;) { const c = makeCode(); if (!rooms.has(c)) return c; } })();
     const room = {
       code, check: passwordCheck(password), passes: createPasses(), members: new Map(), away: new Map(), hostId: null, nextId: 1,
-      chat: createChat(), subsalas: createSubsalas(), musicas: createMusicas(null, cfg.now), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
+      chat: createChat(), silencio: createSilencio(), subsalas: createSubsalas(), musicas: createMusicas(null, cfg.now), sessao: cleanSessao({ oculta: true }), createdAt: cfg.now(),
       amigosMembros,
       chamada, // ligação (chamada.js): todo mundo fica sabendo pelo welcome e ninguém anuncia a sala aos amigos
     };
@@ -308,7 +309,7 @@ function createInternetServer(options = {}) {
     let joinedViaPasse = false;
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
-    const salaCtx = () => ({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas });
+    const salaCtx = () => ({ members: room.members, broadcast: room.broadcast, chat: room.chat, subsalas: room.subsalas, musicas: room.musicas, silencio: room.silencio });
 
     const deny = (message) => {
       busy = true;
@@ -459,6 +460,7 @@ function createInternetServer(options = {}) {
         room.members.set(id, me);
         return;
       }
+      const silenciado = !convidado && entraSilenciado(room.silencio, me); // convidado não é silenciado (não teria como se liberar)
       if (convidado) { // welcome enxuto: sem chat, subsalas, música, passe nem perfis; só quem está na sala e na voz
         send(ws, {
           type: 'welcome', id, sala: room.code, features: ['voice', 'convidado'], now: cfg.now(), iceServers: iceServersFor(room.code, id),
@@ -466,6 +468,7 @@ function createInternetServer(options = {}) {
         });
         room.members.set(id, me);
         room.broadcast({ type: 'member-joined', ...memberInfo(id, me), resumed: false }, id);
+        if (silenciado) room.broadcast(silencioMsg(room.silencio, room.members), id);
         return;
       }
       if (!room.hostId) room.hostId = id;
@@ -475,11 +478,12 @@ function createInternetServer(options = {}) {
         hostId: room.hostId,
         sala: room.code,
         members: [...room.members].filter(([mid, m]) => mid !== id && !m.espectador).map(([mid, m]) => memberInfo(mid, m)),
-        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping', 'chamada'],
+        features: ['chat', 'voice', 'internet', 'resume', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'passe', 'senha', 'passe-sala', 'ping', 'chamada', 'mute-room'],
         passeSala: room.passeSalaPara(me),
         amigosMembros: room.amigosMembros,
         ...(room.chamada ? { chamada: true } : {}),
         chat: room.chat.log,
+        silencio: room.silencio.lista(new Map([...room.members, [id, me]])),
         subsalas: room.subsalas.list,
         lider: room.subsalas.liderMsg(),
         musicas: [...room.musicas.map.values()],
@@ -489,6 +493,7 @@ function createInternetServer(options = {}) {
       });
       room.members.set(id, me);
       room.broadcast({ type: 'member-joined', ...memberInfo(id, me), resumed: resuming }, id);
+      if (silenciado) room.broadcast(silencioMsg(room.silencio, room.members), id); // os outros ligam o silêncio ao número
     });
 
     ws.on('close', () => {

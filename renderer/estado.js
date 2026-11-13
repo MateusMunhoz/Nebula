@@ -32,6 +32,8 @@ const state = {
   host: '',
   port: 8765,
   cloud: null,             // modo Internet: { url, code } do servidor da VPS e o código da sala
+  muteRoomOn: false,       // o servidor da sala conhece o Silenciar para a sala
+  silencio: [],            // Silenciar para a sala: [{ chave, ids, por, surdo }] (voz.js › setSilencio)
   members: new Map(),      // id -> { name, sharing, version, addrs }  (outras pessoas na sala)
   // Troca de host: quem roda o servidor, a ordem de chegada (o mais antigo assume) e a senha para voltar
   hostId: null,

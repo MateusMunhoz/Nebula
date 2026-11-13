@@ -33,48 +33,60 @@ Aceite: no macOS os botões fechar/minimizar/maximizar não cobrem a logo nem o 
 
 ## Fase 1 — Silenciar para a sala (sem hierarquia)
 
+> Revisado na implementação (branch `feat/silenciar-para-a-sala`), em conversa com o Andrick. Mudanças em relação à
+> primeira versão: **a própria pessoa se libera** (o caso principal é quem saiu do PC com o microfone ligado; é
+> cortesia, não castigo), **sem a opção do host "Todos podem silenciar"** (trabalho a mais sem uso claro; dá para
+> acrescentar depois sem quebrar nada) e **Ensurdecer para a sala** (corta também o que a pessoa ouve).
+
 ### Comportamento
-- No perfil de quem está na voz (cartão de volume, coluna do perfil, menu da pessoa na lista da voz e no mapa), nova ação
-  **Silenciar para a sala** (ícone de microfone com cadeado/contorno; laranja = cuidado, nunca vermelho).
-- Qualquer pessoa da sala pode usar, sem ser host. Efeito: o microfone de quem foi silenciado é desligado para todo
-  mundo. A pessoa vê no Seu sinal e na barra da chamada **Silenciado por Fulano**, e o botão de microfone fica travado
-  (com dica explicando). O fone dela continua normal.
-- Desfazer: **qualquer outra pessoa** da sala (não a própria silenciada) pode clicar **Liberar microfone** no mesmo lugar.
-  Quem silenciou também. Ninguém precisa ser host.
-- No chat da sala entra uma linha de sistema: "Fulano silenciou Ciclano para a sala" / "Beltrano liberou o microfone de
-  Ciclano". Transparência substitui a hierarquia.
+- No perfil de quem está na voz (cartão de volume e página da pessoa: caixinha da lista e coluna do perfil), ao lado
+  do **Silenciar para mim**: **Silenciar para a sala** e **Ensurdecer para a sala** (ícones com cadeado; laranja =
+  cuidado, nunca vermelho). A órbita do mapa não tem lugar livre: o **Perfil** dela abre o cartão, onde estão os botões.
+- Qualquer pessoa da sala pode usar, sem ser host. Silenciar: o microfone de quem foi silenciado é desligado para todo
+  mundo. Ensurdecer: também o fone dela. A pessoa recebe um aviso ("Fulano silenciou você para a sala. Ligue o
+  microfone quando voltar.") e os botões de microfone dizem **Silenciado para a sala por Fulano**.
+- Desfazer: a **própria pessoa**, ligando o microfone (qualquer botão ou atalho), ou **qualquer outra pessoa** com
+  **Liberar microfone** / **Liberar áudio** no mesmo lugar.
+- No chat da sala entra uma linha para cada ação, com o autor: "Fulano silenciou Ciclano para a sala", "Fulano
+  ensurdeceu Ciclano para a sala", "Beltrano liberou o microfone de Ciclano", "Ciclano liberou o próprio microfone".
+  No app antigo ela aparece como mensagem do autor, e continua legível.
 - Proteções contra abuso:
-  - limite por pessoa: no máximo 3 silenciamentos por minuto; depois disso o botão some por 60 s com dica;
-  - quem está silenciado não silencia outros;
-  - o host pode desligar o recurso no menu da sala (**Todos podem silenciar para a sala**, ligado por padrão); desligado,
-    só o host silencia;
-  - sair e voltar na sala **não** limpa o silêncio enquanto a sala existir (guardar por id de conta, ou nome na sala sem conta);
-  - na troca de host o estado continua (vai junto com o estado da sala).
-- Ícone na lista da voz, na grade do palco e nas janelas flutuantes: o mesmo microfone riscado de hoje, com um selinho de
-  cadeado para diferenciar "se mutou" de "foi silenciado".
-- Silenciar só para mim (o que já existe, `Silenciar para mim`) continua igual e separado; os dois botões lado a lado
-  com textos claros.
+  - limite por pessoa: no máximo 3 ações (silenciar, ensurdecer ou liberar outra pessoa) por minuto, e 10 na sala
+    inteira, contados no servidor da sala; na interface os botões ficam desativados com dica até passar o minuto;
+  - quem está silenciado não silencia nem libera os outros (só a si mesmo);
+  - sair e voltar na sala **não** limpa o silêncio enquanto a sala existir (pela conta Razze ou, sem conta, pelo nome);
+  - na troca de host o estado continua (vai no seed, junto com o estado da sala);
+  - quem insiste em atrapalhar depois de se liberar: cada um ainda tem o **Silenciar para mim**.
+- Ícone na lista da voz, na lista de pessoas, no palco, no mapa e na coluna do perfil: o microfone (ou fone) riscado de
+  hoje com um cadeadinho, para diferenciar "se mutou" de "foi silenciado". As janelas flutuantes (PiP) não mostram
+  microfone hoje e continuam sem.
+- **Silenciar para mim** (o que já existe) continua igual e separado.
 
 ### Técnica
-- Mensagem nova no protocolo da sala (`sala-protocolo.js`): `{ type: 'mute-room', target, on }`. Validar e limitar como
-  o resto (id existente na sala, booleano, limite de frequência no relay). O estado oficial mora no host
-  (`signaling.js`) e no servidor da sala Internet (`servidor-internet/`, que usa o mesmo `sala-protocolo.js`): eles
-  aplicam a regra, ignoram pedido inválido e mandam o estado para todos (incluindo quem entra depois, no `welcome`).
-- O silenciado tem o microfone desligado localmente (track `enabled = false`) **e** os outros ignoram o áudio dele
-  enquanto o estado disser silenciado (defesa contra cliente modificado: cada receptor zera o volume dessa pessoa).
-- Versão antiga na sala: quem não entende a mensagem continua ouvindo a pessoa. Mostrar no menu da sala "X pessoas
-  numa versão que não respeita o silenciar para a sala". Não quebrar a sala.
-- Preferência do host (`Todos podem silenciar`) no estado da sala, não em `appPreferences`.
-- Skill `sala-webrtc` antes de codar. Plano aprovado (é protocolo da sala).
+- Mensagem nova no protocolo da sala (`sala-protocolo.js`): `{ type: 'mute-room', target, on, surdo }`. Estado em
+  `createSilencio` (chave = `c:<conta>` ou `n:<nome>`, as duas já públicas na sala), aplicado igual pelos dois
+  servidores (`signaling.js` e `servidor-internet/`): ignoram pedido inválido e mandam `mute-room-state` a todos
+  (e o estado no `welcome`, campo `silencio`, com `mute-room` em `features`). O `voice-state` não desmuta quem
+  está silenciado. Convidado web (navegador) não manda `mute-room` nem pode ser alvo: ele não teria como se liberar
+  (para ele, cada um usa o **Silenciar para mim**).
+- Limites no servidor: 3 ações por minuto por pessoa e 10 por minuto na sala inteira. A conta e o nome vêm do app de
+  cada um, sem verificação; trocar de nome zera o limite por pessoa (o teto da sala segura) e quem entra com o nome (ou
+  a conta) de outra pessoa divide o silêncio com ela. É o mesmo limite que já existia para a conta na sala; quando a
+  conta for verificada no servidor da sala, a chave passa a ser confiável.
+- O silenciado tem o microfone desligado localmente **e** os outros zeram o volume dele enquanto o estado disser
+  silenciado (`mixer.apply`, defesa contra cliente modificado). O "não ouvir" do ensurdecer só vale no app dela: um
+  app modificado ou antigo continua ouvindo (bloquear de verdade exigiria parar de mandar a voz para ela).
+- Versão antiga na sala: quem não entende a mensagem continua ouvindo a pessoa. O menu da sala mostra "X pessoas numa
+  versão que não respeita o silenciar para a sala" (hello com `muteRoom: true`). Host antigo: o recurso não aparece.
 
 ### Aceite
-- [ ] Qualquer pessoa silencia e libera outra; o silenciado não consegue se desmutar.
-- [ ] Quem entra depois já vê o estado certo; troca de host mantém.
-- [ ] Limite de frequência funciona no relay, não só na interface.
-- [ ] Linha no chat para cada ação.
-- [ ] Host desliga o recurso e só ele silencia.
-- [ ] Testes: `tests/sala-protocolo*.test.js` (mensagem válida/ inválida/ limite), teste do estado no `signaling`, e
-      `npm run test:rtc` com 3 pessoas.
+- [x] Qualquer pessoa silencia e libera outra; o silenciado se libera ligando o microfone.
+- [x] Quem entra depois já vê o estado certo; troca de host mantém.
+- [x] Limite de frequência funciona no servidor, não só na interface.
+- [x] Linha no chat para cada ação.
+- [x] Testes: `tests/sala-protocolo-silenciar.test.js` (válida/inválida/limite), estado no `signaling` e no servidor
+      Internet, fuzz com o tipo novo, e `npm run test:rtc` com 3 pessoas.
+- [ ] Teste manual numa call real com 3 pessoas (roteiro abaixo, item 3).
 
 ---
 
@@ -206,7 +218,7 @@ Hoje: precisa do identificador completo, o botão fica escondido no envelope, co
 ## Testes manuais (roteiro)
 1. Instalar limpo, criar conta, adicionar um amigo pelo link, entrar na sala dele pelo **Entrar**.
 2. Sem conta: receber link de sala e entrar.
-3. Sala com 3 pessoas: silenciar, tentar desmutar, liberar por terceiro, limite de frequência, host desliga o recurso, troca de host.
+3. Sala com 3 pessoas: silenciar, ensurdecer, liberar por terceiro, a pessoa se liberar ligando o microfone, limite de frequência, sair e voltar, troca de host.
 4. Redimensionar a janela de 820 a 1920 em cada tela (Início, sala com tela, sala só voz, configurações).
 5. macOS: barra de título em todos os temas, gravação de tela, voz.
 6. Com VPN/WARP ligada: mensagem de erro de conexão útil.

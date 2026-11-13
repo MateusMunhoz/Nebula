@@ -16,6 +16,13 @@ Para gerar um `.exe` portátil sem publicar: `npm run dist`. O arquivo aparece e
 ## Como o app funciona
 
 - **Sala:** quem cria a sala roda um servidor pequeno de sinalização (`signaling.js`, WebSocket) dentro do próprio app. Ele só apresenta as pessoas umas às outras e guarda as últimas 100 mensagens do chat. Também guarda a música de cada canal (`sala-protocolo.js`: o vídeo, o ponto, o título e a duração, `dur`, contados pelo primeiro player de quem ouve com `musica-ctl` `titulo` e `duracao`) e a fila de cada canal (`fila`, com `fila-por`, `fila-mover`, `fila-tirar` e `pular`; limites `FILA_MAX`, `FILA_POR_PESSOA` e `FILA_SALA_MAX`; anunciada como `fila` em `features`). Tira sozinho a esquecida e passa a que acabou para a próxima da fila (`limparMusicas`, a cada 5 s).
+- **Silenciar para a sala** (`mute-room`, em `sala-protocolo.js`): `{ type: 'mute-room', target, on, surdo }`. O estado
+  oficial mora no servidor da sala (`createSilencio`: chave = conta Razze ou nome, quem silenciou, `surdo`), vai a todos
+  como `mute-room-state` (`lista` de `{ chave, ids, por, surdo }`; `ids` = todos na sala com a chave; entrar ou sair da conta leva o silêncio para a chave nova), no `welcome` (`silencio`, com `mute-room` em
+  `features`) e no seed da troca de host. Regras no servidor: alvo existente, nem espectador nem convidado, limite
+  `SILENCIO_POR_MINUTO` por pessoa e `SILENCIO_SALA_POR_MINUTO` na sala, silenciado só se libera, `voice-state` não desmuta quem está silenciado. Cada ação
+  vira uma entrada do chat com `sistema: true` e o autor da ação. O app manda `muteRoom: true` no hello (o menu da sala
+  conta quem não manda). No cliente: `renderer/voz.js` (`setSilencio`, `conferirMeuSilencio`, `acoesSilencioSala`).
 - **Vídeo, áudio, voz e arquivos:** vão direto de PC para PC, por WebRTC, pela rede da Radmin. Não passam por servidor.
 - **Troca de host:** cada um sabe a ordem de chegada e os endereços dos outros. Se o servidor some, o mais antigo abre outro na mesma porta, e todo mundo volta com o mesmo número. Por isso as conexões diretas (quem assiste quem) não caem.
 - **Rede usada pelo app:** em Configurações, escolha Internet (servidor, o padrão), Radmin/LAN ou VPN Razze; quem já usava o app sem ter escolhido continua na Radmin. A RazzeAPI independente gerencia contas, amizades, redes, convites e chaves públicas; o executável oficial `bin/selfvpn/wireguard.exe` cria um serviço de túnel por rede no Windows. Os peers são descobertos pelo API e por STUN UDP. O primeiro MVP usa conexão direta; não há relay para CGNAT restritivo. A descoberta automática de salas continua apenas em LAN/Radmin.

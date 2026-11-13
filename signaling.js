@@ -11,6 +11,7 @@ let roomChanged = () => {};
 
 const {
   MAX_MEMBERS, send, cleanSessao, cleanSenha, newMember, memberInfo, createChat, createSubsalas, memberGone, createMusicas, limparMusicas, handleMemberMessage,
+  createSilencio, silencioMsg, entraSilenciado,
 } = require('./sala-protocolo');
 
 const LOCAL = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
@@ -56,6 +57,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
     const chat = createChat(seed.chat);
     const subsalas = createSubsalas(seed.subsalas, seed.lider); // as subsalas de voz continuam depois da troca de host
     const musicas = createMusicas(seed.musicas); // e as músicas de cada canal, de onde estavam
+    const silencio = createSilencio(seed.silencio); // e quem a sala silenciou
     // Quem roda este servidor: numa sala nova, a primeira conexão do próprio PC; depois de uma troca,
     // já vem definido (os outros podem chegar antes do próprio novo host)
     let hostId = /^\d{1,6}$/.test(String(seed.hostId || '')) ? String(seed.hostId) : null;
@@ -164,13 +166,15 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
           if (!hostId && isLocal) hostId = id;
           // A versão de cada um serve para os apps baixarem atualizações uns dos outros
           me = newMember(ws, msg, resume, subsalas);
+          const silenciado = entraSilenciado(silencio, me);
           send(ws, {
             type: 'welcome',
             id,
             hostId,
             members: [...members].filter(([mid]) => mid !== id).map(([mid, m]) => memberInfo(mid, m)),
-            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'senha', 'ping'],
+            features: ['chat', 'voice', 'handoff', 'sessoes', 'subsalas', 'subsala-move', 'lider', 'musica', 'fila', 'senha', 'ping', 'mute-room'],
             chat: chat.log,
+            silencio: silencio.lista(new Map([...members, [id, me]])),
             subsalas: subsalas.list,
             lider: subsalas.liderMsg(),
             musicas: [...musicas.map.values()],
@@ -179,6 +183,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
           });
           members.set(id, me);
           broadcast({ type: 'member-joined', ...memberInfo(id, me), resumed: !!resume }, id);
+          if (silenciado) broadcast(silencioMsg(silencio, members), id); // os outros ligam o silêncio ao número novo
           roomChanged();
           return;
         }
@@ -195,7 +200,7 @@ function startServer(port, password = '', seed = {}) { // a senha pode mudar dep
           roomChanged();
           return;
         }
-        handleMemberMessage({ members, broadcast, chat, subsalas, musicas }, id, me, msg);
+        handleMemberMessage({ members, broadcast, chat, subsalas, musicas, silencio }, id, me, msg);
       });
 
       ws.on('close', (code) => {
