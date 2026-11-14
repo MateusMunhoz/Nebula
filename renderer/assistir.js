@@ -155,7 +155,23 @@ function createTile(id, name) {
   ambient.className = 'tile-ambient';
   ambient.width = 32; ambient.height = 18;
   ambient.hidden = true;
-  body.append(ambient, video, overlay, pipNote);
+  // A câmera de quem transmite, num quadrinho no canto (transmitir.js › Câmera)
+  const cam = document.createElement('video');
+  cam.className = 'tile-cam';
+  cam.autoplay = true;
+  cam.playsInline = true;
+  cam.muted = true;
+  cam.hidden = true;
+  // Em cima do quadrinho: troca a câmera e a tela de lugar (a câmera grande, a tela no canto), só para você
+  const camTroca = document.createElement('button');
+  camTroca.type = 'button';
+  camTroca.className = 'tile-cam-troca';
+  camTroca.setAttribute('aria-pressed', 'false');
+  camTroca.title = 'Trocar a câmera e a tela de lugar';
+  camTroca.setAttribute('aria-label', camTroca.title);
+  camTroca.onclick = (e) => { e.stopPropagation(); camTroca.setAttribute('aria-pressed', String(el.classList.toggle('cam-foco'))); };
+  camTroca.ondblclick = (e) => e.stopPropagation(); // dois cliques aqui não são tela cheia
+  body.append(ambient, video, cam, camTroca, overlay, pipNote);
   // Luz ambiente (Aparência): nas barras pretas, as cores do vídeo, desfocadas. Um quadro de 32 x 18 duas vezes
   // por segundo, e só quando o vídeo não enche o quadro; o desfoque fica por conta do CSS (.tile-ambient).
   const ambientCtx = ambient.getContext('2d', { alpha: false });
@@ -185,7 +201,7 @@ function createTile(id, name) {
   setupTileDrag(id, el);
   setupTileIdle(el);
   el.dataset.person = id;
-  const tile = { el, video, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, vendo, paused: false, mutedBefore: false, userMuted: false };
+  const tile = { el, video, cam, vol, overlay, pipNote, fs, focusBtn, pipBtn, syncMute, name, vendo, paused: false, mutedBefore: false, userMuted: false };
   return tile;
 }
 
@@ -226,7 +242,8 @@ function watch(id) {
   }
 
   pc.ontrack = (e) => {
-    if (e.track.kind === 'video') setVideoTrack(link, e.track);
+    if (link.camId && e.track.kind === 'video' && e.streams[0]?.id === link.camId) { link.camTr = e.transceiver; tile.cam.srcObject = new MediaStream([e.track]); }
+    else if (e.track.kind === 'video') setVideoTrack(link, e.track);
     else { link.tracks.push(e.track); refreshTileStream(link); renderTileAudio(id); }
   };
   // Quem transmite no modo "uma vez só" manda o vídeo já codificado por este canal
@@ -248,7 +265,7 @@ function watch(id) {
     }
   };
 
-  sendSignal(id, { side: 'viewer', subscribe: true, once: onceSupportedForViewer() });
+  sendSignal(id, { side: 'viewer', subscribe: true, once: onceSupportedForViewer(), cam: true });
   if (document.hidden) onVisibility(); // começou a assistir com a janela já oculta: pausa o vídeo também
   if (state.focus) state.focus = id;   // pediu para assistir alguém durante o destaque: essa pessoa vira o destaque
   state.minimizado = false;            // e com as telas minimizadas, elas voltam
@@ -305,6 +322,8 @@ async function watchSelf() {
   tile.video.muted = true;
   tile.vol.hidden = true;
   tile.el.querySelector('.tile-bar .btn.icon').hidden = true; // o botão de silenciar: não tem som
+  tile.cam.srcObject = cam.stream; // a sua câmera no canto, como os outros veem
+  tile.cam.hidden = !cam.track;
   const link = { self: true, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 };
   state.in.set(id, link);
   syncCaptureExclude(); // antes do vídeo aparecer
@@ -519,7 +538,7 @@ function ensureStats() {
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
       report.forEach((r) => {
-        if (r.type !== 'inbound-rtp' || r.kind !== 'video') return;
+        if (r.type !== 'inbound-rtp' || r.kind !== 'video' || isCamStat(link, r)) return;
         const mbps = link.lastTs ? ((r.bytesReceived - link.lastBytes) * 8) / (r.timestamp - link.lastTs) / 1000 : 0;
         link.lastBytes = r.bytesReceived;
         link.lastTs = r.timestamp;

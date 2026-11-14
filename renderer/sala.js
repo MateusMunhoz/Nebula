@@ -681,7 +681,7 @@ function handleSignal(from, data) {
   if (data.side === 'lider') return lider.receive(from, data); // a voz da subsala Líder (voice.js)
   if (data.side === 'viewer') {
     // Mensagem de alguém que assiste (ou quer assistir) a minha tela
-    if (data.subscribe) return addWatcher(from, data.once === true);
+    if (data.subscribe) return addWatcher(from, data.once === true, data.cam === true);
     if (data.unsubscribe) return closeOut(from);
     const link = state.out.get(from);
     if (!link) return;
@@ -722,6 +722,12 @@ function handleSignal(from, data) {
     // Mensagem de quem transmite uma tela que eu pedi para assistir
     const link = state.in.get(from);
     if (!link) return;
+    // A câmera no canto: o id do fluxo dela (para separar da tela quando a faixa chegar) e se está ligada
+    if (data.cam !== undefined) {
+      if (typeof data.camId === 'string' && data.camId.length <= 64) link.camId = data.camId;
+      link.tile.cam.hidden = data.cam !== true;
+      return;
+    }
     // Quantos assistem essa transmissão: um número pequeno, e só de quem eu estou assistindo
     if (data.vendo !== undefined) {
       if (Number.isInteger(data.vendo) && data.vendo >= 0 && data.vendo <= 99 && link.tile.vendo) {

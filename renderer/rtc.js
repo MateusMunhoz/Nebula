@@ -13,8 +13,10 @@ function enhanceOpus(sdp) {
 
 // Coloca o H.264 em primeiro lugar (a placa de vídeo codifica, a CPU fica livre).
 // Se o PC não tiver H.264, fica o padrão do WebRTC (VP8).
-function preferH264(pc) {
-  const tr = pc.getTransceivers().find((t) => t.sender.track && t.sender.track.kind === 'video');
+// Sem tr, vale para a faixa da tela (a da câmera no canto, transmitir.js, tem o próprio transceptor e é pulada).
+function preferH264(pc, tr) {
+  const camTrack = typeof cam === 'undefined' ? null : cam.track;
+  tr ||= pc.getTransceivers().find((t) => t.sender.track && t.sender.track.kind === 'video' && t.sender.track !== camTrack);
   if (!tr || !tr.setCodecPreferences || !RTCRtpReceiver.getCapabilities) return;
   const codecs = RTCRtpReceiver.getCapabilities('video')?.codecs || [];
   if (!codecs.some((c) => c.mimeType.toLowerCase() === 'video/h264')) return;
@@ -42,6 +44,11 @@ function usesHardware(efficient, impl) {
   return null;
 }
 
+// A câmera no canto da transmissão (transmitir.js › Câmera): pequena e leve
+const CAM_CORNER = { w: 1280, h: 720, fps: 30, bitrate: 1000000 };
+// Nas medidas (getStats), a faixa da câmera no canto não conta como a tela. link.camTr: o transceptor dela
+function isCamStat(link, r) { return !!link.camTr?.mid && r.mid === link.camTr.mid; }
+
 // videoOff: quem assiste está com a janela minimizada, então o vídeo para (só o som continua)
 // e a placa de vídeo deixa de codificar para essa pessoa.
 async function applyBitrate(link) {
@@ -51,8 +58,10 @@ async function applyBitrate(link) {
     const params = sender.getParameters();
     if (!params.encodings || !params.encodings.length) params.encodings = [{}];
     const s = sender.track.getSettings();
-    params.encodings[0].maxBitrate = bitrateFor(q, s.width, s.height);
-    params.encodings[0].maxFramerate = q.fps;
+    // A câmera no canto (transmitir.js) é pequena: teto fixo, para não disputar a banda com a tela
+    const isCam = sender === link.camTr?.sender;
+    params.encodings[0].maxBitrate = isCam ? CAM_CORNER.bitrate : bitrateFor(q, s.width, s.height);
+    params.encodings[0].maxFramerate = isCam ? CAM_CORNER.fps : q.fps;
     params.encodings[0].active = !link.videoOff;
     try { await sender.setParameters(params); } catch (e) { console.warn(e); }
   }

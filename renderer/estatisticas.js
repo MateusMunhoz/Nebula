@@ -255,7 +255,7 @@ async function renderCodecInfo() {
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
       report.forEach((r) => {
-        if (r.type !== type || r.kind !== 'video' || !r.codecId) return;
+        if (r.type !== type || r.kind !== 'video' || !r.codecId || isCamStat(link, r)) return;
         const codec = codecName(report, r.codecId) || '?';
         const size = r.frameWidth ? `, ${r.frameWidth}×${r.frameHeight} a ${Math.round(r.framesPerSecond || 0)} fps` : '';
         if (!r[implKey]) {

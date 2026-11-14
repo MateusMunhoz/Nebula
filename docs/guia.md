@@ -232,8 +232,10 @@ Se o host sai, ou se o app dele fecha ou trava, a sala não acaba.
   áudio (à direita; numa janela estreita, um embaixo do outro). Um clique
   fora dela fecha sem mudar nada (trocando a tela, a transmissão continua com a de antes).
 - **Sem prévia:** a prévia da sua própria tela não aparece na sala. Você vê o que escolheu ao começar.
-- **Só para o seu canal:** na janela de transmitir, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o ícone ao lado de **Trocar** (globo = a sala toda, cadeado = só o seu canal) abre **Quem pode assistir**, com as duas opções; a escolha muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
+- **Só para o seu canal:** na janela de transmitir, em **Avançado**, **Outros canais podem assistir** diz se quem está em outra subsala (ou na Voz geral, se você está numa subsala) pode assistir. Vem ligado e fica salvo. Durante a transmissão, o ícone ao lado de **Trocar** (globo = a sala toda, cadeado = só o seu canal) abre **Quem pode assistir**, com as duas opções; a escolha muda só a transmissão atual; a próxima começa como está na janela. Fechada, quem está fora do seu canal vê o **Assistir** desligado, e quem já assistia de fora para de ver (também quando você ou a pessoa muda de canal).
 - **Trocar sem parar:** enquanto transmite, clique em **Trocar**, ao lado de "Ao vivo", e escolha outra tela ou janela (por exemplo, de uma janela do Chrome para a do Firefox, ou de uma janela para a tela inteira). Quem assiste passa a ver a fonte nova em um instante, sem reconectar. A qualidade, o som e a codificação continuam os mesmos. Funciona nos três modos (normal, WebCodecs e NVENC direto).
+- **Câmera:** na janela de transmitir, a aba **Câmera** transmite a sua webcam no lugar da tela (escolha a câmera e a qualidade, como numa tela).
+- **Câmera no canto:** para aparecer junto com a tela, escolha a câmera em **Sua câmera no canto** antes de começar, ou clique no botão da câmera ao lado de "Ao vivo" durante a transmissão (ele liga e desliga). Quem assiste vê você num quadrinho no canto de baixo da sua tela. Ela começa sempre desligada. Só aparece para quem assiste pelo app nesta versão ou mais nova: no navegador, no celular, na janela flutuante e nos clipes fica só a tela. Clique no quadrinho para trocar: a câmera fica grande e a tela vai para o canto (só para você; outro clique desfaz).
 - **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas**.
 
 ### Áudio e apps ignorados
@@ -345,7 +347,7 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
   **Ensurdecer para a sala** (também corta o que ela ouve da call). Qualquer pessoa da sala pode usar, sem ser host.
   - Quem foi silenciado recebe um aviso, e o microfone (ou o fone) dele fica com um cadeadinho, na lista, no palco e no
     perfil, para diferenciar de quem só se mutou. Ao voltar, é só ligar o microfone: isso libera. Qualquer outra pessoa
-    também libera, com **Liberar microfone** (ou **Liberar áudio**) no mesmo lugar.
+    também libera, com **Liberar microfone** (ou **Liberar áudio**) no mesmo lugar. Liberado por outra pessoa, o microfone (ou o fone) volta a ligar sozinho, se foi o silêncio que desligou; quem já estava no mudo continua no mudo.
   - Cada ação entra no chat da sala ("Fulano silenciou Ciclano para a sala"): a transparência substitui a hierarquia.
   - Contra abuso: no máximo 3 ações por minuto por pessoa e 10 na sala inteira (contado no servidor da sala); quem está silenciado não
     silencia nem libera os outros; o silêncio continua para quem sai e volta na sala (pela conta Razze ou, sem conta,

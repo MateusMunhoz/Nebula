@@ -348,6 +348,7 @@ function renderCallbar() {
   if (live) $('cbShare').insertAdjacentHTML('beforeend', ICON.monitorOff);
   $('cbShare').classList.toggle('ao-vivo', live);
   $('cbSwap').hidden = !live;
+  renderCam();
   $('cbAudience').hidden = !live;
   setIcon($('cbLeave'), 'phoneOff', 'Sair da voz');
 }
@@ -365,6 +366,7 @@ function setupCallbar() {
   $('cbAudience').onclick = () => toggleShareOpenMenu(undefined, $('cbAudience')); // o mesmo menu do painel, ao lado deste botão
   setIcon($('cbSwap'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
   $('cbSwap').onclick = () => $('switchShareBtn').click();
+  $('cbCam').onclick = () => $('camBtn').click();
   $('cbLeave').onclick = () => { setCallbar(false); $('voiceJoin').click(); }; // na voz, o voiceJoin é o Sair
   renderCallbar();
 }

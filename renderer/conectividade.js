@@ -690,8 +690,8 @@ function setupConnectivitySettings() {
       saveNetworkPreferences({ internetUrl: url });
       renderConnectivitySettings();
       $('internetStatus').textContent = info.turn
-        ? 'Servidor ok, com TURN: funciona até para quem está atrás de CGNAT.'
-        : 'Servidor ok, mas sem TURN: quem estiver atrás de CGNAT pode não conseguir ver a tela.';
+        ? 'Servidor ok: funciona até para quem tem internet restrita (CGNAT).'
+        : 'Servidor ok, mas sem o apoio (TURN): quem tem internet restrita (CGNAT) pode não conseguir ver a tela.';
     } catch (error) {
       $('internetStatus').textContent = error.message;
     } finally { $('internetSaveServer').disabled = false; }
