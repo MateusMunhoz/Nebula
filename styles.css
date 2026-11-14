@@ -559,11 +559,14 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .pc-actions .pc-round { width: 38px; height: 38px; margin-left: auto; }
 /* Silenciar para a sala no cartão: laranja (cuidado), nunca vermelho */
 .pc-actions.pc-sala { flex-wrap: wrap; padding-top: 0; }
-.pc-act-sala { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; font-size: 12px;
-  color: var(--warn); background: transparent; border: 1px solid currentColor; cursor: pointer; }
-.pc-act-sala:hover:not(:disabled) { background: var(--warn-soft); }
+.pc-act-sala { flex: 1 1 auto; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 8px; border-radius: 8px; font-size: 12px; white-space: nowrap;
+  color: var(--warn); background: var(--warn-soft); border: 1px solid transparent; cursor: pointer; }
+.pc-act-sala:hover:not(:disabled) { border-color: currentColor; }
+.pc-act-sala:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pc-act-sala:disabled { opacity: .5; cursor: not-allowed; }
-.pc-act-sala svg { width: 16px; height: 16px; }
+/* Sem isto o SVG cai no preenchimento preto padrão e o ícone vira uma mancha escura */
+.pc-act-sala svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .sky-page-act.sala { color: var(--warn); }
 .pc-act-main { flex: 1; min-width: 0; height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--primary);
   border-radius: 999px; background: var(--primary); color: var(--primary-ink); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
@@ -2284,22 +2287,22 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
 .dm-pop-txt span { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .dm-online-pop { animation: none; } .dm-online-person .avatar { transition: none; } }
 /* Conversas: linhas sem caixa, separadas pelo espaço e por grupos de data; o fundo só aparece no hover */
-.dm-panel .dm-grupo { margin: 8px 6px 0; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.dm-panel .dm-grupo:first-child { margin-top: 0; }
+:is(.dm-panel, .dm-tela) .dm-grupo { margin: 8px 6px 0; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+:is(.dm-panel, .dm-tela) .dm-grupo:first-child { margin-top: 0; }
 .dm-panel #dmPanelConvList { gap: 2px; }
-.dm-panel .hub-conv { gap: 12px; padding: 8px; border: 0; background: transparent; transition: background .15s; }
-.dm-panel .hub-conv:hover, .dm-panel .hub-conv:focus-visible { background: color-mix(in srgb, var(--text) 5%, transparent); }
-.dm-panel .hub-conv .avatar { width: 36px; height: 36px; font-size: 13px; }
-.dm-panel .hub-conv .hub-avatar:not(.on)::after { display: none; } /* só quem está online tem a bolinha */
-.dm-panel .hub-conv .hub-avatar::after { box-shadow: 0 0 0 2px var(--panel); }
-.dm-panel .hub-conv .hub-room-info strong { font-size: 12.5px; font-weight: 600; }
-.dm-panel .hub-conv .hub-room-meta { font-size: 11.5px; }
+:is(.dm-panel, .dm-tela) .hub-conv { gap: 12px; padding: 8px; border: 0; background: transparent; transition: background .15s; }
+:is(.dm-panel, .dm-tela) .hub-conv:hover, .dm-panel .hub-conv:focus-visible { background: color-mix(in srgb, var(--text) 5%, transparent); }
+:is(.dm-panel, .dm-tela) .hub-conv .avatar { width: 36px; height: 36px; font-size: 13px; }
+:is(.dm-panel, .dm-tela) .hub-conv .hub-avatar:not(.on)::after { display: none; } /* só quem está online tem a bolinha */
+:is(.dm-panel, .dm-tela) .hub-conv .hub-avatar::after { box-shadow: 0 0 0 2px var(--panel); }
+:is(.dm-panel, .dm-tela) .hub-conv .hub-room-info strong { font-size: 12.5px; font-weight: 600; }
+:is(.dm-panel, .dm-tela) .hub-conv .hub-room-meta { font-size: 11.5px; }
 .dm-voce { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .dm-conv-lado { flex: none; align-self: flex-start; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-top: 1px; }
 /* Não lida: nome forte, prévia clara e a hora na cor de destaque */
-.dm-panel .hub-conv.has-unread .hub-room-info strong { color: var(--text); font-weight: 800; }
-.dm-panel .hub-conv.has-unread .hub-room-meta { color: var(--text); }
-.dm-panel .hub-conv.has-unread .hub-conv-time { color: var(--accent); font-weight: 700; }
+:is(.dm-panel, .dm-tela) .hub-conv.has-unread .hub-room-info strong { color: var(--text); font-weight: 800; }
+:is(.dm-panel, .dm-tela) .hub-conv.has-unread .hub-room-meta { color: var(--text); }
+:is(.dm-panel, .dm-tela) .hub-conv.has-unread .hub-conv-time { color: var(--accent); font-weight: 700; }
 /* Adicionar amigo: sobe de baixo, por cima das conversas (que ficam escurecidas atrás) */
 .dm-add-backdrop { position: absolute; inset: 0; z-index: 2; background: rgba(0, 0, 0, .45); border-radius: inherit; }
 .dm-add-backdrop[hidden], .dm-add-sheet[hidden] { display: none; }
@@ -3956,3 +3959,28 @@ button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
    cobrir a barra de play do YouTube. Vendo só a tela de alguém, a barra fica por cima do vídeo e some sozinha.
    A margem (e não o padding) encolhe o #tiles, e o palco (palco.js) refaz o layout com a altura que sobra */
 .callbar-reserva #room #tiles:not(.minimizado) { margin-bottom: 84px; }
+
+/* Mensagens em tela inteira (renderer/mensagens.js › renderDmTela): as conversas à esquerda e a aberta no centro,
+   por cima do palco e dos painéis, com a barra de conversas à vista embaixo */
+.dm-tela { --text: var(--surface-text); --muted: var(--surface-muted); position: fixed; z-index: 13; top: var(--workspace-top); left: 16px;
+  right: calc(16px + var(--rail-w)); bottom: calc(var(--dm-h) + 12px); display: grid; grid-template-columns: minmax(220px, 280px) 1fr;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); }
+.dm-tela[hidden] { display: none; }
+.dm-tela-lado { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px 10px; background: var(--panel-2); border-right: 1px solid var(--line); }
+.dm-tela-titulo { margin: 0 6px 2px; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.dm-tela-lado .hub-filter { border-radius: 999px; padding: 0 14px; }
+#dmTelaConvList { flex: 1; min-height: 0; overflow: auto; gap: 2px; scrollbar-width: thin; }
+.dm-tela .hub-conv { cursor: pointer; border-radius: 8px; }
+.dm-tela .hub-conv.atual { background: color-mix(in srgb, var(--text) 10%, transparent); }
+.dm-tela-centro { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.dm-tela-topo { flex: none; display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--line); }
+.dm-tela-topo .dm-nome-box { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dm-tela-topo .dm-nome-box strong { font-size: 15px; }
+.dm-tela-av .avatar { width: 34px; height: 34px; font-size: 13px; }
+.dm-tela-topo .dm-chip-btn { width: 36px; height: 36px; border-radius: 50%; }
+.dm-tela-topo .dm-chip-btn svg { width: 17px; height: 17px; }
+.dm-tela-conversa { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#dmTelaVazia { margin: auto; }
+#dmTela .dm-window { position: static; flex: 1; min-height: 0; width: auto; height: auto; padding: 8px 20px 16px; border: 0; border-radius: 0; box-shadow: none; }
+/* Com a tela aberta, a lista dela já mostra as conversas: o trilho da janelinha some */
+body.dm-tela-aberta #dmTrilho { display: none; }

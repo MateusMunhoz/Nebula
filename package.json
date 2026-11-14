@@ -22,7 +22,8 @@
     "dist:linux": "electron-builder --linux AppImage",
     "dist:mac": "electron-builder --mac dmg",
     "icone": "electron gerar-icone.js",
-    "test:razze-admin": "node tests/e2e/razze-admin.js"
+    "test:razze-admin": "node tests/e2e/razze-admin.js",
+    "demo": "electron tests/e2e/demo.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

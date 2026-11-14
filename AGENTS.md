@@ -23,6 +23,7 @@ Regras específicas de cada parte carregam sozinhas de `.claude/rules/` quando v
 ## Comandos
 - `npm ci` — instalar (Node 24 ou mais novo).
 - `npm run dev` — abrir o app com o código desta pasta (`npm start` pode abrir uma atualização baixada).
+- `npm run demo` — abrir o app sozinho numa sala falsa (Ana e Beto na voz, amigos com conversas) para ver e clicar na interface; nada sai do PC (`tests/e2e/demo.cjs`).
 - `npm test` — testes unitários (node:test, ~3 s, sem janelas). Rodar sempre antes de terminar.
 - `npx electron tests/e2e/carga.cjs` — o app abre sem erro (~5 s, janela invisível).
 - `npm run test:settings`, `npm run test:rtc` — Electron com janelas invisíveis.

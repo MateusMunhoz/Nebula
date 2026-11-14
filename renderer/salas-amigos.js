@@ -298,6 +298,7 @@ async function aceitarConvite(cv, quem) {
     if (!(await appConfirm(`Sair desta sala e entrar na sala de ${quem}?`, { title: 'Trocar de sala', ok: 'Trocar' }))) return;
     leaveRoom();
   }
+  if (dm.tela) fecharDmTela(); // a tela de mensagens cobriria a sala
   show('home');
   if (cv.modo === 'internet') return entrarSalaAmigo({ host: quem, codigo: cv.codigo, servidor: cv.servidor, passe: cv.passe, oculta: !!cv.oculta });
   const [endereco, porta] = cv.endereco.split(':');

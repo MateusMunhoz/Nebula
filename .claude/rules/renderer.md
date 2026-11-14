@@ -52,8 +52,8 @@ paths:
   `body` e com a foto em cima da foto da linha (`placeSkyProfile`). O fundo do perfil (`renderer/fundo-perfil.js`) chega
   por `{ side: 'fundo' }` em pedaços; valide tudo que chega como em `onPhotoSignal`.
 - A **coluna do perfil** (`renderer/perfil-fixo.js`, `#perfilFixo`) usa o mesmo `renderSkyPage` com `fixo: true` e fica
-  entre o palco e o painel (`body.com-perfil-fixo`, `--perfil-w`). Ela pega os cliques em pessoas quando cabe
-  (`mostrarNoPerfilFixo`). Fica aberta o tempo todo: além do vinil e das barrinhas da música (que param com o app fora de
+  entre o palco e o painel (`body.com-perfil-fixo`, `--perfil-w`). Clicar numa foto ou nome abre a miniatura
+  (`openPersonCard`, `voz.js`); o botão "Ver o perfil completo" dela leva a pessoa à coluna quando cabe (`mostrarNoPerfilFixo`). Fica aberta o tempo todo: além do vinil e das barrinhas da música (que param com o app fora de
   foco), nada nela anima sozinho.
 
 ## Temas (aba Tema)
