@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.19",
+    "date": "2026-11-14",
+    "items": [
+      "fix(ui): miniatura nas linhas da voz, foco da lista e tela de mensagens fecha ao entrar na sala",
+      "chore(dev): npm run demo, sala e amigos falsos para testar a interface sozinho",
+      "feat(ui): miniatura do perfil, mensagens em tela inteira e ícones do silenciar"
+    ]
+  },
+  {
     "version": "1.20.18",
     "date": "2026-11-13",
     "items": [
@@ -89,13 +98,6 @@ const NOVIDADES = [
       "docs: assistir pelo navegador (spec v1, README do servidor, roadmap)",
       "feat(servidor): assistir pelo navegador do celular (espectador e página /ver)",
       "Sala pelo Nostr: spec e protótipo da fase 0"
-    ]
-  },
-  {
-    "version": "1.20.9",
-    "date": "2026-10-27",
-    "items": [
-      "Barra da chamada: faixa embaixo das telas só com a música da sala no palco"
     ]
   }
 ];
