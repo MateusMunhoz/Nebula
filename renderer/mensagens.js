@@ -695,6 +695,7 @@ function dmHora(t, grupo) {
 }
 function fillDmList(prefix = 'dmPanel') {
   const box = $(prefix + 'ConvList');
+  const focoId = box.contains(document.activeElement) ? document.activeElement.dataset.id : ''; // a lista é refeita a cada busca
   $(prefix + 'Unsupported').hidden = !dm.unsupported;
   $(prefix + 'Error').textContent = !dm.unsupported && dm.error ? dm.error : '';
   const ids = new Set([...friendsData.friends.map((f) => f.id), ...[...dm.convs.values()].filter((c) => c.last).map((c) => c.id)]);
@@ -719,6 +720,7 @@ function fillDmList(prefix = 'dmPanel') {
     const li = document.createElement('li');
     li.className = 'hub-room hub-conv' + (c?.unread ? ' has-unread' : '');
     li.tabIndex = 0;
+    li.dataset.id = id;
     li.setAttribute('role', 'button');
     li.onclick = () => void openDm(id);
     li.onkeydown = (e) => { if (e.key === 'Enter') void openDm(id); };
@@ -748,6 +750,7 @@ function fillDmList(prefix = 'dmPanel') {
     itens.push(li);
   }
   box.replaceChildren(...itens);
+  if (focoId) itens.find((li) => li.dataset.id === focoId)?.focus({ preventScroll: true });
   $(prefix + 'ConvEmpty').hidden = rows.length > 0;
   $(prefix + 'ConvEmpty').textContent = needle ? `Ninguém com “${dm.filter.trim()}”.` : 'Clique em Adicionar amigo, no alto, para conversar com alguém.';
   if (prefix === 'dmPanel') fillDmOnline(needle);

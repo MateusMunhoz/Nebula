@@ -1102,14 +1102,17 @@ function openSkyProfile(id, at, from = null) {
   renderSkyProfile();
   if (at && !('clientX' in at)) $('skyFocus').querySelector('.sky-page-back')?.focus(); // pelo teclado
 }
-// Na lista do painel de voz, clicar na linha de quem está na voz (a foto, o nome, o estado; os botões dela não) abre o
-// mesmo perfil do mapa, por cima do painel. Antes do clique geral das fotos e nomes (voz.js), que abriria o cartão
+// Na lista do painel de voz, clicar na linha de quem está na voz (a foto, o nome, o estado; os botões dela não) abre a
+// miniatura, como as fotos e nomes do resto do app (voz.js); o perfil inteiro fica no botão dela. Você não tem
+// miniatura: a sua linha abre o perfil do mapa, por cima do painel
 $('voicePaneMembers').addEventListener('click', (e) => {
   const li = e.target.closest('li.member');
   if (!li || e.target.closest('button, input, a') || !inVoice(li.dataset.person)) return;
   e.stopPropagation();
-  if (skyFocusId === li.dataset.person && !voiceMapOn()) return closeSkyProfile(); // a mesma linha fecha a caixinha
-  openSkyProfile(li.dataset.person, e.detail === 0 ? li : e);
+  const id = li.dataset.person;
+  if (state.members.has(id)) return openPersonCard(id, e.target.closest('[data-profile]') || li, e.detail === 0);
+  if (skyFocusId === id && !voiceMapOn()) return closeSkyProfile(); // a mesma linha fecha a caixinha
+  openSkyProfile(id, e.detail === 0 ? li : e);
 });
 // A caixinha fecha com um clique fora dela (a linha da pessoa abre e fecha pelo clique acima; o cartão da pessoa e o
 // menu de canais não a fecham)
@@ -1129,6 +1132,7 @@ $('voicePaneMembers').addEventListener('keydown', (e) => {
   if ((e.key !== 'Enter' && e.key !== ' ') || !li || !e.target.matches('[data-profile]') || !inVoice(li.dataset.person)) return;
   e.preventDefault();
   e.stopPropagation();
+  if (state.members.has(li.dataset.person)) return openPersonCard(li.dataset.person, e.target, true);
   openSkyProfile(li.dataset.person, li);
 });
 // Fechar tem transição (CSS .closing, 180 ms): o perfil some e encolhe; só depois sai da tela

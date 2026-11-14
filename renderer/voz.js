@@ -865,7 +865,8 @@ function renderPersonCard() {
     actions.append(dm);
   }
   const from = card.dataset.from || null;
-  if (skyFocusId !== id && (perfilFixoCabe() || from || inVoice(id))) {
+  const naColuna = perfilFixoNaTela() && quemNoPerfilFixo() === id; // a coluna já mostra a pessoa
+  if (skyFocusId !== id && !naColuna && (perfilFixoCabe() || from || inVoice(id))) {
     const open = el('button', 'pc-round');
     open.type = 'button';
     setIcon(open, 'user', `Ver o perfil completo de ${name}`);

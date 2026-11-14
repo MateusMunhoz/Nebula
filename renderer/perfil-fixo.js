@@ -2,8 +2,8 @@
 // ---------- Coluna do perfil ----------
 // Na sala, entre as telas e o painel, o perfil inteiro de uma pessoa fica sempre à vista (como no Discord). O desenho
 // é o do perfil da voz (renderSkyPage em ceu-voz.js, no modo fixo); no pé, a lista "Na voz" com quem está na sala
-// troca de pessoa. Clicar em alguém em qualquer lugar também troca (openSkyProfile e o clique nas fotos e nomes, voz.js).
-// A setinha recolhe; clicar em alguém abre de novo. Com a janela estreita não há coluna: volta o perfil por cima do painel.
+// troca de pessoa. Clicar numa foto ou nome abre a miniatura (openPersonCard, voz.js); o botão "Ver o perfil completo"
+// dela (openSkyProfile) troca a coluna. A setinha recolhe; o botão da miniatura abre de novo. Com a janela estreita não há coluna: volta o perfil por cima do painel.
 // px de janela: abaixo disso, a coluna tiraria espaço demais das telas. A janela começa com 1200 (main.js) e o Windows
 // come uns pixels da borda: 1160 deixa a coluna no tamanho de abertura, com ~430 px de telas
 const PERFIL_FIXO_MIN = 1160;

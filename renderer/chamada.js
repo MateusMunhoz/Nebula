@@ -223,6 +223,7 @@ async function ligarPara(id) {
 async function atenderChamada(cv, quem) {
   if (chamada.atendendo || entrandoNaSala()) return;
   mixer.ensure(); // o clique em Atender libera o áudio da voz
+  if (dm.tela) fecharDmTela(); // a tela de mensagens cobriria a sala
   if (state.myId && mesmaSala(cv)) {
     if (!voice.session) joinVoiceIn('');
     show('room');
