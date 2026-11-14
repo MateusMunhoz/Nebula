@@ -102,9 +102,9 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 - **Coluna do perfil:** na sala, entre as telas e o painel (com o painel recolhido, encostada na barrinha), o perfil
   inteiro de uma pessoa fica sempre à vista, como no Discord: fundo, foto grande, nome, frase, o que está jogando ou
   ouvindo, as ações, o volume da voz (e o som da transmissão, se você assiste) e os recentes. Sem escolha, mostra quem
-  transmite (ou alguém da voz). Clicar em qualquer pessoa (na lista da voz, em Pessoas, no chat, no palco) mostra ela
+  transmite (ou alguém da voz). Clicar numa pessoa (em Pessoas, no chat, no palco) abre a miniatura do perfil ao lado (como no Discord); o botão **Ver o perfil completo** dela mostra a pessoa
   na coluna; as fotos de **Na voz** no pé também trocam (só a foto; o nome aparece com o mouse em cima; quem fala acende em verde, quem transmite tem o anel azul, microfone desligado tem o selinho laranja). A seta no
-  canto do fundo recolhe a coluna e devolve o espaço às telas; clicar em alguém abre de novo, e o app lembra. Com a
+  canto do fundo recolhe a coluna e devolve o espaço às telas; o **Ver o perfil completo** abre de novo, e o app lembra. Com a
   janela estreita (menos de 1160 px) não há coluna: o perfil abre por cima do painel, como antes. O disco da música gira
   e as barrinhas pulam como no perfil aberto; param com o app fora de foco (num jogo, por exemplo) e no modo gamer.
 - **Barrinha da direita:** em cima, o perfil; no pé, **Início** (vai para o saguão sem sair da sala), **Convidar** (copia o endereço ou o código da sala), o **chat por cima do jogo**, o **modo gamer** (o controle), **Apoiar** (o coração), **Feedback e bugs** (o balão com exclamação), a engrenagem e, por último, depois de uma linha, **Sair** em vermelho (para o host sozinho, **Encerrar**). Convidar e Sair só aparecem numa sala. No saguão, com a sala aberta, o pé mostra **Voltar para a sala** no lugar do Início, com o número de mensagens novas; sair por ali, sendo o host com gente na sala, volta para a sala para perguntar se passa a sala adiante.
@@ -609,6 +609,9 @@ Conversa com um amigo (conta Razze), dentro ou fora da sala.
   - **"sem criptografia":** marca as mensagens de antes, que o servidor ainda guarda por até 30 dias.
 - **Clicar fora** da janelinha minimiza a conversa. O **alfinete** no chip trava a janela aberta (clique de novo
   para destravar). A escolha fica salva.
+- **Tela inteira:** as setinhas no chip da conversa aberta abrem as mensagens por cima do palco, como no Discord: as
+  conversas e os amigos à esquerda (com busca) e a conversa no centro, com ligar no topo. Clicar em outra pessoa da
+  lista troca a conversa. As setinhas do topo voltam para a janelinha; o **X** ou Esc fecha e minimiza a conversa.
 
 - **Convite para a sala:** o **Convidar** da aba **Amigos** (em **Adicionar amigo**; aparece só com você numa sala e para quem não está nela) manda um cartão "Convite para a sala de [nome]", com
   quantas pessoas estão, o modo e um **Entrar**. Só entra quando você clica, nunca sozinho.

@@ -636,17 +636,12 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-profile]');
   if (!el || !state.members.has(el.dataset.profile)) return;
   e.stopPropagation();
-  if (mostrarNoPerfilFixo(el.dataset.profile)) return; // com a coluna do perfil (perfil-fixo.js), qualquer foto ou nome abre nela
-  if (el.closest('#peoplePop')) { // na lista de Pessoas, o mesmo perfil da voz; a mesma pessoa de novo fecha
-    if (skyFocusId === el.dataset.profile && skyFocusFrom === 'pessoas') return closeSkyProfile();
-    return openSkyProfile(el.dataset.profile, e.detail === 0 ? el : e, 'pessoas');
-  }
+  // Como no Discord: qualquer foto ou nome abre a miniatura ao lado; o perfil inteiro (coluna) fica no botão dela
   openPersonCard(el.dataset.profile, el, e.detail === 0);
 });
 document.addEventListener('keydown', (e) => {
   if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches?.('[data-profile]')) return;
   e.preventDefault();
-  if (mostrarNoPerfilFixo(e.target.dataset.profile)) return;
   if (state.members.has(e.target.dataset.profile)) openPersonCard(e.target.dataset.profile, e.target, true);
 });
 function openPersonCard(id, anchor, byKeyboard = false) {
@@ -870,10 +865,10 @@ function renderPersonCard() {
     actions.append(dm);
   }
   const from = card.dataset.from || null;
-  if (skyFocusId !== id && (from || inVoice(id))) {
+  if (skyFocusId !== id && (perfilFixoCabe() || from || inVoice(id))) {
     const open = el('button', 'pc-round');
     open.type = 'button';
-    setIcon(open, 'user', `Abrir o perfil de ${name}`);
+    setIcon(open, 'user', `Ver o perfil completo de ${name}`);
     open.onclick = () => { closePersonCard(); openSkyProfile(id, open, from); };
     actions.append(open);
   }

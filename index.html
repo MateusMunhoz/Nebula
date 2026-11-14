@@ -337,6 +337,28 @@
       </div>
     </div>
   </div>
+  <!-- Mensagens em tela inteira (como o Discord): as conversas à esquerda e a aberta no centro; a janela da conversa
+       é a mesma da barra, movida para cá enquanto a tela está aberta (renderer/mensagens.js: renderDmTela) -->
+  <section id="dmTela" class="dm-tela" aria-label="Mensagens" hidden>
+    <aside class="dm-tela-lado">
+      <h2 class="dm-tela-titulo">Mensagens</h2>
+      <input id="dmTelaFilter" class="hub-filter" type="search" placeholder="Buscar" aria-label="Buscar conversa pelo nome" autocomplete="off">
+      <p id="dmTelaUnsupported" class="warn" hidden>O servidor Razze ainda não tem mensagens diretas.</p>
+      <p id="dmTelaError" class="razze-status" role="status"></p>
+      <ul id="dmTelaConvList" class="hub-list"></ul>
+      <p id="dmTelaConvEmpty" class="hint" hidden></p>
+    </aside>
+    <div class="dm-tela-centro">
+      <header class="dm-tela-topo">
+        <span id="dmTelaAv" class="dm-tela-av"></span>
+        <span class="dm-nome-box"><strong id="dmTelaNome"></strong><span id="dmTelaSub" class="dm-sub"></span></span>
+        <button id="dmTelaLigar" type="button" class="dm-chip-btn" title="Ligar (cria uma sala só para vocês e entra na voz)" aria-label="Ligar"></button>
+        <button id="dmTelaJanela" type="button" class="dm-chip-btn" title="Voltar para a janelinha" aria-label="Voltar para a janelinha"></button>
+        <button id="dmTelaFechar" type="button" class="dm-chip-btn" title="Fechar (Esc)" aria-label="Fechar as mensagens"></button>
+      </header>
+      <div id="dmTelaConversa" class="dm-tela-conversa"><p id="dmTelaVazia" class="hint">Escolha uma conversa à esquerda.</p></div>
+    </div>
+  </section>
   <!-- Barra de conversas: embaixo, até a barrinha; o envelope (mensagens e amigos) abre o painel para cima, e um chip por conversa aberta, que também abre para cima (renderer/mensagens.js) -->
   <footer id="dmBar" class="dm-bar" aria-label="Conversas" hidden>
     <button id="dmBarLabel" type="button" class="dm-bar-label" title="Mensagens e amigos" aria-label="Mensagens e amigos" aria-expanded="false" aria-controls="dmPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="dmBarBadge" class="hub-badge" hidden></span></button>

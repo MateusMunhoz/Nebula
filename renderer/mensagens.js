@@ -19,6 +19,7 @@ const DM_POLL_MS = 4000;
 const dm = {
   account: '', convs: new Map(), bar: [], cursor: 0, timer: null, polling: false,
   unsupported: false, error: '', filter: '',
+  tela: false, // Mensagens em tela inteira (renderDmTela)
 };
 let dmPanelTab = 'convs'; // o painel do envelope: convs (as conversas) | friends (Adicionar amigo por cima delas)
 
@@ -92,8 +93,8 @@ function dmStop() {
   clearInterval(dm.timer);
   diretoParar();
   dm.timer = null;
-  for (const c of dm.convs.values()) c.el?.slot.remove();
-  Object.assign(dm, { account: '', convs: new Map(), bar: [], cursor: 0, unsupported: false, error: '' });
+  for (const c of dm.convs.values()) { c.el?.slot.remove(); c.el?.win.remove(); } // a janela pode estar na tela inteira
+  Object.assign(dm, { account: '', convs: new Map(), bar: [], cursor: 0, unsupported: false, error: '', tela: false });
   renderDm();
 }
 
@@ -207,7 +208,7 @@ function toggleDmPin(id) {
 // Clique fora de uma janela aberta (e do chip dela) minimiza, menos as travadas. Diálogos, balões de dica e
 // avisos não contam como "fora" (podem ter sido abertos por algo dentro da janela, como o Entrar de um convite).
 function minimizeDmOutside(target) {
-  if (target.closest?.('dialog, .dialog, #tipBubble, .toast')) return;
+  if (dm.tela || target.closest?.('dialog, .dialog, #tipBubble, .toast')) return; // a tela inteira só fecha pelos botões dela ou Esc
   // Num chip de outra conversa (ou no "+N"), quem troca é o clique, que abre a outra no lugar (openDm). Minimizar já
   // aqui, no pointerdown, tirava a janela, as fotos andavam para a esquerda e o clique caía fora do chip
   if (target.closest?.('.dm-chip, #dmMoreMenu, #dmTrilho')) return;
@@ -228,7 +229,7 @@ function closeDm(id) {
   dm.bar = dm.bar.filter((b) => b.id !== id);
   diretoFechar(id);
   const c = dm.convs.get(id);
-  if (c) { c.unread = 0; c.el?.slot.remove(); c.el = null; c.shown = 0; }
+  if (c) { c.unread = 0; c.el?.slot.remove(); c.el?.win.remove(); c.el = null; c.shown = 0; }
   dmSaveBar();
   renderDm();
 }
@@ -271,7 +272,7 @@ function dmElements(c) {
   input.maxLength = 2000;
   input.setAttribute('aria-label', 'Mensagem');
   input.addEventListener('input', () => fitDmInput(input));
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void dmSend(c); } if (e.key === 'Escape') { e.preventDefault(); minimizeDm(c.id); } });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void dmSend(c); } if (e.key === 'Escape') { e.preventDefault(); if (dm.tela) fecharDmTela(true); else minimizeDm(c.id); } });
   const sendBtn = document.createElement('button');
   sendBtn.type = 'submit';
   sendBtn.className = 'btn primary icon dm-send';
@@ -333,15 +334,16 @@ function dmElements(c) {
   nomeBox.className = 'dm-nome-box';
   nomeBox.append(name, sub);
   const call = dmIconButton('dm-chip-btn dm-call-btn', ICON.phone, 'Ligar (cria uma sala só para vocês e entra na voz)', () => void ligarPara(c.id));
+  const telaBtn = dmIconButton('dm-chip-btn dm-tela-btn', ICON.expand, 'Abrir em tela inteira (com as outras conversas)', () => abrirDmTela(c.id));
   const pin = dmIconButton('dm-chip-btn dm-pin', ICON.pin, 'Travar aberta', () => toggleDmPin(c.id));
   const min = dmIconButton('dm-chip-btn dm-min', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>', 'Minimizar', () => minimizeDm(c.id));
   const close = dmIconButton('dm-chip-btn', ICON.close, 'Fechar a conversa (o histórico fica salvo neste PC)', () => closeDm(c.id));
   const extra = document.createElement('span');
   extra.className = 'dm-chip-extra';
-  extra.append(nomeBox, call, pin, min, close);
+  extra.append(nomeBox, call, telaBtn, pin, min, close);
   chip.append(av, extra);
   slot.append(win, chip);
-  c.el = { slot, win, list, empty, status, input, chip, av, dot, name, sub, badge, pin, min, modo, attach };
+  c.el = { slot, win, list, empty, status, input, chip, av, dot, name, sub, badge, pin, min, telaBtn, modo, attach };
   return c.el;
 }
 
@@ -435,7 +437,7 @@ function renderDmWindow(c, open) {
   el.pin.hidden = !open;
   el.pin.setAttribute('aria-pressed', String(pinned));
   el.pin.title = el.pin.ariaLabel = pinned ? 'Destravar: clicar fora volta a minimizar' : 'Travar aberta: clicar fora não minimiza';
-  el.min.hidden = !open;
+  el.min.hidden = el.telaBtn.hidden = !open;
   el.win.hidden = !open;
   el.input.placeholder = 'Mensagem'; // o nome já está no topo da janela (e o texto longo quebrava em duas linhas)
   if (!open) return;
@@ -480,7 +482,8 @@ function renderDmBar() {
 // (a aberta marcada; não lidas e online no canto) e o "+" que abre o envelope. O envelope some enquanto isso. As da barra deitada somem enquanto isso
 function renderDmTrilho() {
   const trilho = $('dmTrilho');
-  const aberta = dm.bar.find((b) => b.open && !dm.convs.get(b.id)?.el?.slot.hidden);
+  // Com a tela inteira, a barra fica normal (envelope e fotos à vista): a conversa está na tela
+  const aberta = !dm.tela && dm.bar.find((b) => b.open && !dm.convs.get(b.id)?.el?.slot.hidden);
   trilho.hidden = !aberta;
   $('dmBar').classList.toggle('com-janela', !!aberta);
   if (!aberta) return;
@@ -874,8 +877,51 @@ function renderDmPanel() {
 
 function renderDm() {
   renderDmBar();
+  renderDmTela();
   if (!dm.account) setDmPanel(false);
   renderDmPanel();
+}
+
+// ---------- Mensagens em tela inteira ----------
+// A janelinha continua sendo a conversa: abrir a tela só move a janela dela para o centro, com as conversas à esquerda
+function abrirDmTela(id) {
+  dm.tela = true;
+  $('dmTelaFilter').value = dm.filter;
+  void openDm(id);
+}
+function fecharDmTela(minimizar = false) {
+  dm.tela = false;
+  const aberta = dm.bar.find((b) => b.open);
+  if (minimizar && aberta) return minimizeDm(aberta.id); // minimizeDm já redesenha
+  renderDm();
+  if (aberta) dmConv(aberta.id).el?.input.focus();
+}
+function renderDmTela() {
+  const on = dm.tela && !!dm.account;
+  $('dmTela').hidden = !on;
+  document.body.classList.toggle('dm-tela-aberta', on);
+  const aberta = on ? dm.bar.find((b) => b.open) : null;
+  const c = aberta ? dmConv(aberta.id) : null;
+  // Só mexe em quem está fora do lugar: mover a janela tira o foco do campo de escrever, e isto roda a cada busca
+  for (const x of dm.convs.values()) {
+    if (!x.el) continue;
+    if (x === c) { if (x.el.win.parentNode !== $('dmTelaConversa')) $('dmTelaConversa').append(x.el.win); }
+    else if (x.el.win.parentNode !== x.el.slot) x.el.slot.prepend(x.el.win);
+  }
+  if (!on) return;
+  $('dmTelaVazia').hidden = !!c;
+  $('dmTelaLigar').hidden = $('dmTelaJanela').hidden = !c;
+  $('dmTelaNome').textContent = c ? friendName(c.id) : '';
+  $('dmTelaSub').textContent = c ? c.el.sub.textContent : '';
+  const av = $('dmTelaAv'), chave = c ? `${c.id}|${friendOnline(c.id)}` : '';
+  if (av.dataset.chave !== chave) { // a foto só muda com a pessoa ou o online (isto roda a cada busca)
+    av.dataset.chave = chave;
+    av.replaceChildren(...(c ? [hubAvatar(friendName(c.id), friendOnline(c.id))] : []));
+  }
+  fillDmList('dmTela');
+  // A conversa aberta fica marcada na lista
+  const nome = c ? friendName(c.id) : null;
+  for (const li of $('dmTelaConvList').querySelectorAll('.hub-conv')) li.classList.toggle('atual', !!nome && li.querySelector('strong')?.textContent === nome);
 }
 
 // ---------- Configurações › Mensagens privadas ----------
@@ -947,6 +993,14 @@ function setupDm() {
     }, 800);
   };
   $('dmMore').onclick = () => setDmMore($('dmMoreMenu').hidden);
+  $('dmTelaLigar').innerHTML = ICON.phone;
+  $('dmTelaJanela').innerHTML = ICON.expand;
+  $('dmTelaFechar').innerHTML = ICON.close;
+  $('dmTelaLigar').onclick = () => { const b = dm.bar.find((x) => x.open); if (!b) return; fecharDmTela(); void ligarPara(b.id); }; // a sala não fica coberta
+  $('dmTelaJanela').onclick = () => fecharDmTela();
+  $('dmTelaFechar').onclick = () => fecharDmTela(true);
+  $('dmTelaFilter').oninput = () => { dm.filter = $('dmTelaFilter').value; renderDmTela(); };
+  $('dmTela').addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); fecharDmTela(true); } });
   new ResizeObserver(() => { if (dm.account) fitDmBar(); }).observe($('dmBar'));
   // Clicar fora do painel (e fora do botão que abre) fecha
   document.addEventListener('pointerdown', (e) => {
