@@ -243,6 +243,9 @@ Opções:
   nova. O `github.js` lê a linha, e quem está abaixo vê no Início uma tela sem "Depois" até atualizar (fora da sala;
   numa call, só ao voltar). Vale para quem já tem uma versão com esse código.
 - **Sem GitHub:** `npm run publicar -- --sem-github`
+- **Mac e Linux:** a Release publicada dispara `.github/workflows/mac.yml` (`Tela-P2P-mac-arm64.dmg`) e `linux.yml`
+  (`Tela-P2P.AppImage`), que anexam o instalador na mesma Release. Falhou? Rode o workflow de novo pela aba Actions
+  (Run workflow) com a tag. Sem WSL no PC, o `publicar.js` pula o AppImage e o `linux.yml` cobre.
 
 Para mandar para o GitHub, o PC precisa do Git e do [GitHub CLI](https://cli.github.com), logado (`gh auth login`) na conta dona do repositório.
 
