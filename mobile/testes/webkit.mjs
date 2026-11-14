@@ -79,7 +79,7 @@ try {
   }));
   estado.versao = await page.evaluate(() => window.api.getVersion());
 
-  check('window.api é o do iPhone (platform = ios, 155 chaves)', estado.plataforma === 'ios' && estado.chaves === 155, JSON.stringify(estado));
+  check('window.api é o do iPhone (platform = ios, 162 chaves)', estado.plataforma === 'ios' && estado.chaves === 162, JSON.stringify(estado));
   check('o <html> sabe que é iOS', estado.html === 'ios');
   check('a tela inicial aparece e a sala não', estado.inicio && !estado.sala, JSON.stringify(estado));
   check('a versão do app é a do desktop', estado.versao === JSON.parse(fs.readFileSync(path.join(RAIZ, 'package.json'), 'utf8')).version);
