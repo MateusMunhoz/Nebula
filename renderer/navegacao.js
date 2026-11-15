@@ -343,13 +343,15 @@ function renderCallbar() {
   $('cbDeafen').setAttribute('aria-pressed', String(voice.deafened));
   $('cbDeafen').classList.toggle('off', voice.deafened);
   // O monitor: parado, transmite; ao vivo, cheio de azul, e com o mouse em cima vira o monitor cortado (parar)
-  const live = !!state.sharing;
-  setIcon($('cbShare'), 'monitor', live ? 'Parar de transmitir' : 'Escolher a tela ou a janela para transmitir');
+  // Só com a câmera ligada, o monitor continua "parado": ele põe a tela junto e a câmera vai para o canto
+  const soCamera = !!state.sharing && isCamera(state.sharingSource);
+  const live = !!state.sharing && !soCamera;
+  setIcon($('cbShare'), 'monitor', live ? 'Parar de transmitir' : soCamera ? 'Transmitir também a tela (a câmera vai para o canto)' : 'Escolher a tela ou a janela para transmitir');
   if (live) $('cbShare').insertAdjacentHTML('beforeend', ICON.monitorOff);
   $('cbShare').classList.toggle('ao-vivo', live);
   $('cbSwap').hidden = !live;
   renderCam();
-  $('cbAudience').hidden = !live;
+  $('cbAudience').hidden = !state.sharing;
   setIcon($('cbLeave'), 'phoneOff', 'Sair da voz');
 }
 function setupCallbar() {
@@ -362,7 +364,7 @@ function setupCallbar() {
   $('callbar').addEventListener('transitionend', (e) => { if (e.target === $('callbar') && !$('callbar').classList.contains('on')) $('callbar').hidden = true; });
   $('cbMic').onclick = () => $('voiceMute').click();
   $('cbDeafen').onclick = () => $('voiceDeafen').click();
-  $('cbShare').onclick = () => $(state.sharing ? 'stopShareBtn' : 'shareBtn').click();
+  $('cbShare').onclick = () => $(!state.sharing ? 'shareBtn' : isCamera(state.sharingSource) ? 'switchShareBtn' : 'stopShareBtn').click();
   $('cbAudience').onclick = () => toggleShareOpenMenu(undefined, $('cbAudience')); // o mesmo menu do painel, ao lado deste botão
   setIcon($('cbSwap'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
   $('cbSwap').onclick = () => $('switchShareBtn').click();

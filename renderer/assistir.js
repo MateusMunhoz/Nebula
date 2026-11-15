@@ -106,7 +106,21 @@ function createTile(id, name) {
   close.className = 'btn icon';
   setIcon(close, 'close', 'Parar de assistir');
   close.onclick = () => stopWatching(id);
-  bar.append(barSpace, mute, vol, clipBtn, pipBtn, focusBtn, minBtn, fs, close);
+  // A câmera de quem transmite: cada um esconde ou mostra no seu quadro (o CSS só mostra o botão com a câmera ligada)
+  const camVer = document.createElement('button');
+  camVer.className = 'btn icon tile-cam-ver on';
+  const syncCamVer = () => {
+    const oculta = el.classList.contains('cam-oculta');
+    setIcon(camVer, 'camera', `Câmera de ${name} no seu quadro`); // rótulo fixo: o ligado/desligado vai no aria-pressed
+    camVer.classList.toggle('on', !oculta);
+    camVer.setAttribute('aria-pressed', String(!oculta));
+  };
+  camVer.onclick = () => {
+    if (el.classList.toggle('cam-oculta') && el.classList.contains('cam-foco')) el.querySelector('.tile-cam-troca').click(); // a tela volta a ser a grande
+    syncCamVer();
+  };
+  syncCamVer();
+  bar.append(barSpace, mute, vol, camVer, clipBtn, pipBtn, focusBtn, minBtn, fs, close);
   label.append(bar); // os controles ficam na faixa do nome, sempre à vista
   // Qualidade que está chegando: altura do vídeo e quadros por segundo (medidos a cada 2 s). Em pausa, só a altura.
   let lastFrames = null;
@@ -326,6 +340,7 @@ async function watchSelf() {
   tile.cam.hidden = !cam.track;
   const link = { self: true, pc: SELF_PC, tile, videoOn: true, tracks: [], once: null, lastBytes: 0, lastTs: 0 };
   state.in.set(id, link);
+  renderCamVoce(); // o quadro mostra você: a miniatura sai
   syncCaptureExclude(); // antes do vídeo aparecer
   if (state.focus) state.focus = id;
   state.minimizado = false;
@@ -365,6 +380,7 @@ function stopWatching(id, notify = true) {
   link.tile.video.srcObject = null;
   link.tile.el.remove();
   state.in.delete(id);
+  if (link.self) renderCamVoce(); // fechou o seu quadro com a câmera ligada: a miniatura assume
   if (link.music) { renderNavMusic(); send({ type: 'musica-ouvindo', ch: id.slice('musica:'.length), on: false }); } // parou de ouvir: o botão de música da barrinha some
   if (state.focus === id) state.focus = null; // quem estava em destaque saiu: as outras voltam
   if (!state.in.size) state.minimizado = false;

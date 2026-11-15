@@ -722,6 +722,19 @@
               </div>
               <button id="cbLeave" type="button" class="cb icon leave"></button>
             </div>
+            <!-- A sua câmera para você mesmo, enquanto ela está ligada e o seu quadro não está aberto (renderer/transmitir.js:
+                 renderCamVoce). Arrasta e gruda num dos quatro cantos; minimizada vira só o botão "Você" -->
+            <div id="camVoce" class="cam-voce" data-canto="be" role="group" aria-label="A sua câmera" hidden>
+              <video muted autoplay playsinline></video>
+              <span class="cam-voce-nome">Você</span>
+              <div class="cam-voce-acoes">
+                <button id="camVoceTrocar" class="btn icon" type="button" aria-haspopup="menu" hidden></button>
+                <button id="camVoceGrande" class="btn icon" type="button"></button>
+                <button id="camVoceMin" class="btn icon" type="button"></button>
+                <button id="camVoceOff" class="btn icon" type="button"></button>
+              </div>
+              <button id="camVoceAbrir" class="btn small cam-voce-abrir" type="button"></button>
+            </div>
             <!-- Falando com o microfone desligado (avisoMutado em renderer/microfone.js) -->
             <div id="mutadoAviso" class="mutado-aviso" role="status" hidden>
               <span id="mutadoIcone" aria-hidden="true"></span><span>Você está falando no mudo</span>

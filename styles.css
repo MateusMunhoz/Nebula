@@ -678,6 +678,28 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 .tile-cam-troca:hover { border-color: var(--accent); }
 .tile-cam-troca:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tile.cam-foco:not(.small) .tile-body > video.tile-cam:not([hidden]) { inset: 0; z-index: 0; width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; border: 0; border-radius: 0; }
+/* Esconder a câmera de quem transmite, só no seu quadro (botão .tile-cam-ver na faixa do nome: só com a câmera ligada) */
+.tile.cam-oculta .tile-body > video.tile-cam, .tile.cam-oculta .tile-cam-troca { display: none; }
+.tile:not(:has(.tile-cam:not([hidden]))) .tile-cam-ver { display: none; }
+/* "Você": a sua câmera num canto do palco (renderer/transmitir.js: renderCamVoce). Os cantos de baixo ficam acima da
+   barra da chamada; os de cima, abaixo da faixa do nome das telas */
+.cam-voce { position: absolute; z-index: 3; width: min(clamp(160px, 18vw, 280px), 40%); aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; background: #000; box-shadow: var(--shadow-2); cursor: grab; touch-action: none; user-select: none; }
+.cam-voce:active { cursor: grabbing; }
+.cam-voce[data-canto^="t"] { top: 56px; }
+.cam-voce[data-canto^="b"] { bottom: 84px; }
+.cam-voce[data-canto$="e"] { left: 16px; }
+.cam-voce[data-canto$="d"] { right: 16px; }
+.cam-voce video { display: block; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); pointer-events: none; } /* espelhada, como num espelho: só para você */
+.cam-voce-nome { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; background: var(--panel); color: var(--text); font-size: 12px; line-height: 1.3; pointer-events: none; }
+.cam-voce-acoes { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; }
+.cam-voce:hover .cam-voce-acoes, .cam-voce:focus-within .cam-voce-acoes { opacity: 1; }
+.cam-voce-acoes .btn.icon { width: 28px; height: 28px; min-width: 0; padding: 0; }
+.cam-voce #camVoceOff { background: var(--live-fill); color: var(--live-ink); }
+.cam-voce .cam-voce-abrir { display: none; gap: 6px; }
+.cam-voce .cam-voce-abrir svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cam-voce.min { width: auto; aspect-ratio: auto; overflow: visible; border: 0; background: none; box-shadow: none; cursor: default; }
+.cam-voce.min > * { display: none; }
+.cam-voce.min > #camVoceAbrir { display: inline-flex; align-items: center; color: var(--live-ink); background: var(--live-fill); }
 .tile:fullscreen { border: 0; border-radius: 0; }
 /* Tela grande (e tela cheia): a faixa do nome, em cima, e os controles da música, embaixo, ficam por cima do vídeo e
    somem com o mouse parado ou fora da tela (setupTileIdle, palco.js); o foco do teclado traz de volta */
