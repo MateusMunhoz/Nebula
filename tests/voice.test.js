@@ -52,9 +52,13 @@ test('sair enquanto a permissão está pendente descarta a captura tardia', asyn
   const f = fixture({ getUserMedia: () => new Promise(r => { resolve = r; }) });
   const pending = f.v.join();
   f.v.reset(null);
+  // O microfone de verdade (cadeia de filtros) só existe depois da captura: tem que ser fechado de novo
+  const soltos = [];
+  f.v.mixer = { local: s => soltos.push(s) };
   resolve(f.stream);
   await pending;
   assert.ok(f.track.stopped); assert.equal(f.v.session, ''); assert.equal(f.sent.length, 0);
+  assert.deepEqual(soltos, [null]);
 });
 
 test('negação de permissão e salas antigas não deixam o microfone ativo', async () => {

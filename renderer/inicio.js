@@ -457,6 +457,9 @@ setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
 $('shareOpenBtn').onclick = () => toggleShareOpenMenu();
 document.addEventListener('pointerdown', (e) => { if ($('shareOpenMenu') && !e.target.closest('#shareOpenMenu, #shareOpenBtn, #cbAudience')) toggleShareOpenMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('shareOpenMenu')) { toggleShareOpenMenu(false); (shareOpenAnchor || $('shareOpenBtn')).focus(); } });
+setupCamVoce();
+document.addEventListener('pointerdown', (e) => { if ($('camMenu') && !e.target.closest('#camMenu, #cbCam, #camVoceTrocar')) toggleCamMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('camMenu')) { toggleCamMenu(false); camMenuAnchor?.focus(); } });
 // A janela de transmitir (e a de trocar a tela) fecha com um clique fora dela. Não contam outras janelas e menus por
 // cima, nem os botões que a abrem
 document.addEventListener('pointerdown', (e) => {

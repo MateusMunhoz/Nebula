@@ -247,9 +247,11 @@ function setupTileIdle(el) {
     clearTimeout(timer);
     timer = setTimeout(idle, TILE_IDLE_MS);
   });
+  // Saiu do quadro: a faixa espera o mesmo tempo antes de sumir. Os controles ficam colados na borda de cima, e
+  // sumindo na hora eles fugiam de quem passava 1 px do quadro ao ir ajustar o volume
   el.addEventListener('pointerleave', () => {
     clearTimeout(timer);
-    el.classList.add('ui-idle');
+    timer = setTimeout(() => el.classList.add('ui-idle'), TILE_IDLE_MS);
   });
 }
 

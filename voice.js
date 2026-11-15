@@ -74,7 +74,14 @@ class VoiceChat {
       const stream = await this.media.getUserMedia({ video: false, audio: {
         echoCancellation: true, noiseSuppression: true, autoGainControl: true,
       } });
-      if (epoch !== this.epoch) { stream.getTracks().forEach(t => t.stop()); return; }
+      if (epoch !== this.epoch) {
+        stream.getTracks().forEach(t => t.stop());
+        // No app, o microfone de verdade fica atrás da cadeia de filtros e só o mixer o fecha. O leave() rodou antes
+        // de ele existir. shortcut: entrando de novo neste instante, o microfone antigo não é fechado; se acontecer, o
+        // media precisa de um jeito de soltar o fluxo certo
+        if (!this.pending && !this.stream) this.mixer?.local(null);
+        return;
+      }
       this.stream = stream;
       this.mixer?.local(stream);
       this.session = this.token();
