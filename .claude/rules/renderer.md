@@ -19,6 +19,9 @@ paths:
   O `'wasm-unsafe-eval'` existe para o RNNoise; não acrescente outras exceções.
 - Cores só por `var(--...)`: tokens em `styles.css` (`:root`) e `palette()` em `renderer/preferencias-modelo.js`.
   Semântica: amarelo = você/ao vivo, verde = falando, laranja = cuidado. Sem vermelho.
+  Exceção aprovada pelo dono: o **Sair** da barrinha (`.rail-leave`) é vermelho.
+- Texto corrido nunca abaixo de 12 px. Só letra dentro de selo ou bolinha de tamanho fixo (inicial da foto, contador,
+  pílula) pode ser menor.
 - Sem animação contínua: o app roda junto com jogos. Só transições curtas em resposta a uma ação.
   Exceção aprovada: o vinil e as barrinhas do "Ouvindo agora" no perfil (`atvVinil`, `ceu-voz.js`), só com o perfil
   aberto ou na coluna do perfil (lá também param com o app fora de foco, `app-blurred`), só `transform`, parados no

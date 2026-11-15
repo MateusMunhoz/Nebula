@@ -358,8 +358,7 @@ function setupAmbient() {
   $('chatPreviaYoutube').onchange = () => {
     appPreferences.chat = { ...appPreferences.chat, previaYoutube: $('chatPreviaYoutube').checked };
     saveAppPreferences();
-  };
-}
+  };}
 // Céu da voz na visão Lista (o Mapa não depende disso), em Aparência
 function setVoiceSkyOn(on) {
   appPreferences.appearance = { ...appPreferences.appearance, voiceSky: !!on };
@@ -380,8 +379,7 @@ function renderAppearance() {
   $('ambientLight').checked = appPreferences.appearance.ambient;
   $('voiceSkyOn').checked = appPreferences.appearance.voiceSky;
   $('mirrorOn').checked = appPreferences.appearance.mirror;
-  $('chatPreviaYoutube').checked = appPreferences.chat.previaYoutube;
-  if (!$('fontFamily').options.length) renderFontOptions();
+  $('chatPreviaYoutube').checked = appPreferences.chat.previaYoutube;  if (!$('fontFamily').options.length) renderFontOptions();
   renderFontPreview();
 }
 function setupAppearance() {
@@ -442,24 +440,28 @@ let settingsTabNow = null;
 const settingsTabs = () => [...document.querySelectorAll('.settings-tabs [role=tab]')];
 const settingsGroupOf = (name) => settingsTabs().find((t) => t.dataset.tab === name)?.dataset.group || null;
 const settingsOpenOn = (group) => !$('generalSettingsDialog').hidden && settingsGroupOf(settingsTabNow) === group;
+// Grupos que dividem um botão da esquerda com outro (menos botões na barra): as abas dos dois aparecem juntas no topo.
+// O data-group das abas continua o de antes: é ele que liga e desliga o que só corre com o grupo à vista
+const SETTINGS_NAV = { sons: 'voz', atalhos: 'transmissao', backup: 'privacidade', stats: 'rede' };
+const settingsNavOf = (group) => SETTINGS_NAV[group] || group;
 function showSettingsTab(name, focus = false) {
   const tabs = settingsTabs();
   const tab = tabs.find((t) => t.dataset.tab === name) || tabs[0];
-  const group = tab.dataset.group, before = settingsGroupOf(settingsTabNow);
+  const group = tab.dataset.group, before = settingsGroupOf(settingsTabNow), nav = settingsNavOf(group);
   const panel = (t) => t.dataset.panel || t.dataset.tab;
   settingsTabNow = tab.dataset.tab;
   for (const t of tabs) {
-    t.hidden = t.dataset.group !== group;
+    t.hidden = settingsNavOf(t.dataset.group) !== nav;
     t.setAttribute('aria-selected', String(t === tab));
     t.tabIndex = t === tab ? 0 : -1;
   }
   for (const id of new Set(tabs.map(panel))) $('settingsPanel-' + id).hidden = id !== panel(tab);
-  document.querySelector('.settings-tabs').hidden = tabs.filter((t) => t.dataset.group === group).length < 2;
+  document.querySelector('.settings-tabs').hidden = tabs.filter((t) => !t.hidden).length < 2;
   for (const b of document.querySelectorAll('.settings-nav [data-group]')) {
-    if (b.dataset.group === group) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    if (b.dataset.group === nav) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
   }
   save('settingsTab', settingsTabNow);
-  save('settingsTab:' + group, settingsTabNow);
+  save('settingsTab:' + nav, settingsTabNow);
   if ($('generalSettingsDialog').hidden) return;
   if (group === 'stats') setStatsTab(settingsTabNow);
   settingsGroupChanged(before, group);
@@ -494,7 +496,7 @@ function setupSettingsTabs() {
   for (const b of groups) {
     const g = b.dataset.group;
     // A última aba do grupo, se ela ainda for dele (os grupos mudaram: Atalhos já foi aba de Voz)
-    b.onclick = () => { const ult = load('settingsTab:' + g); showSettingsTab(settingsGroupOf(ult) === g ? ult : tabs.find((t) => t.dataset.group === g).dataset.tab); };
+    b.onclick = () => { const ult = load('settingsTab:' + g); showSettingsTab(settingsNavOf(settingsGroupOf(ult)) === g ? ult : tabs.find((t) => settingsNavOf(t.dataset.group) === g).dataset.tab); };
     b.onkeydown = (e) => {
       const i = groups.indexOf(b);
       const next = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: groups.length - 1 }[e.key];

@@ -967,30 +967,26 @@
       <div class="settings-layout">
         <nav class="settings-nav" aria-label="Grupos das configurações">
           <p class="settings-nav-bloco">Uso diário</p>
-          <button type="button" data-group="voz">Voz<small>Microfone · Como falar</small></button>
-          <button type="button" data-group="transmissao">Transmissão<small>Clipes · Prioridade</small></button>
-          <button type="button" data-group="atalhos">Atalhos<small>Teclas no jogo</small></button>
+          <button type="button" data-group="voz">Voz e sons<small>Microfone · Avisos sonoros</small></button>
+          <button type="button" data-group="transmissao">Transmissão e atalhos<small>Clipes · Teclas no jogo</small></button>
           <p class="settings-nav-bloco">Personalizar</p>
           <button type="button" data-group="aparencia">Aparência<small>Tema · Janela · Cores</small></button>
-          <button type="button" data-group="sons">Sons<small>Avisos sonoros</small></button>
           <p class="settings-nav-bloco">Você e seus dados</p>
-          <button type="button" data-group="privacidade">Privacidade<small>Amigos · Mensagens</small></button>
-          <button type="button" data-group="backup">Backup no celular<small>Guardar · Trazer</small></button>
-          <button type="button" data-group="rede">Rede<small>Conexão · Servidores</small></button>
+          <button type="button" data-group="privacidade">Privacidade e backup<small>Amigos · Mensagens · Celular</small></button>
+          <button type="button" data-group="rede">Rede e diagnóstico<small>Conexão · Desempenho</small></button>
           <p class="settings-nav-bloco">Mais</p>
           <button type="button" data-group="extras">Recursos extras<small>Comando de voz</small></button>
-          <button type="button" data-group="stats">Diagnóstico<small>Desempenho do PC</small></button>
           <button type="button" data-group="ajuda">Ajuda<small>Passo a passo · Dicas</small></button>
         </nav>
         <div class="settings-main">
         <p class="hint" id="settingsSaveStatus" role="status"></p>
         <div class="settings-tabs" role="tablist" aria-label="Seções do grupo">
           <button id="settingsTab-voice" type="button" role="tab" data-group="voz" data-tab="voice" aria-controls="settingsPanel-voice">Voz</button>
-          <button id="settingsTab-shortcuts" type="button" role="tab" data-group="atalhos" data-tab="shortcuts" aria-controls="settingsPanel-shortcuts">Atalhos</button>
           <button id="settingsTab-skin" type="button" role="tab" data-group="aparencia" data-tab="skin" aria-controls="settingsPanel-skin">Tema</button>
           <button id="settingsTab-appearance" type="button" role="tab" data-group="aparencia" data-tab="appearance" aria-controls="settingsPanel-appearance">Janela e fonte</button>
           <button id="settingsTab-colors" type="button" role="tab" data-group="aparencia" data-tab="colors" aria-controls="settingsPanel-colors">Cores</button>
           <button id="settingsTab-transmissao" type="button" role="tab" data-group="transmissao" data-tab="transmissao" aria-controls="settingsPanel-transmissao">Transmissão</button>
+          <button id="settingsTab-shortcuts" type="button" role="tab" data-group="atalhos" data-tab="shortcuts" aria-controls="settingsPanel-shortcuts">Atalhos</button>
           <button id="settingsTab-sounds" type="button" role="tab" data-group="sons" data-tab="sounds" aria-controls="settingsPanel-sounds">Sons</button>
           <button id="settingsTab-activity" type="button" role="tab" data-group="privacidade" data-tab="activity" aria-controls="settingsPanel-activity">Privacidade<span id="settingsActivityNovos" class="unread settings-tab-novos" role="img" hidden></span></button>
           <button id="settingsTab-phone" type="button" role="tab" data-group="backup" data-tab="phone" aria-controls="settingsPanel-phone">Backup no celular</button>

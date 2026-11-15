@@ -65,7 +65,7 @@
 :root[data-skin="cloud"] ::-webkit-scrollbar-thumb { background-color: rgba(209, 18, 43, .5) !important; border-radius: 0 !important; }
 
 /* ---------- Enfeites em japonês ---------- */
-:root[data-skin="cloud"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 11px; color: var(--accent); }
+:root[data-skin="cloud"] .titlebar span { text-transform: uppercase; letter-spacing: .3em; font-size: 12px; color: var(--accent); }
 :root[data-skin="cloud"] .titlebar::after {
   content: "雲隠れ  ·  CANAL SEGURO"; position: absolute; right: 160px; font: 400 11px/1 var(--font-console);
   letter-spacing: .25em; color: var(--cl-bone); opacity: .6;

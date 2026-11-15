@@ -256,10 +256,10 @@ Qualidade, codificação e jogo em tela cheia estão em [Desempenho](desempenho.
 - **Assistir:** na lista de pessoas, quem está transmitindo aparece com **Assistir** (o monitor com um play; assistindo, o play vira um quadrado, que para). Na sua linha, o mesmo monitor mostra a sua própria transmissão. O vídeo só começa a ser baixado depois do clique. Na tela de quem você assiste, ao lado do nome, o olho mostra quantas pessoas estão assistindo aquela transmissão (você incluído). Só quem transmite e quem assiste veem esse número; o resto da sala não recebe. O botão **Minimizar** (o traço, na faixa da tela, também na da música) tira as telas da frente sem parar de assistir: o palco volta a mostrar os cartões de quem está fazendo algo na sala, o som das transmissões e da música continua e o vídeo das transmissões pausa até você voltar. A música fica num player pequeno no canto do palco (o YouTube pede o player à vista enquanto toca), com o botão de voltar em cima. Para voltar, clique no cartão de quem você assiste (com o selo **Assistindo**), na pílula **Minimizado** em cima do palco ou no cartão dela no painel da voz; abrir outra tela também traz todas de volta.
 - **Parar:** clique em **Parar** na lista ou no X da própria tela. A conexão fecha e o download para na hora.
 - **Cada tela** tem uma faixa em cima com o nome da pessoa. Quando ela fala na voz, a borda pisca em verde e aparecem 3 barrinhas ao lado do nome.
-- **Barra do vídeo:** fica por cima do vídeo, em cima. Aparece ao mexer o mouse na tela (ou ao navegar com Tab) e some com o mouse parado por uns 2 segundos ou fora da tela; com o mouse em cima dela, fica. Tem silenciar, volume, janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
+- **Barra do vídeo:** fica por cima do vídeo, em cima. Aparece ao mexer o mouse na tela (ou ao navegar com Tab) e some com o mouse parado por uns 2 segundos ou fora da tela; com o mouse em cima dela, fica. Tem silenciar, volume (a barrinha fica sempre aberta e a barra não some enquanto você a arrasta), janela flutuante, destacar, tela cheia e o X. Clicar duas vezes no vídeo também põe em tela cheia. Resolução, quadros e Mbps de cada tela ficam em [Estatísticas](#estatísticas), na aba Transmissão.
 - **Várias telas:** com duas ou mais, uma fica grande à esquerda e as outras numa coluna ao lado, todas ao vivo. Clique numa pequena (ou Enter nela) para trocar o destaque.
 - **Só esta:** o botão de destacar deixa só essa tela ocupando tudo. As outras ficam em pausa só para você, sem vídeo e sem som: quem transmite para de mandar o vídeo para você, e o seu PC deixa de decodificar. A pílula de cima, **Em pausa**, mostra a bolinha de quem está em pausa (o nome aparece com o mouse em cima) e a música como **YouTube**, sem o nome do vídeo. Clique numa bolinha para trocar, ou na grade de **Mostrar todas** (ou Esc) para voltar.
-- **Em cima da tela grande:** sem faixa: a foto (com o anel de quem transmite), o nome e os botões ficam direto sobre o vídeo, com uma sombra escura no alto, e somem com o mouse parado. O volume abre ao passar o mouse no ícone de som; a resolução e os quadros que estão chegando ficam em **Configurações › Estatísticas**.
+- **Em cima da tela grande:** sem faixa: a foto (com o anel de quem transmite), o nome e os botões ficam direto sobre o vídeo, com uma sombra escura no alto, e somem com o mouse parado. A barrinha do volume fica sempre aberta, ao lado do ícone de som; a resolução e os quadros que estão chegando ficam em **Configurações › Estatísticas**.
 - **Transmissão sem som:** se quem transmite está sem o som do PC (desligou em "Som do PC" ou a captura falhou), a faixa da tela mostra **sem som** e o controle de volume some. Quem transmite vê o aviso na dica do olho, na pílula **Transmitindo tela**; para ter som, é parar e transmitir de novo com "Som do PC" ligado.
 - **Som das telas:** toda transmissão começa **sem som** (0%). Para ouvir, role a roda do mouse para cima em cima da tela (5% por clique), use o controle da barra do vídeo ou clique no alto-falante (liga em 100%). O volume de cada pessoa fica guardado pelo nome.
 - **Volume por pessoa:** veja [Voz](#voz).
@@ -656,7 +656,7 @@ O **telefone** no chip da conversa (ou ao lado do nome, na aba **Amigos** de **A
 
 ## Voz e atalhos
 
-Ficam nas **Configurações** (a engrenagem), nos grupos **Voz** e **Atalhos**. O botão de ajustes no **Seu sinal** abre a **Voz**. 
+Ficam nas **Configurações** (a engrenagem), nos grupos **Voz e sons** e **Transmissão e atalhos** (aba **Atalhos**). O botão de ajustes no **Seu sinal** abre a **Voz**. 
 
 - **Testar o microfone:** **Ouvir minha voz** toca no seu fone o som do seu microfone, do jeito que a sala ouve: depois da supressão de ruído e da sensibilidade. Funciona fora da voz (abre o microfone só para o teste) e dentro dela; na voz, desligue o microfone para testar sem os outros ouvirem. Dá para mexer nos filtros enquanto ouve. Use fone de ouvido: com caixa de som, o microfone pega o próprio som e apita. O teste para ao fechar a janela.
 - **Supressão de ruído:**
@@ -686,7 +686,7 @@ Ficam nas **Configurações** (a engrenagem), nos grupos **Voz** e **Atalhos**. 
 
 ## Diagnóstico
 
-Fica nas **Configurações**, no grupo **Diagnóstico** (abas **Desempenho** e **Transmissão**). Os números só são medidos com o grupo à vista.
+Fica nas **Configurações**, no grupo **Rede e diagnóstico** (abas **Desempenho** e **Transmissão**). Os números só são medidos com uma dessas abas à vista.
 
 - **Medição:** enquanto você está numa sala, o app mede tudo uma vez por segundo, com a janela aberta ou não, e guarda os últimos 10 minutos. Dá para jogar e abrir depois para ver como foi.
 Tem duas abas: **Desempenho** e **Transmissão**.
@@ -711,7 +711,7 @@ A configuração de outra pessoa só aparece se ela e o host estiverem na versã
 
 ## Tema
 
-Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos, em blocos: **Uso diário** (**Voz**, **Transmissão**, **Atalhos**), **Personalizar** (**Aparência**, **Sons**), **Você e seus dados** (**Privacidade**, **Backup no celular**, **Rede**) e **Mais** (**Recursos extras**, **Diagnóstico**, **Ajuda**: passo a passo e as dicas); em cima, as abas do grupo escolhido, quando ele tem mais de uma. Tema, **Janela e fonte** (transparência, efeitos e fonte) e **Cores** (os temas prontos de cores e as cores de cada parte) ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
+Abra **Configurações** pela engrenagem no pé da barrinha da direita. A barrinha fica na borda direita da janela, no início e dentro de uma sala. À esquerda da janela ficam os grupos, em blocos: **Uso diário** (**Voz e sons**, **Transmissão e atalhos**), **Personalizar** (**Aparência**), **Você e seus dados** (**Privacidade e backup**, **Rede e diagnóstico**) e **Mais** (**Recursos extras**, **Ajuda**: passo a passo e as dicas). **Sons**, **Atalhos**, **Backup no celular** e o diagnóstico (**Desempenho** e **Transmissão**) são abas desses grupos; em cima, as abas do grupo escolhido, quando ele tem mais de uma. Tema, **Janela e fonte** (transparência, efeitos e fonte) e **Cores** (os temas prontos de cores e as cores de cada parte) ficam juntos em **Aparência**. Cada grupo lembra a última aba aberta.
 
 Prefere tudo do outro lado? **Configurações › Aparência › Espelhar a interface** troca os lados: a barrinha, o chat e a voz vão para a esquerda. O resto continua igual, e a escolha fica salva (trocar de tema não desfaz).
 
