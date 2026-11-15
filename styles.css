@@ -1033,6 +1033,7 @@ html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border
 .source img { width: 100%; aspect-ratio: 16/9; object-fit: contain; background: var(--thumb); border-radius: 7px; }
 .source-cam { width: 100%; aspect-ratio: 16/9; display: grid; place-items: center; background: var(--thumb); border-radius: 7px; color: var(--muted); }
 .source-cam svg { width: 40px; height: 40px; }
+.source-cam video { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: inherit; } /* a prévia da câmera escolhida (previewCamera) */
 /* width 0 + min-width 100%: nome comprido não alarga o cartão (termina em "…") */
 .source span {
   width: 0; min-width: 100%; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;

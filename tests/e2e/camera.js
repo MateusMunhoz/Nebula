@@ -115,5 +115,31 @@ run('Câmera', 200000, async () => {
   await sleep(800);
   check('Câmera como fonte: a Bia vê a câmera (azul) no lugar da tela', (await colorOf(B, video)) === 'azul', await colorOf(B, video));
   check('Câmera como fonte: sem quadrinho no canto', await B.eval(`${camVideo}.hidden`));
+  check('Câmera como fonte: a Ana já se vê', await A.eval(`state.in.get(state.myId)?.self === true`));
   await A.eval(`stopSharing()`);
+  await A.waitFor(`!state.sharing && state.in.size === 0`, 8000);
+
+  // O botão da câmera na barra da chamada: liga só a câmera, sem a janela de transmitir, e desliga
+  check('Botão da câmera: à vista sem transmitir', await A.eval(`!$('cbCam').hidden && $('cbCam').getAttribute('aria-pressed') === 'false'`));
+  await A.eval(`(() => { window.abertas = 0; const g = cameraVideo; cameraVideo = (...a) => { window.abertas++; return g(...a); }; state.selectedSource = null; void toggleCamera(); void toggleCamera(); })()`); // dois cliques seguidos
+  await A.waitFor(`state.sharing && isCamera(state.sharingSource)`, 8000);
+  await sleep(500);
+  check('Botão da câmera: transmite só a câmera, sem som, aceso', await A.eval(`$('shareDialog').hidden && !state.stream.getAudioTracks().length && $('cbCam').getAttribute('aria-pressed') === 'true'`));
+  check('Botão da câmera: dois cliques seguidos abrem a câmera uma vez só', await A.eval(`window.abertas`) === 1, await A.eval(`window.abertas`));
+  check('Botão da câmera: a janela de transmitir não fica com a câmera marcada', await A.eval(`state.selectedSource === null`));
+  check('Botão da câmera: no seu quadro, sem o quadrinho do canto', await A.eval(`(renderCam(), state.in.get(state.myId)?.tile.cam.hidden === true)`));
+  await A.eval(`toggleCamera()`);
+  check('Botão da câmera: clicar de novo para de transmitir', await A.eval(`!state.sharing && $('cbCam').getAttribute('aria-pressed') === 'false'`));
+
+  // A prévia na janela de transmitir: liga ao escolher a câmera e desliga ao fechar
+  await A.eval(`(openShareDialog(), state.sourceTab = 'cameras')`);
+  await A.waitFor(`state.sources.some((s) => isCamera(s.id))`, 8000);
+  await A.eval(`(state.selectedSource = state.sources.find((s) => isCamera(s.id)).id, renderSources())`);
+  await sleep(800);
+  check('Prévia: abrir a janela com a câmera já marcada não liga a câmera', await A.eval(`!camPrev.stream && !camPrev.id`));
+  await A.eval(`$('sources').querySelector('[data-source]').click()`);
+  await A.waitFor(`!!camPrev.stream`, 8000);
+  check('Prévia: clicar na câmera mostra ela ao vivo no cartão', await A.eval(`!!$('sources').querySelector('.source-cam video')`));
+  await A.eval(`closeShareDialog()`);
+  check('Prévia: fechar a janela desliga a câmera', await A.eval(`!camPrev.stream && !$('sources').querySelector('.source-cam video')`));
 });

@@ -366,7 +366,7 @@ function setupCallbar() {
   $('cbAudience').onclick = () => toggleShareOpenMenu(undefined, $('cbAudience')); // o mesmo menu do painel, ao lado deste botão
   setIcon($('cbSwap'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
   $('cbSwap').onclick = () => $('switchShareBtn').click();
-  $('cbCam').onclick = () => $('camBtn').click();
+  $('cbCam').onclick = () => toggleCamera();
   $('cbLeave').onclick = () => { setCallbar(false); $('voiceJoin').click(); }; // na voz, o voiceJoin é o Sair
   renderCallbar();
 }

@@ -114,6 +114,7 @@ function setAdvanced(open) {
 
 function closeShareDialog() {
   $('shareDialog').hidden = true;
+  stopCamPreview();
   if (state.shareSwitching) state.selectedSource = state.sharingSource; // cancelou: a escolha volta a ser a de agora
   state.shareSwitching = false;
   $('shareDialog').classList.remove('switching');
@@ -142,6 +143,33 @@ function selectSource(id) {
   renderShareSummary();
 }
 
+// Prévia da câmera escolhida na aba Câmera: liga só com o clique nela e desliga ao escolher outra fonte, trocar de
+// aba, fechar a janela ou começar a transmitir
+const camPrev = { id: null, stream: null };
+function stopCamPreview() {
+  camPrev.id = null;
+  camPrev.stream?.getTracks().forEach((t) => t.stop());
+  camPrev.stream = null;
+  for (const v of $('sources').querySelectorAll('.source-cam video')) v.parentNode.innerHTML = ICON.camera;
+}
+async function previewCamera(id) {
+  if (id && id === camPrev.id && $('sources').querySelector('.source-cam video')) return; // já está à vista
+  stopCamPreview();
+  const box = () => [...$('sources').querySelectorAll('[data-source]')].find((b) => b.dataset.source === id)?.querySelector('.source-cam');
+  if (!isCamera(id) || $('shareDialog').hidden || !box()) return;
+  camPrev.id = id;
+  let stream = null;
+  try { stream = await cameraVideo(id, { w: 640, h: 360, fps: 15 }); } catch (e) { console.warn(e); }
+  if (!stream) return;
+  const alvo = box();
+  if (camPrev.id !== id || camPrev.stream || $('shareDialog').hidden || !alvo) return stream.getTracks().forEach((t) => t.stop()); // mudou enquanto a câmera abria
+  camPrev.stream = stream;
+  const v = document.createElement('video');
+  v.muted = true; v.autoplay = true; v.playsInline = true;
+  v.srcObject = stream;
+  alvo.replaceChildren(v);
+}
+
 // Abas Telas | Janelas | Câmera. Janelas que saem pretas (administrador, protegidas ou minimizadas) ficam à parte.
 function renderSources() {
   const grid = $('sources');
@@ -158,6 +186,7 @@ function renderSources() {
   $('tabWindows').setAttribute('aria-selected', String(state.sourceTab === 'windows'));
   const shown = state.sourceTab === 'screens' ? screens : state.sourceTab === 'cameras' ? cameras : windows;
 
+  stopCamPreview(); // os cartões são refeitos: a prévia só volta com um clique na câmera
   grid.innerHTML = '';
   if (!shown.length) {
     grid.innerHTML = state.sourceTab === 'cameras'
@@ -178,7 +207,7 @@ function renderSources() {
     const label = document.createElement('span');
     label.textContent = sourceLabel(s);
     btn.append(img, label);
-    btn.onclick = () => selectSource(s.id);
+    btn.onclick = () => { selectSource(s.id); void previewCamera(s.id); };
     btn.ondblclick = () => startSharing();
     grid.append(btn);
   }
@@ -360,15 +389,19 @@ async function setCam(on, id = load('camCorner', CAM_PREFIX)) {
 
 // Os botões da câmera (Seu sinal e a barra da chamada) e a sua câmera no seu próprio quadro
 function renderCam() {
-  const on = !!cam.track;
-  const label = on ? 'Desligar a sua câmera no canto da transmissão' : 'Mostrar a sua câmera no canto da transmissão';
+  const soCamera = !!state.sharing && isCamera(state.sharingSource);
+  const on = !!cam.track || soCamera;
+  const label = soCamera ? 'Desligar a câmera (para de transmitir)'
+    : !state.sharing ? 'Ligar a câmera (transmite só a câmera)'
+    : on ? 'Desligar a sua câmera no canto da transmissão' : 'Mostrar a sua câmera no canto da transmissão';
   for (const btn of [$('camBtn'), $('cbCam')]) {
     setIcon(btn, 'camera', label);
     btn.setAttribute('aria-pressed', String(on));
-    btn.hidden = !state.sharing || isCamera(state.sharingSource);
   }
+  $('camBtn').hidden = !state.sharing || soCamera; // ao lado da pílula: só a câmera no canto
+  $('cbCam').hidden = false; // na barra da chamada: sempre (toggleCamera)
   const self = state.in.get(state.myId);
-  if (self?.self) self.tile.cam.hidden = !on;
+  if (self?.self) self.tile.cam.hidden = !cam.track;
 }
 
 function stopTracks() {
@@ -378,20 +411,44 @@ function stopTracks() {
   stopAppAudio();
 }
 
-async function startSharing() {
+// O botão da câmera (barra da chamada). Parado: transmite só a câmera, sem abrir a janela de transmitir e sem o som
+// do PC. Transmitindo a câmera: para. Transmitindo a tela: liga ou desliga a câmera no canto
+async function toggleCamera() {
+  if (state.sharing) return isCamera(state.sharingSource) ? stopSharing() : setCam(!cam.track);
+  if (!state.ws || cam.busy) return;
+  cam.busy = true; // até a transmissão começar: um segundo clique não abre a câmera duas vezes
+  const antes = state.selectedSource;
+  try {
+    const cams = await listCameras();
+    const escolhida = cams.find((c) => c.id === load('camCorner', '')) || cams[0];
+    if (!escolhida) return toast('Nenhuma câmera encontrada.', 'error');
+    if (state.sharing || !state.ws) return; // começou a transmitir (ou saiu da sala) enquanto as câmeras eram listadas
+    if (!state.sources.some((s) => s.id === escolhida.id)) state.sources.push(escolhida);
+    state.selectedSource = escolhida.id;
+    await startSharing(true);
+  } finally {
+    state.selectedSource = antes; // a janela de transmitir não passa a abrir com a câmera marcada
+    cam.busy = false;
+  }
+}
+
+// soCamera: veio do botão da câmera (toggleCamera); vai sem o som do PC e sem mexer no que a janela de transmitir guarda
+async function startSharing(soCamera = false) {
   if (!state.selectedSource || state.sharing || !state.ws) return;
   const btn = $('startBtn');
   setBusy(btn, true, 'Iniciando…');
+  stopCamPreview();
 
   state.quality = QUALITY[radioValue('quality')] ? radioValue('quality') : '1080p30';
   const q = QUALITY[state.quality];
-  const audioMode = $('soundOn').checked ? 'all' : 'none';
-  const encodeMode = radioValue('encodeMode') || 'once';
-  save('encodeMode2', encodeMode);
+  const audioMode = soCamera ? 'none' : $('soundOn').checked ? 'all' : 'none';
+  // Pelo botão da câmera a janela pode nunca ter aberto (checkEncodeOnce não rodou): sem suporte, vai no modo normal
+  const encodeMode = soCamera && !(await onceSupport()) ? 'per' : radioValue('encodeMode') || 'once';
+  if (!soCamera) save('encodeMode2', encodeMode);
   state.shareOpen = $('shareOpenOn').checked; // o começo de cada transmissão; a barra Ao vivo muda só esta
   const excluded = audioMode === 'none' ? [] : appsLoaded() ? checkedApps() : savedExcludes();
   save('quality', state.quality);
-  save('audioMode', audioMode);
+  if (!soCamera) save('audioMode', audioMode);
   if (audioMode !== 'none') save('excludeApps', JSON.stringify(excluded));
 
   // O som vem do capturador próprio, que sempre deixa de fora o som deste app (as telas que você
@@ -453,6 +510,8 @@ async function startSharing() {
       toast('Este PC não conseguiu codificar uma vez só. Transmitindo no modo normal.', 'error');
     }
   }
+  // Saiu da sala enquanto o codificador iniciava: o stopSharing do leaveRoom rodou antes de haver transmissão
+  if (!state.ws) { stopTracks(); stopOnceEncoder(); return setBusy(btn, false, 'Iniciar transmissão'); }
 
   state.sharing = true;
   void appSounds.play('shareStart'); // começou a transmitir
@@ -468,6 +527,7 @@ async function startSharing() {
   syncCaptureExclude(); // o Mapa de conexões já estava aberto
   setBusy(btn, false, 'Iniciar transmissão');
   if (corner !== null) void setCam(true, corner);
+  if (camSrc && !state.focus) void watchSelf(); // quem liga a câmera já se vê (fecha no X do quadro); com uma tela em destaque, não toma o lugar dela
 }
 
 function setupChromeVideo(track) {
@@ -544,6 +604,7 @@ function stopSharing(reason) {
 async function switchSource() {
   const id = state.selectedSource;
   if (!state.sharing || !id || id === state.sharingSource) return closeShareDialog();
+  stopCamPreview(); // senão a câmera já aberta na prévia (640x360) pode ditar a qualidade da transmissão
   const btn = $('startBtn');
   btn.dataset.busy = '1';
   setBusy(btn, true, 'Trocando…');
