@@ -3,6 +3,16 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.22",
+    "date": "2026-11-15",
+    "items": [
+      "feat(camera): miniatura Você, escolha da câmera e tela junto da câmera",
+      "feat(camera): prévia na aba Câmera, botão na barra da chamada e quem transmite já se vê",
+      "fix(voz): sair durante a abertura do microfone fecha o microfone de verdade",
+      "fix(ui): volume da transmissão não some ao sair 1 px do quadro"
+    ]
+  },
+  {
     "version": "1.20.21",
     "date": "2026-11-14",
     "items": [
@@ -84,15 +94,6 @@ const NOVIDADES = [
       "feat(atividade): generalizar Codando para o que estou fazendo no PC",
       "feat(atividade): mostrar \"Codando no <editor>\" no perfil",
       "feat(atualizacao): card da abertura com etapa e barra de progresso"
-    ]
-  },
-  {
-    "version": "1.20.12",
-    "date": "2026-11-07",
-    "items": [
-      "feat(abertura): logo animada enquanto o app carrega",
-      "feat(ver): lista de saída de som, botão de mudo e entrada mais fácil",
-      "fix(ver): som da tela, escolha alto-falante/auricular e voz que retoma"
     ]
   }
 ];
