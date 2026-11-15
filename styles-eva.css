@@ -204,7 +204,7 @@
   position: fixed; left: 0; top: calc(var(--workspace-top) + 8px); bottom: 16px; z-index: 1; width: 44px;
   display: flex; flex-direction: column; align-items: center; gap: 12px; overflow: hidden;
   pointer-events: none; user-select: none; color: var(--accent);
-  font-family: "Share Tech Mono", Consolas, monospace; font-size: 11px; letter-spacing: .24em; line-height: 1;
+  font-family: "Share Tech Mono", Consolas, monospace; font-size: 12px; letter-spacing: .24em; line-height: 1;
 }
 .theme-decor > span { writing-mode: vertical-rl; flex: none; }
 .theme-decor .decor-num {
@@ -219,8 +219,8 @@
 .theme-decor .decor-unit { font-size: 19px; letter-spacing: .06em; color: var(--accent); }
 .theme-decor .decor-en { color: #A57BE6; }
 .theme-decor .decor-rail { flex: 1 1 0; min-height: 24px; width: 1px; background: linear-gradient(var(--accent), #6B3FA0 70%, transparent); }
-.theme-decor .decor-code { color: var(--ok); font-size: 10px; }
-.theme-decor .decor-sign { color: var(--muted); font-size: 9px; letter-spacing: .34em; }
+.theme-decor .decor-code { color: var(--ok); font-size: 12px; }
+.theme-decor .decor-sign { color: var(--muted); font-size: 12px; letter-spacing: .34em; }
 :root[data-skin="eva"] .screen { padding-left: 64px; }
 :root[data-skin="eva"] #room { padding-left: 56px; }
 @media (max-width: 900px), (max-height: 560px) {

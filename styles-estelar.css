@@ -47,7 +47,7 @@
 
 /* Títulos dos painéis: uma estrela de quatro pontas na cor de destaque */
 :root:not([data-skin]) :is(.pane-head h2, .chat-title, .stream-pane-head h2)::before {
-  content: "✦"; margin-right: 8px; font-size: 11px; vertical-align: 2px; color: var(--accent);
+  content: "✦"; margin-right: 8px; font-size: 12px; vertical-align: 2px; color: var(--accent);
 }
 /* Barra de título: o nome do tema logo depois de "Nebula", como nos outros temas */
 :root:not([data-skin]) .titlebar .brand-name::after {
@@ -253,14 +253,14 @@ body.app-blurred :is(.voice-sky-neb, .voice-sky :is(.sky-galaxy, .sky-tw, .sky-s
 }
 
 /* ---------- Sala (docs/spec/sala-nova.md): o nome da sala com a estrela, rótulos em fonte fixa espaçada, a estrelinha na aba aberta e as marcas (+) no cartão Seu sinal ---------- */
-:root:not([data-skin]) .room-name-star { display: inline; font-size: 11px; color: var(--accent); }
+:root:not([data-skin]) .room-name-star { display: inline; font-size: 12px; color: var(--accent); }
 :root:not([data-skin]) :is(.room-head-meta, .pg-musica-rot) {
   font: 400 11px/1 var(--st-mono); letter-spacing: .18em; text-transform: uppercase; }
 :root:not([data-skin]) .pg-musica-rot { letter-spacing: .2em; }
 :root:not([data-skin]) .pg-tempo { font-family: var(--st-mono); }
 :root:not([data-skin]) .pane-tab { font: 400 11px/1 var(--st-mono); letter-spacing: .16em; text-transform: uppercase; }
 :root:not([data-skin]) .pane-tab-n { letter-spacing: 0; }
-:root:not([data-skin]) .pane-tab-star { display: inline; font-size: 9px; color: transparent; }
+:root:not([data-skin]) .pane-tab-star { display: inline; font-size: 12px; color: transparent; }
 :root:not([data-skin]) .pane-tab[aria-pressed=true] .pane-tab-star { color: var(--accent); }
 :root:not([data-skin])[data-glass=opaque] :is(.seu-sinal, .room-menu, .palco-convite) { background-image: var(--st-plus); }
 :root:not([data-skin]) .pc-rotulo { font: 400 11px/1 var(--st-mono); letter-spacing: .2em; }
