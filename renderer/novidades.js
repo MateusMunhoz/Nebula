@@ -3,6 +3,17 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.20",
+    "date": "2026-11-14",
+    "items": [
+      "feat(transmitir): webcam como fonte e câmera no canto da tela",
+      "fix(voz): liberar microfone ou áudio por outra pessoa volta a ligar",
+      "test(ios): teste do WebKit espera as 162 chaves da ponte (ytEscolher*)",
+      "chore(ios): MARKETING_VERSION na versão do desktop (1.20.19)",
+      "ci(linux): AppImage gerado no GitHub Actions a cada Release"
+    ]
+  },
+  {
     "version": "1.20.19",
     "date": "2026-11-14",
     "items": [
@@ -81,23 +92,6 @@ const NOVIDADES = [
     "date": "2026-11-03",
     "items": [
       "Música: fila por canal; Próxima, painel da fila, pôr na fila pelo YouTube, chat e colar link"
-    ]
-  },
-  {
-    "version": "1.20.10",
-    "date": "2026-11-02",
-    "items": [
-      "commit",
-      "Teste de configurações: servidor sem configuração aparece em cinza no mapa",
-      "feat(ver): botão de saída de som e retomada da tela cheia no iPhone",
-      "feat(ver): link de convite com o código da sala (/ver#ABC234)",
-      "feat(ver): várias telas ao mesmo tempo na página do navegador",
-      "docs: resultado do teste no iPhone e pendências do convidado web",
-      "docs: convidado pelo navegador (spec, README do servidor, guia, roadmap)",
-      "feat(servidor): convidado pelo navegador com voz (role 'convidado' e voz.js)",
-      "docs: assistir pelo navegador (spec v1, README do servidor, roadmap)",
-      "feat(servidor): assistir pelo navegador do celular (espectador e página /ver)",
-      "Sala pelo Nostr: spec e protótipo da fase 0"
     ]
   }
 ];
