@@ -3,6 +3,14 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.21",
+    "date": "2026-11-14",
+    "items": [
+      "fix(ui): volume da transmissão sempre à vista e fonte mínima de 12 px",
+      "feat(config): Configurações em sete grupos"
+    ]
+  },
+  {
     "version": "1.20.20",
     "date": "2026-11-14",
     "items": [
@@ -85,13 +93,6 @@ const NOVIDADES = [
       "feat(abertura): logo animada enquanto o app carrega",
       "feat(ver): lista de saída de som, botão de mudo e entrada mais fácil",
       "fix(ver): som da tela, escolha alto-falante/auricular e voz que retoma"
-    ]
-  },
-  {
-    "version": "1.20.11",
-    "date": "2026-11-03",
-    "items": [
-      "Música: fila por canal; Próxima, painel da fila, pôr na fila pelo YouTube, chat e colar link"
     ]
   }
 ];
