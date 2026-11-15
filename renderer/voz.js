@@ -265,6 +265,8 @@ function micOffLabel(id, base = 'Microfone desligado', meu = false) {
   return meu ? `${quem}: clique para ${s.surdo ? 'voltar a ouvir e falar' : 'ligar o microfone'}` : quem;
 }
 let silencioAplicado = ''; // a sessão de voz em que o meu microfone já foi desligado pelo silêncio
+// O que o silêncio desligou em mim (e não eu): outra pessoa liberando, isso volta a ligar sozinho
+const silencioDesligou = { mic: false, fone: false };
 function setSilencio(lista) {
   const antes = silencioDe(state.myId);
   state.silencio = (Array.isArray(lista) ? lista : []).slice(0, 100).filter((e) => e && typeof e.chave === 'string')
@@ -273,7 +275,15 @@ function setSilencio(lista) {
   if (!agora) silencioAplicado = '';
   else if (!antes || antes.surdo !== agora.surdo) silencioAplicado = ''; // silêncio novo (ou virou ensurdecer): aplica de novo
   if (agora && (!antes || antes.surdo !== agora.surdo)) toast(`${agora.por || 'Alguém'} ${agora.surdo ? 'ensurdeceu' : 'silenciou'} você para a sala. Ligue o microfone quando voltar.`);
-  if (antes && !agora && voice.session) voice.announce(); // liberado: os outros voltam a ver o meu estado de verdade
+  if (antes && !agora && voice.session) {
+    // Outra pessoa liberou (quem se libera sozinho já ligou o microfone): volta como estava antes do silêncio
+    const fone = silencioDesligou.fone && voice.deafened, mic = silencioDesligou.mic;
+    if (fone) voice.deafen();
+    if (mic && voice.muted) voice.mute();
+    if (fone || (mic && !voice.muted)) toast(fone ? 'Liberaram o seu áudio: você voltou a ouvir.' : 'Liberaram o seu microfone: ele voltou a ligar.');
+    voice.announce(); // liberado: os outros voltam a ver o meu estado de verdade
+  }
+  if (!agora) silencioDesligou.mic = silencioDesligou.fone = false;
   for (const id of state.members.keys()) mixer.apply(id);
   conferirMeuSilencio();
   renderVoice();
@@ -286,8 +296,8 @@ function conferirMeuSilencio() {
   if (!s || !voice.session) { if (!voice.session) silencioAplicado = ''; return; }
   if (silencioAplicado !== voice.session) {
     silencioAplicado = voice.session;
-    if (s.surdo && !voice.deafened) voice.deafen();
-    else if (!voice.muted) voice.mute();
+    if (s.surdo && !voice.deafened) { if (!voice.muted) silencioDesligou.mic = true; silencioDesligou.fone = true; voice.deafen(); }
+    else if (!voice.muted) { silencioDesligou.mic = true; voice.mute(); }
     return;
   }
   if ((!voice.muted || (s.surdo && !voice.deafened)) && !s.liberando) {

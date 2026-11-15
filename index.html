@@ -275,6 +275,7 @@
         <!-- Transmitindo: quem pode assistir, trocar e parar ficam ao lado da pílula -->
         <div class="ss-tx-acoes" role="group" aria-label="Sua transmissão">
           <button class="btn small icon" id="shareOpenBtn" type="button" aria-haspopup="menu" aria-expanded="false"></button>
+          <button class="btn small icon" id="camBtn" type="button" aria-pressed="false"></button>
           <button class="btn small icon" id="switchShareBtn" type="button"></button>
           <button class="btn small icon danger" id="stopShareBtn" type="button"></button>
         </div>
@@ -715,6 +716,7 @@
               </div>
               <div class="cb-grupo" role="group" aria-label="Sua transmissão">
                 <button id="cbShare" type="button" class="cb icon"></button>
+                <button id="cbCam" type="button" class="cb icon" aria-pressed="false" hidden></button>
                 <button id="cbSwap" type="button" class="cb icon" hidden></button>
                 <button id="cbAudience" type="button" class="cb icon" aria-haspopup="menu" aria-expanded="false" hidden></button>
               </div>
@@ -742,6 +744,7 @@
                       <div class="seg" role="tablist" aria-label="O que transmitir">
                         <button type="button" role="tab" id="tabScreens" aria-selected="true">Telas <span class="count" id="countScreens"></span></button>
                         <button type="button" role="tab" id="tabWindows" aria-selected="false">Janelas <span class="count" id="countWindows"></span></button>
+                        <button type="button" role="tab" id="tabCameras" aria-selected="false">Câmera <span class="count" id="countCameras"></span></button>
                       </div>
                       <button class="btn icon" id="refreshSources" type="button"></button>
                     </div>
@@ -794,6 +797,20 @@
                       </div>
                     </div>
 
+                    <!-- A câmera no canto da tela transmitida: começa sempre desligada; na barra Ao vivo dá para ligar e desligar -->
+                    <div class="group" id="camGroup">
+                      <label class="group-title" for="camCorner">Sua câmera no canto</label>
+                      <select id="camCorner" class="vd-select" aria-describedby="camNote"></select>
+                      <p id="camNote" class="hint">Quem assiste vê você num quadrinho por cima da tela. Dá para ligar e desligar durante a transmissão.</p>
+                    </div>
+
+                    <div class="group advanced">
+                      <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                        <span class="adv-title">Avançado</span>
+                        <span class="hint" id="advSummary"></span>
+                      </button>
+                      <div id="advPanel" class="adv-panel" hidden>
                     <!-- Mouse: em jogo o Windows deixa o cursor parado no meio da imagem. Só o NVENC direto consegue tirar -->
                     <div class="group" id="cursorGroup">
                       <div class="group-head">
@@ -805,7 +822,6 @@
                       </div>
                       <p id="cursorNote" class="hint"></p>
                     </div>
-
                     <!-- Quem está em outro canal (subsala ou Voz geral) pode assistir: é o começo de cada transmissão; o botão
                          da barra Ao vivo muda só a atual (renderer/transmitir.js) -->
                     <div class="group" id="shareOpenGroup">
@@ -818,14 +834,6 @@
                       </div>
                       <p id="shareOpenNote" class="hint">Desligado, só quem está no mesmo canal que você (subsala ou Voz geral) assiste. Durante a transmissão, dá para mudar na barra Ao vivo.</p>
                     </div>
-
-                    <div class="group advanced">
-                      <button type="button" class="adv-toggle" id="advToggle" aria-expanded="false" aria-controls="advPanel">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-                        <span class="adv-title">Avançado</span>
-                        <span class="hint" id="advSummary"></span>
-                      </button>
-                      <div id="advPanel" class="adv-panel" hidden>
                         <span class="hint" id="encodeLabel">Codificação</span>
                         <div class="seg" role="radiogroup" aria-labelledby="encodeLabel">
                           <label><input type="radio" name="encodeMode" value="once"><span id="encodeOnceLabel">Uma vez só</span></label>

@@ -372,7 +372,8 @@ async function fallbackToTracks() {
     link.dc.close();
     link.dc = null;
     if (!video) continue;
-    link.pc.addTrack(video, state.stream);
+    // addTransceiver, e não addTrack: o addTrack reaproveitaria o lugar vazio da câmera no canto (link.camTr)
+    link.pc.addTransceiver(video, { direction: 'sendonly', streams: [state.stream] });
     preferH264(link.pc);
     link.chain = link.chain.then(async () => {
       await link.pc.setLocalDescription(await link.pc.createOffer());

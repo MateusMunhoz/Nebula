@@ -214,6 +214,7 @@ $('shareDialog').addEventListener('change', (e) => {
 });
 $('tabScreens').onclick = () => { state.sourceTab = 'screens'; renderSources(); };
 $('tabWindows').onclick = () => { state.sourceTab = 'windows'; renderSources(); };
+$('tabCameras').onclick = () => { state.sourceTab = 'cameras'; renderSources(); };
 $('advToggle').onclick = () => setAdvanced($('advToggle').getAttribute('aria-expanded') !== 'true');
 // Todo botão de fechar janela é um X (a dica e o leitor de tela dizem "Fechar")
 for (const id of ['closeShare', 'closeGeneralSettings', 'closeProfile']) setIcon($(id), 'close', 'Fechar');
@@ -450,6 +451,7 @@ $('shareSummaryMore').onclick = () => {
 })();
 $('startBtn').onclick = () => (state.shareSwitching ? switchSource() : startSharing());
 $('switchShareBtn').onclick = () => openShareDialog(true);
+$('camBtn').onclick = () => setCam(!cam.track);
 setIcon($('switchShareBtn'), 'swap', 'Trocar a tela ou janela transmitida, sem parar');
 setIcon($('stopShareBtn'), 'stop', 'Parar de transmitir');
 $('shareOpenBtn').onclick = () => toggleShareOpenMenu();

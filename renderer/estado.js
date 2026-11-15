@@ -59,7 +59,7 @@ const state = {
   sharingSource: null,     // a tela ou janela que está sendo transmitida agora
   shareSwitching: false,   // a janela de escolher está aberta para trocar, no meio da transmissão
   sources: [],             // telas e janelas da última busca
-  sourceTab: 'screens',    // aba aberta na janela de transmitir: 'screens' ou 'windows'
+  sourceTab: 'screens',    // aba aberta na janela de transmitir: 'screens', 'windows' ou 'cameras'
   appAudio: null,
   out: new Map(),          // id de quem me assiste -> { pc, chain }
 

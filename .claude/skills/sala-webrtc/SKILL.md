@@ -25,6 +25,8 @@ description: Como a sala do Tela P2P funciona - sinalização WebSocket, protoco
   `voice` → `voice.receive`; `viewer` → vem de quem assiste a minha tela (subscribe/unsubscribe/restart/sdp/candidate);
   `sharer` → vem de quem transmite a tela que eu assisto; `update`, `file`, `foto` → atualização, arquivo do chat e
   foto de perfil, em pedaços pela sala.
+- Câmera no canto (`renderer/transmitir.js` › Câmera): quem assiste pede com `subscribe` + `cam: true`; quem transmite põe um
+  segundo transceptor de vídeo na mesma conexão e avisa `{ side: 'sharer', camId, cam }`. Ligar/desligar é `replaceTrack`.
 - Mídia (tela, áudio, voz, arquivos) vai direto entre os PCs; nunca passa pelo servidor (no modo Internet, pode passar
   pelo TURN, cifrada por DTLS-SRTP).
 

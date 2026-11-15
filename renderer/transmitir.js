@@ -93,7 +93,7 @@ function renderShareSummary() {
       : same ? `${sourceLabel(src)} · é o que você já está transmitindo`
       : `${sourceLabel(src)} · a qualidade e o som continuam os mesmos`)
     : src
-      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')]].join(' · ')
+      ? [sourceLabel(src), QUALITY_SPEC[radioValue('quality')], camCornerChoice(src.id) !== null && 'com a sua câmera no canto'].filter(Boolean).join(' · ')
       : 'Escolha uma tela ou janela para começar';
   // Segunda linha: codificação e som, por inteiro (o som é o que mais dá errado); clicar leva até o Som do PC
   const more = !state.shareSwitching && !!src;
@@ -123,10 +123,12 @@ async function loadSources() {
   $('sources').innerHTML = '<p class="hint">Carregando telas e janelas…</p>';
   let sources = [];
   try { sources = await window.api.getSources(); } catch (e) { console.error(e); }
-  state.sources = sources;
-  const sel = sources.find((s) => s.id === state.selectedSource);
+  const cams = await listCameras();
+  state.sources = [...sources, ...cams];
+  renderCamCorner(cams);
+  const sel = state.sources.find((s) => s.id === state.selectedSource);
   if (!sel) state.selectedSource = null;
-  else state.sourceTab = sel.id.startsWith('screen') ? 'screens' : 'windows';
+  else state.sourceTab = isCamera(sel.id) ? 'cameras' : sel.id.startsWith('screen') ? 'screens' : 'windows';
   renderSources();
 }
 
@@ -140,21 +142,27 @@ function selectSource(id) {
   renderShareSummary();
 }
 
-// Abas Telas | Janelas. Janelas que saem pretas (administrador, protegidas ou minimizadas) ficam à parte.
+// Abas Telas | Janelas | Câmera. Janelas que saem pretas (administrador, protegidas ou minimizadas) ficam à parte.
 function renderSources() {
   const grid = $('sources');
   const screens = state.sources.filter((s) => s.id.startsWith('screen'));
-  const windows = state.sources.filter((s) => !s.id.startsWith('screen') && !s.dark);
-  const blocked = state.sources.filter((s) => !s.id.startsWith('screen') && s.dark);
+  const cameras = state.sources.filter((s) => isCamera(s.id));
+  const apps = state.sources.filter((s) => !s.id.startsWith('screen') && !isCamera(s.id));
+  const windows = apps.filter((s) => !s.dark);
+  const blocked = apps.filter((s) => s.dark);
   $('countScreens').textContent = screens.length || '';
   $('countWindows').textContent = windows.length || '';
+  $('countCameras').textContent = cameras.length || '';
+  $('tabCameras').setAttribute('aria-selected', String(state.sourceTab === 'cameras'));
   $('tabScreens').setAttribute('aria-selected', String(state.sourceTab === 'screens'));
   $('tabWindows').setAttribute('aria-selected', String(state.sourceTab === 'windows'));
-  const shown = state.sourceTab === 'screens' ? screens : windows;
+  const shown = state.sourceTab === 'screens' ? screens : state.sourceTab === 'cameras' ? cameras : windows;
 
   grid.innerHTML = '';
   if (!shown.length) {
-    grid.innerHTML = state.sources.length
+    grid.innerHTML = state.sourceTab === 'cameras'
+      ? '<p class="hint">Nenhuma câmera encontrada. Conecte uma e clique em atualizar.</p>'
+      : state.sources.length
       ? '<p class="hint">Nenhuma janela aberta agora.</p>'
       : '<p class="hint">Nenhuma tela encontrada. Clique em atualizar.</p>';
   }
@@ -163,9 +171,10 @@ function renderSources() {
     btn.type = 'button';
     btn.className = 'source';
     btn.dataset.source = s.id;
-    const img = document.createElement('img');
-    img.src = s.thumbnail;
-    img.alt = '';
+    // Câmera não tem miniatura (ela só liga ao transmitir): fica o desenho
+    const img = document.createElement(s.thumbnail ? 'img' : 'div');
+    if (s.thumbnail) { img.src = s.thumbnail; img.alt = ''; }
+    else { img.className = 'source-cam'; img.innerHTML = ICON.camera; }
     const label = document.createElement('span');
     label.textContent = sourceLabel(s);
     btn.append(img, label);
@@ -267,6 +276,101 @@ function stopAppAudio() {
   state.appAudio = null;
 }
 
+// ---------- Câmera ----------
+// Duas formas. Sozinha: é uma fonte como as outras (aba Câmera, id "camera:<deviceId>") e passa pelo mesmo caminho da
+// tela. No canto: junto com a tela, numa segunda faixa de vídeo da mesma conexão de quem assiste (addWatcher), que quem
+// assiste desenha por cima da tela (assistir.js, .tile-cam). O servidor da sala só repassa os sinais, como sempre.
+const CAM_PREFIX = 'camera:';
+function isCamera(id) { return String(id || '').startsWith(CAM_PREFIX); }
+const cam = { stream: new MediaStream(), track: null, busy: false }; // stream: o id dele diz a quem assiste qual faixa é a câmera
+
+async function listCameras() {
+  let list = [];
+  try { list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput'); } catch (e) { console.warn(e); }
+  const seen = new Set();
+  return list.filter((d) => !seen.has(d.deviceId) && seen.add(d.deviceId))
+    .map((d, i) => ({ id: CAM_PREFIX + d.deviceId, name: d.label || `Câmera ${i + 1}`, thumbnail: '' }));
+}
+
+function cameraVideo(id, size) {
+  const deviceId = id.slice(CAM_PREFIX.length);
+  return navigator.mediaDevices.getUserMedia({
+    video: { ...(deviceId && { deviceId: { exact: deviceId } }), width: { ideal: size.w }, height: { ideal: size.h }, frameRate: { ideal: size.fps, max: size.fps } },
+    audio: false,
+  });
+}
+
+// A captura de uma fonte: câmera, tela ou janela. audio: o som do Windows junto da tela (só tela e janela)
+async function captureSource(id, q, audio = false) {
+  if (isCamera(id)) return cameraVideo(id, q);
+  await window.api.selectSource(id, audio);
+  return navigator.mediaDevices.getDisplayMedia({
+    video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
+    audio: audio ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false } : false,
+  });
+}
+
+// "Sua câmera no canto" na janela de transmitir. Começa sempre em Desligada (a câmera nunca liga sozinha)
+function renderCamCorner(cams) {
+  const sel = $('camCorner');
+  const before = sel.value;
+  sel.replaceChildren(new Option('Desligada', ''), ...cams.map((c) => new Option(c.name, c.id)));
+  if (cams.some((c) => c.id === before)) sel.value = before;
+  $('camGroup').hidden = !cams.length;
+}
+// A câmera escolhida para o canto, ou null (desligada, ou a fonte já é uma câmera)
+function camCornerChoice(sourceId) {
+  return $('camCorner').value && !isCamera(sourceId) ? $('camCorner').value : null;
+}
+
+// Liga ou desliga a câmera no canto, durante a transmissão. Sem id, a última usada (ou a padrão do sistema)
+async function setCam(on, id = load('camCorner', CAM_PREFIX)) {
+  if (cam.busy) return;
+  if (on) {
+    if (!state.sharing || isCamera(state.sharingSource)) return;
+    cam.busy = true;
+    let track = null;
+    const transmissao = state.stream; // parou e começou outra enquanto a câmera abria: esta câmera não é dela
+    try { track = (await cameraVideo(id, CAM_CORNER)).getVideoTracks()[0]; }
+    catch (err) { toast(`Não foi possível ligar a câmera: ${err.message}`, 'error'); }
+    cam.busy = false;
+    if (!track) return;
+    if (!state.sharing || state.stream !== transmissao || isCamera(state.sharingSource)) return track.stop(); // parou enquanto a câmera abria
+    save('camCorner', id);
+    track.onended = () => { void setCam(false); toast('A câmera foi desconectada.'); };
+    cam.track = track;
+    cam.stream.addTrack(track);
+  } else {
+    if (!cam.track) return renderCam();
+    cam.track.onended = null;
+    cam.track.stop();
+    cam.stream.removeTrack(cam.track);
+    cam.track = null;
+  }
+  for (const [watcher, link] of state.out) {
+    if (!link.camTr) continue;
+    link.chain = link.chain.then(async () => {
+      await link.camTr.sender.replaceTrack(cam.track);
+      await applyBitrate(link);
+    }).catch(console.error);
+    sendSignal(watcher, { side: 'sharer', cam: !!cam.track });
+  }
+  renderCam();
+}
+
+// Os botões da câmera (Seu sinal e a barra da chamada) e a sua câmera no seu próprio quadro
+function renderCam() {
+  const on = !!cam.track;
+  const label = on ? 'Desligar a sua câmera no canto da transmissão' : 'Mostrar a sua câmera no canto da transmissão';
+  for (const btn of [$('camBtn'), $('cbCam')]) {
+    setIcon(btn, 'camera', label);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.hidden = !state.sharing || isCamera(state.sharingSource);
+  }
+  const self = state.in.get(state.myId);
+  if (self?.self) self.tile.cam.hidden = !on;
+}
+
 function stopTracks() {
   state.systemLoopback = false;
   if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
@@ -293,19 +397,22 @@ async function startSharing() {
   // O som vem do capturador próprio, que sempre deixa de fora o som deste app (as telas que você
   // está assistindo) e os apps marcados. Se ele falhar sem nenhum app marcado, volta para a
   // captura comum do Windows; com apps marcados, transmite sem som (melhor que vazar a call).
+  const camSrc = isCamera(state.selectedSource);
+  const corner = camCornerChoice(state.selectedSource);
+  $('camCorner').value = ''; // vale só para esta transmissão: a próxima começa de novo em Desligada
   let audioTrack = null;
   let loopback = false;
   if (audioMode !== 'none' && window.api.platform === 'linux') {
     // Linux: o som do PC inteiro vem junto da tela (PulseAudio/PipeWire), inclusive o deste app. Com a voz
     // ligada, a voz da call iria junto: vai sem som
     if (voice.session || voice.pending) toast('No Linux o som do PC leva junto a voz da call. Transmitindo sem som enquanto você estiver na voz.', 'error');
-    else loopback = true;
+    else if (!camSrc) loopback = true; // o som do Linux vem junto da captura de tela: a câmera vai sem ele
   } else if (audioMode !== 'none') {
     try {
       audioTrack = await createAppAudioTrack(excluded);
     } catch (err) {
       stopAppAudio();
-      if (!excluded.length && !voice.session && !voice.pending) {
+      if (!camSrc && !excluded.length && !voice.session && !voice.pending) {
         loopback = true;
         state.systemLoopback = true;
         toast('Não deu para separar o som deste app, então quem você assiste pode se ouvir na sua transmissão.', 'error');
@@ -317,19 +424,13 @@ async function startSharing() {
 
   // Uma vez só + placa NVIDIA: o videocap captura e codifica, sem a captura do Chromium
   let nvenc = false;
-  if (encodeMode === 'once' && (await onceSupport())?.engine === 'nvenc') nvenc = await startNvenc(state.selectedSource);
+  if (!camSrc && encodeMode === 'once' && (await onceSupport())?.engine === 'nvenc') nvenc = await startNvenc(state.selectedSource);
 
   try {
     if (nvenc && !loopback) {
       state.stream = new MediaStream();
     } else {
-      await window.api.selectSource(state.selectedSource, loopback);
-      state.stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
-        audio: loopback
-          ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-          : false,
-      });
+      state.stream = await captureSource(state.selectedSource, q, loopback);
       // Com o NVENC, a captura do Chromium só serviu para pegar o som do Windows
       if (nvenc) for (const t of state.stream.getVideoTracks()) { t.stop(); state.stream.removeTrack(t); }
     }
@@ -338,8 +439,10 @@ async function startSharing() {
     stopAppAudio();
     state.systemLoopback = false;
     setBusy(btn, false, 'Iniciar transmissão');
-    return toast(`Não foi possível capturar a tela: ${err.message}`, 'error');
+    return toast(`Não foi possível capturar a ${camSrc ? 'câmera' : 'tela'}: ${err.message}`, 'error');
   }
+  // Saiu da sala enquanto a captura abria: nada fica ligado (a câmera, principalmente)
+  if (!state.ws) { stopTracks(); stopOnceEncoder(); stopAppAudio(); audioTrack?.stop(); state.systemLoopback = false; return setBusy(btn, false, 'Iniciar transmissão'); }
   if (audioTrack) state.stream.addTrack(audioTrack);
   state.systemLoopback = loopback;
 
@@ -364,6 +467,7 @@ async function startSharing() {
   renderMembers();
   syncCaptureExclude(); // o Mapa de conexões já estava aberto
   setBusy(btn, false, 'Iniciar transmissão');
+  if (corner !== null) void setCam(true, corner);
 }
 
 function setupChromeVideo(track) {
@@ -382,11 +486,7 @@ function ensureChromeVideo() {
     chromeVideoPending = (async () => {
       const q = QUALITY[state.quality];
       try {
-        await window.api.selectSource(state.sharingSource || state.selectedSource, false);
-        const s = await navigator.mediaDevices.getDisplayMedia({
-          video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
-          audio: false,
-        });
+        const s = await captureSource(state.sharingSource || state.selectedSource, q);
         const track = s.getVideoTracks()[0];
         if (!state.sharing || !state.stream) { track.stop(); return null; }
         setupChromeVideo(track);
@@ -422,6 +522,7 @@ function stopSharing(reason) {
   stopOnceEncoder();
   stopOutStats();
   for (const id of [...state.out.keys()]) closeOut(id);
+  void setCam(false);
   stopTracks();
   state.shareInfo = null;
   state.shareInfoKey = '';
@@ -452,14 +553,8 @@ async function switchSource() {
   let newVideo = null;
   try {
     // Faixa nova do Chromium: sempre, menos no NVENC sem ninguém de versão antiga (que não usa essa faixa)
-    if (oldVideo || !nvenc) {
-      await window.api.selectSource(id, false);
-      const s = await navigator.mediaDevices.getDisplayMedia({
-        video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } },
-        audio: false,
-      });
-      newVideo = s.getVideoTracks()[0];
-    }
+    // (a câmera também: o NVENC direto só captura tela e janela)
+    if (oldVideo || !nvenc || isCamera(id)) newVideo = (await captureSource(id, q)).getVideoTracks()[0];
   } catch (err) {
     delete btn.dataset.busy;
     setBusy(btn, false, 'Trocar para esta');
@@ -467,13 +562,14 @@ async function switchSource() {
   }
   if (!state.sharing) { newVideo?.stop(); delete btn.dataset.busy; return; }
   state.sharingSource = id;
+  if (isCamera(id)) await setCam(false); // a câmera virou a transmissão: sai do canto
 
   if (newVideo) {
     if (oldVideo) { oldVideo.onended = null; state.stream.removeTrack(oldVideo); }
     state.stream.addTrack(newVideo);
     setupChromeVideo(newVideo);
     for (const link of state.out.values()) {
-      const sender = link.pc.getSenders().find((x) => x.track && x.track.kind === 'video');
+      const sender = link.pc.getSenders().find((x) => x.track && x.track.kind === 'video' && x !== link.camTr?.sender);
       if (sender) await sender.replaceTrack(newVideo).catch((e) => console.warn(e));
     }
     if (once.active && once.engine === 'webcodecs') {
@@ -491,12 +587,12 @@ async function switchSource() {
     await window.api.videoCapStop().catch(() => {});
     once.active = false;
     once.engine = '';
-    if (await startNvenc(id)) {
+    if (!isCamera(id) && await startNvenc(id)) {
       sendConfigToAll();
       for (const [, l] of onceLinks()) l.needKey = true;
       requestKey();
     } else {
-      await switchToWebCodecs('O NVENC direto não conseguiu capturar a fonte nova.');
+      await switchToWebCodecs(isCamera(id) ? 'A câmera não passa pelo NVENC direto.' : 'O NVENC direto não conseguiu capturar a fonte nova.');
     }
   }
 
@@ -504,6 +600,7 @@ async function switchSource() {
   setBusy(btn, false, 'Trocar para esta');
   closeShareDialog();
   renderShareBox();
+  renderCam(); // saiu de (ou foi para) uma câmera como fonte: o botão da câmera no canto aparece ou some
   sendShareInfo();
   refreshSelfView();
   const src = state.sources.find((s) => s.id === id);
@@ -513,7 +610,7 @@ async function switchSource() {
 // Alguém clicou em Assistir na minha transmissão: só agora a conexão é criada
 // Se eu transmito no modo "uma vez só" e o app da pessoa entende, o vídeo vai pelo canal de dados;
 // senão (ex.: versão antiga), vai como faixa WebRTC normal, com o codificador próprio dessa conexão.
-function addWatcher(id, wantsOnce) {
+function addWatcher(id, wantsOnce, wantsCam) {
   if (!state.sharing || !state.stream) return sendSignal(id, { side: 'sharer', unavailable: true });
   // Fechada para outros canais: quem está fora do meu recebe a recusa (unavailable para versões antigas)
   if (!mayWatchMe(id)) return sendSignal(id, { side: 'sharer', unavailable: true, closed: true });
@@ -533,6 +630,14 @@ function addWatcher(id, wantsOnce) {
     if (!state.stream || state.out.get(id) !== link) return;
     state.stream.getTracks().filter((t) => !useOnce || t.kind !== 'video').forEach((t) => pc.addTrack(t, state.stream));
     if (!useOnce) preferH264(pc);
+    // O lugar da câmera no canto nasce com a conexão, vazio: ligar e desligar depois é só replaceTrack, sem renegociar.
+    // Só para o app que pede (cam: true); versão antiga e navegador ficam sem
+    if (wantsCam) {
+      link.camTr = pc.addTransceiver('video', { direction: 'sendonly', streams: [cam.stream] });
+      preferH264(pc, link.camTr);
+      if (cam.track) await link.camTr.sender.replaceTrack(cam.track);
+      sendSignal(id, { side: 'sharer', camId: cam.stream.id, cam: !!cam.track });
+    }
   });
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(id, { side: 'sharer', candidate: e.candidate }); };
   pc.onconnectionstatechange = () => {
@@ -750,8 +855,8 @@ function startOutStats() {
       let report;
       try { report = await link.pc.getStats(); } catch { continue; }
       report.forEach((r) => {
-        if (r.type === 'media-source' && r.kind === 'video') captureFps = Math.max(captureFps, r.framesPerSecond || 0);
-        if (r.type !== 'outbound-rtp' || r.kind !== 'video') return;
+        if (r.type === 'media-source' && r.kind === 'video' && r.trackIdentifier !== cam.track?.id) captureFps = Math.max(captureFps, r.framesPerSecond || 0);
+        if (r.type !== 'outbound-rtp' || r.kind !== 'video' || isCamStat(link, r)) return;
         codec = codecName(report, r.codecId) || codec;
         const h = usesHardware(r.powerEfficientEncoder, r.encoderImplementation);
         if (h !== null) hw = hw === null ? h : hw && h;

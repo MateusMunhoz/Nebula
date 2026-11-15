@@ -612,6 +612,7 @@ body:not(.workspace-in-room) #workspaceNav .rail-overlay { display: none; }
 .live-chip .btn.small { height: 30px; }
 .live-chip .btn.icon.small { width: 30px; }
 #selfViewBtn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+#camBtn[aria-pressed="true"], .callbar .cb-grupo #cbCam[aria-pressed="true"] { background: var(--live-fill); color: var(--live-ink); }
 .pip-chip {
   display: inline-flex; align-items: center; gap: 8px; height: 40px; box-sizing: border-box; padding: 0 4px 0 10px;
   border: 1px solid var(--accent); border-radius: 8px; background: var(--accent-soft); font-size: 13px;
@@ -669,6 +670,14 @@ kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--muted); bo
 }
 .tile-body { position: relative; flex: 1; min-height: 0; background: #000; }
 .tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+/* A câmera de quem transmite, no canto da tela dela (renderer/transmitir.js › Câmera) */
+.tile video.tile-cam, .tile-cam-troca, .tile.cam-foco:not(.small) .tile-body:has(> .tile-cam:not([hidden])) > video:not(.tile-cam) { position: absolute; inset: auto 12px 12px auto; z-index: 2; width: clamp(96px, 22%, 320px); height: auto; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--line-strong); border-radius: 8px; background: #000; }
+.tile video.tile-cam[hidden], .tile-cam[hidden] + .tile-cam-troca, .tile.small .tile-cam-troca { display: none; }
+/* O botão invisível por cima do quadrinho: clicar troca a câmera e a tela de lugar (assistir.js) */
+.tile-cam-troca { z-index: 3; padding: 0; border-color: transparent; background: transparent; cursor: pointer; }
+.tile-cam-troca:hover { border-color: var(--accent); }
+.tile-cam-troca:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile.cam-foco:not(.small) .tile-body > video.tile-cam:not([hidden]) { inset: 0; z-index: 0; width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; border: 0; border-radius: 0; }
 .tile:fullscreen { border: 0; border-radius: 0; }
 /* Tela grande (e tela cheia): a faixa do nome, em cima, e os controles da música, embaixo, ficam por cima do vídeo e
    somem com o mouse parado ou fora da tela (setupTileIdle, palco.js); o foco do teclado traz de volta */
@@ -1022,6 +1031,8 @@ html .chat-form #chatSend:disabled { opacity: 1; background: transparent; border
   background: var(--panel); border: 2px solid transparent; border-radius: 12px; color: var(--text); text-align: left;
 }
 .source img { width: 100%; aspect-ratio: 16/9; object-fit: contain; background: var(--thumb); border-radius: 7px; }
+.source-cam { width: 100%; aspect-ratio: 16/9; display: grid; place-items: center; background: var(--thumb); border-radius: 7px; color: var(--muted); }
+.source-cam svg { width: 40px; height: 40px; }
 /* width 0 + min-width 100%: nome comprido não alarga o cartão (termina em "…") */
 .source span {
   width: 0; min-width: 100%; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;
@@ -1078,6 +1089,7 @@ fieldset.group > legend { margin-bottom: 6px; }
 .adv-title { font-size: 14px; font-weight: 600; }
 .adv-toggle .hint { flex: 1; text-align: right; font-size: 12px; }
 .adv-panel { display: flex; flex-direction: column; gap: 8px; }
+.adv-panel > .group { padding-bottom: 8px; border-bottom: 1px solid var(--line); }
 .adv-panel .seg { background: var(--bg); }
 .adv-panel .seg label { font-size: 13px; height: 34px; }
 .share-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--line); background: var(--bg); }
@@ -2581,6 +2593,8 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--tex
   -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='9.5'/><path d='M12 16.5v-5M12 7.8v.01'/></svg>") center / contain no-repeat;
   mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='9.5'/><path d='M12 16.5v-5M12 7.8v.01'/></svg>") center / contain no-repeat;
 }
+.tip { position: relative; }
+.tip::after { content: ""; position: absolute; inset: -4px; } /* área de clique de 26 px sem mudar o desenho */
 .tip:hover, .tip:focus-visible { color: var(--text); opacity: 1; }
 html[data-tips="off"] .tip { display: none !important; }
 #tipBubble {
@@ -3930,14 +3944,14 @@ button.pg-cartao:is(:hover, :focus-visible) .pg-assistir { opacity: 1; }
 :root[data-gamer="on"] .callbar { backdrop-filter: none; background: var(--panel); transition: none; }
 /* Com a barra à vista, os botões que ela repete saem do Seu sinal (microfone, fone, sair, quem pode assistir, trocar e parar):
    apagam e encolhem até sumir (e voltam do mesmo jeito). Fica só Voz e atalhos (#voiceSettingsBtn) */
-.seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn) { transition: opacity .18s, width .18s, margin .18s, visibility 0s; }
-.callbar-on .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn) { opacity: 0; width: 0; min-width: 0; margin-left: -8px; border-width: 0;
+.seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #camBtn, #switchShareBtn, #stopShareBtn) { transition: opacity .18s, width .18s, margin .18s, visibility 0s; }
+.callbar-on .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #camBtn, #switchShareBtn, #stopShareBtn) { opacity: 0; width: 0; min-width: 0; margin-left: -8px; border-width: 0;
   overflow: hidden; visibility: hidden; pointer-events: none; transition: opacity .18s, width .18s, margin .18s, visibility 0s .18s; }
 .seu-sinal .ss-tx-acoes { transition: gap .18s, margin .18s; }
 /* Ao lado da pílula, os três somem por inteiro (sem o vão entre eles nem o da pílula), e ela cresce no lugar */
 .callbar-on .seu-sinal .ss-tx-acoes { gap: 0; margin-left: -8px; }
-.callbar-on .seu-sinal .ss-tx-acoes :is(#shareOpenBtn, #switchShareBtn, #stopShareBtn) { margin-left: 0; }
-@media (prefers-reduced-motion: reduce) { .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #switchShareBtn, #stopShareBtn, .ss-tx-acoes) { transition: none !important; } }
+.callbar-on .seu-sinal .ss-tx-acoes :is(#shareOpenBtn, #camBtn, #switchShareBtn, #stopShareBtn) { margin-left: 0; }
+@media (prefers-reduced-motion: reduce) { .seu-sinal :is(#voiceMute, #voiceDeafen, #voiceJoin.voice-leave, #shareOpenBtn, #camBtn, #switchShareBtn, #stopShareBtn, .ss-tx-acoes) { transition: none !important; } }
 
 /* Aviso de quem fala com o microfone desligado: no pé das telas (em cima da barra, se ela estiver à vista), em laranja */
 .mutado-aviso { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; z-index: 4; display: flex; align-items: center; gap: 10px;
