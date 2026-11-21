@@ -101,7 +101,7 @@ Discord; o público do Tela P2P é o grupo de amigos. Reavaliar só se aparecer 
 
 **Objetivo:** ninguém na mesma rede consegue ler o chat, a senha da sala ou a sinalização. O vídeo e a voz já vão
 criptografados pelo WebRTC (DTLS-SRTP) e as mensagens diretas já são de ponta a ponta. O que falta é a conexão com o
-servidor da sala: no modo Internet o app fala `ws://2.25.253.140:8765` (texto puro). Nos modos Radmin e rede local
+servidor da sala: no modo Internet o app fala `ws://34.63.86.72:8765` (texto puro). Nos modos Radmin e rede local
 também, mas ali o túnel já é cifrado.
 
 **Mudança de plano:** o desenho original (troca de chaves ECDH dentro do protocolo, em `signaling.js` e

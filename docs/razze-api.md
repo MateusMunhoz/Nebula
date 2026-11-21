@@ -109,14 +109,16 @@ O cliente HTTP fica em `main/razze-api-client.js`; `main/razze-service.js` persi
 
 ## Atualizar a VPS (passo a passo)
 
-Vale para a VPS que já roda a RazzeAPI com Docker Compose (hoje `https://srv2015370.hstgr.cloud`). O servidor novo continua
-funcionando com apps antigos; atualize **antes** de publicar o app novo.
+Vale para o servidor que já roda a RazzeAPI com Docker Compose. Hoje é a VM do Google Cloud, em
+`https://nebula-sys.duckdns.org` (onde fica cada peça: `docs/servidores-producao.md`). O servidor novo continua
+funcionando com apps antigos; atualize **antes** de publicar o app novo. Na VM (Debian) o comando é `docker-compose`, com hífen;
+nos passos abaixo, troque `docker compose` por `docker-compose` lá.
 
-1. **Entrar na VPS** (no PowerShell do seu PC): `ssh root@srv2015370.hstgr.cloud` (ou o usuário que você usa).
-2. **Achar a pasta do servidor**: `cd ~/AmostradinhoScreenShare/razze-api`. Se não for esse o caminho:
+1. **Entrar no servidor**: console do Google Cloud › Compute Engine › VM instances › botão **SSH** da instância.
+2. **Achar a pasta do servidor**: `cd ~/nebula/razze-api`. Se não for esse o caminho:
    `find / -name compose.yaml -path "*razze-api*" 2>/dev/null`. Confira que o `.env` está nela: `ls -la`.
 3. **Ver o que está rodando e a versão atual**:
-   `docker compose ps` e `curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config` (antes da atualização dá erro 401: normal).
+   `docker compose ps` e `curl -s https://nebula-sys.duckdns.org/v1/auth/google/config` (antes da atualização dá erro 401: normal).
 4. **Backup do banco** (contas, amigos e redes ficam no volume `razze-data`; o banco usa WAL, então pare o servidor um instante):
    ```sh
    docker volume ls | grep razze-data          # anote o nome inteiro, por exemplo razze-api_razze-data
@@ -125,9 +127,9 @@ funcionando com apps antigos; atualize **antes** de publicar o app novo.
    ls -lh razze-data-*.tgz
    docker compose start razze-api
    ```
-   Guarde esse `.tgz` também fora da VPS (`scp` para o seu PC).
+   Guarde esse `.tgz` também fora do servidor (na janela SSH do Google: engrenagem › Download file).
 5. **Trazer o código novo** (depois do merge do PR na `main`): `git pull`. Se a pasta não for um clone do repositório, copie a
-   pasta `razze-api` do projeto para a VPS (`scp -r razze-api root@srv2015370.hstgr.cloud:~/`), **sem apagar o `.env`**.
+   pasta `razze-api` do projeto para o servidor (janela SSH › engrenagem › Upload file), **sem apagar o `.env`**.
 6. **Conferir o `.env`**: `API_DOMAIN` e `RAZZE_ADMIN_TOKEN` já existentes. Para o e-mail e os dois fatores, veja "E-mail e dois fatores" abaixo (`RAZZE_SMTP_USER`, `RAZZE_SMTP_PASS`, `RAZZE_TOTP_KEY`). As linhas `RAZZE_GOOGLE_CLIENT_ID` e
    `RAZZE_GOOGLE_CLIENT_SECRET` são opcionais (veja "Entrar com Google"); vazias, o botão do Google fica escondido. O
    `RAZZE_PUBLIC_URL` já vem do Compose (`https://$API_DOMAIN`).
@@ -135,11 +137,11 @@ funcionando com apps antigos; atualize **antes** de publicar o app novo.
    a primeira subida cria as tabelas e colunas novas sozinha (nada precisa ser migrado à mão).
 8. **Conferir**:
    ```sh
-   curl -s https://srv2015370.hstgr.cloud/v1/health
-   curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config     # {"enabled":false,"clientId":""} (ou true com o Google ligado)
-   curl -s -o /dev/null -w "%{http_code}\n" https://srv2015370.hstgr.cloud/a/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   # 200
+   curl -s https://nebula-sys.duckdns.org/v1/health
+   curl -s https://nebula-sys.duckdns.org/v1/auth/google/config     # {"enabled":false,"clientId":""} (ou true com o Google ligado)
+   curl -s -o /dev/null -w "%{http_code}\n" https://nebula-sys.duckdns.org/a/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   # 200
    ```
-   Abra também `https://srv2015370.hstgr.cloud/admin/`: o painel deve entrar e, na lista de usuários, cada conta tem o botão
+   Abra também `https://nebula-sys.duckdns.org/admin/`: o painel deve entrar e, na lista de usuários, cada conta tem o botão
    **Código de senha**.
 9. **Se algo der errado, voltar** (o banco antigo não perde dados, só ganha colunas):
    ```sh
@@ -165,7 +167,7 @@ senha" só pelo código do administrador; sem 2FA).
    O Gmail aceita uns 500 envios por dia; se ele bloquear, o painel mostra "E-mail com erro" em Visão geral.
 2. **Dois fatores**: `RAZZE_TOTP_KEY=` com um valor gerado por `openssl rand -base64 36`. Ele cifra os segredos do app
    autenticador no banco: **não troque depois** (quem tem o 2FA perderia o acesso) e guarde junto com o backup.
-3. `docker compose up -d` e confira: `curl -s https://srv2015370.hstgr.cloud/v1/auth/google/config` mostra
+3. `docker compose up -d` e confira: `curl -s https://nebula-sys.duckdns.org/v1/auth/google/config` mostra
    `"emailConfirmation":true` e `"twoFactor":true`.
 4. **Antes de ligar o `RAZZE_TOTP_KEY`**, avise os administradores: depois dele, o painel (web e no app) só entra com o 2FA
    ligado. Cada um liga em Perfil › Conta › Verificação em dois fatores (o token

@@ -49,7 +49,7 @@ flowchart LR
 
 1. Os PCs ficam na mesma rede: pela **Radmin VPN** (grátis), pela **VPN WireGuard Razze** ou pelo **modo Internet**, sem VPN, com um servidor numa VPS.
 2. Uma pessoa cria a sala. O app dela vira o ponto de encontro: só apresenta quem está na sala.
-3. Depois de apresentadas, as pessoas se conectam **direto**, por WebRTC. O vídeo, o áudio e a voz não passam por nenhum servidor, então não há mensalidade nem limite de qualidade imposto por terceiros. No modo Internet, quando a rede de alguém não deixa a conexão direta (CGNAT, 4G), o vídeo passa pelo TURN da VPS, sempre criptografado de ponta a ponta.
+3. Depois de apresentadas, as pessoas se conectam **direto**, por WebRTC. O vídeo, o áudio e a voz não passam por nenhum servidor, então não há mensalidade nem limite de qualidade imposto por terceiros. No modo Internet, quando a rede de alguém não deixa a conexão direta (CGNAT, 4G), o vídeo passa por um servidor TURN (o da Cloudflare ou o da VPS), sempre criptografado de ponta a ponta.
 
 ## Por dentro do app
 
@@ -155,6 +155,7 @@ No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-
 | Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
 | RazzeAPI, VPN WireGuard e implantação numa VPS | [docs/razze-api.md](docs/razze-api.md) |
 | Modo Internet (sem VPN: salas por código + senha, STUN e TURN numa VPS) | [servidor-internet/README.md](servidor-internet/README.md) |
+| Onde os servidores da equipe rodam hoje (Google Cloud), custo e como atualizar | [docs/servidores-producao.md](docs/servidores-producao.md) |
 | O que vem por aí e como fazer (Discord e TeamSpeak como referência) | [docs/roadmap.md](docs/roadmap.md) |
 
 ## Feito com

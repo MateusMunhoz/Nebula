@@ -9,6 +9,9 @@ paths:
 # Servidores (RazzeAPI e modo Internet)
 
 - RazzeAPI: Node ≥ 24 (`node:sqlite`). Detalhes e rotas: `docs/razze-api.md`. Modo Internet: `servidor-internet/README.md`.
+- Produção (VM do Google Cloud, endereços, custo, atualizar): `docs/servidores-producao.md`. Trocar um endereço padrão do app
+  (`main/razze-service.js`, `renderer/conectividade.js`) exige migrar o endereço antigo gravado no PC das pessoas.
+- O TURN pela VM gasta o pouco tráfego grátis do Google: prefira o TURN da Cloudflare (`CF_TURN_*`, em `servidor-internet/server.js`).
 - Segredos (`RAZZE_ADMIN_TOKEN`, `TURN_SECRET`, `.env`) nunca no código, nos testes nem no cliente Electron.
   Não leia `razze-api/.env` nem `razze-api/data/`. Exemplo de configuração só em `.env.example`.
 - Todo dado que chega de cliente é não confiável: valide tipo, tamanho e formato antes de usar, como

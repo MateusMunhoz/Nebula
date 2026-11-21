@@ -16,10 +16,22 @@ A senha do TURN nunca fica dentro do app: o `server.js` e o coturn dividem um se
 O jeito fácil: um comando só, como root. Ele instala o Node e o coturn, baixa este ramo do GitHub para `/opt/tela-p2p`, gera o segredo do TURN, configura tudo, libera as portas no `ufw` (se ele estiver ligado) e confere se subiu. Pode rodar de novo para atualizar: o segredo é mantido.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/MateusMunhoz/AmostradinhoScreenShare/modo-internet/servidor-internet/vps/instalar.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/MateusMunhoz/AmostradinhoScreenShare/main/servidor-internet/vps/instalar.sh | sudo bash
 ```
 
 No fim ele mostra o endereço para colocar no app (`ws://IP:8765`) e as portas para liberar no firewall do painel da hospedagem.
+No Google Cloud, o "firewall do painel" é uma regra de VPC (Rede VPC › Firewall) com essas portas de entrada. O servidor da
+equipe hoje roda numa VM do Google Cloud: veja `docs/servidores-producao.md`.
+
+## TURN da Cloudflare (recomendado em nuvem com pouco tráfego grátis)
+
+Quando o vídeo passa pelo TURN, quem paga o tráfego é a máquina do TURN. Na camada gratuita do Google Cloud são só 1 GB/mês de
+saída; o **Realtime TURN da Cloudflare** dá 1.000 GB/mês grátis. Com `CF_TURN_KEY_ID` e `CF_TURN_API_TOKEN` no
+`/etc/tela-p2p-internet.env`, o `server.js` pede uma credencial à Cloudflare na subida (renovada sozinha a cada quarto da
+validade, `CF_TURN_TTL_SECONDS`, padrão 24 h) e a entrega na sala **no lugar** do coturn. O coturn fica de reserva: entra só se a
+Cloudflare não respondeu, ou se a credencial guardada está perto de vencer. O token da Cloudflare fica só no servidor; o app
+recebe a credencial temporária, como já recebia a do coturn. O `/health` mostra `"turnCloudflare":true` quando ela está valendo.
+O `instalar.sh`, rodado de novo, mantém as linhas `CF_TURN_*`. Passo a passo da conta: `docs/servidores-producao.md`.
 
 ### Passo a passo manual (o que o script faz)
 
@@ -33,7 +45,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 
 # 2. Código (só a pasta do servidor e o sala-protocolo.js são usados)
-git clone --depth 1 -b modo-internet https://github.com/MateusMunhoz/AmostradinhoScreenShare /opt/tela-p2p
+git clone --depth 1 -b main https://github.com/MateusMunhoz/AmostradinhoScreenShare /opt/tela-p2p
 cd /opt/tela-p2p/servidor-internet && npm ci --omit=dev
 
 # 3. Segredo compartilhado entre o servidor e o coturn
