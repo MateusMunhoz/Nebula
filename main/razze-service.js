@@ -9,7 +9,7 @@ const { loginComGoogle } = require('./google-login');
 
 // RazzeAPI da equipe (conta, amigos e salas dos amigos): quem instala agora já cria a conta sem configurar nada.
 // TELA_RAZZE_API troca o padrão; vazia, o app começa sem servidor (os testes de ponta a ponta usam assim).
-const API_PADRAO = process.env.TELA_RAZZE_API ?? 'https://srv2015370.hstgr.cloud';
+const API_PADRAO = process.env.TELA_RAZZE_API ?? 'https://nebula-sys.duckdns.org';
 
 // O servidor recusou a sessão (vencida, apagada, conta desativada). Outros 401/403 (senha errada numa ação, proxy,
 // Wi-Fi de hotel sem corpo JSON) não deslogam
@@ -51,7 +51,7 @@ function createRazzeService(options = {}) {
   function load() {
     try {
       const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-      baseUrl = String(saved.baseUrl || padrao);
+      baseUrl = String(saved.baseUrl || padrao); if (baseUrl === 'https://srv2015370.hstgr.cloud') baseUrl = padrao; // migração da Hostinger
       sealedToken = String(saved.secret || '');
     } catch {}
     unlockSession();

@@ -9,7 +9,7 @@
 const NETWORK_PREF_KEY = 'connectivity.v1';
 // Servidor do modo Internet da equipe: quem instala agora já entra pela internet, sem configurar nada.
 // A RazzeAPI padrão (conta e amigos) fica no processo principal (main/razze-service.js).
-const INTERNET_URL_PADRAO = 'ws://2.25.253.140:8765';
+const INTERNET_URL_PADRAO = 'ws://34.63.86.72:8765';
 let razzeUser = null;
 // A conta Razze vai para a sala (perfil e Adicionar dos outros; sala-protocolo.js › cleanRazze): a id e o nome do servidor
 function contaSala() {
@@ -52,7 +52,7 @@ function networkPreferences() {
       outrasRedes,
       apiUrl: typeof p.apiUrl === 'string' ? p.apiUrl : '',
       activeNetworkId: typeof p.activeNetworkId === 'string' ? p.activeNetworkId : '',
-      internetUrl: typeof p.internetUrl === 'string' && p.internetUrl.trim() ? p.internetUrl : INTERNET_URL_PADRAO,
+      internetUrl: typeof p.internetUrl === 'string' && p.internetUrl.trim() && p.internetUrl.trim() !== 'ws://2.25.253.140:8765' ? p.internetUrl : INTERNET_URL_PADRAO, // migração da Hostinger
     };
   } catch { return { provider: 'internet', outrasRedes: false, apiUrl: '', activeNetworkId: '', internetUrl: INTERNET_URL_PADRAO }; }
 }
