@@ -160,10 +160,10 @@ com o protocolo de voz dos apps (`voz.js`). Spec: `docs/spec/convidado-web.md`.
 
 ### HTTPS quando a VPS já tem o Caddy da RazzeAPI (Docker, portas 80 e 443)
 Não suba outro Caddy: acrescente um site ao Caddyfile da RazzeAPI (`/opt/tela-p2p/razze-api/Caddyfile`, montado no container
-`razze-api-caddy-1`). Sem domínio, use `<IP com hífens>.sslip.io` (ex.: `2-25-253-140.sslip.io` aponta para `2.25.253.140`):
+`razze-api-caddy-1`). Sem domínio, use `<IP com hífens>.sslip.io` (ex.: `34-63-86-72.sslip.io` aponta para `34.63.86.72`):
 
 ```
-2-25-253-140.sslip.io {
+34-63-86-72.sslip.io {
         reverse_proxy <endereço que o container alcança>:8765 {
                 header_up X-Forwarded-For {remote_host}
         }
