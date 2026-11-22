@@ -35,7 +35,8 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
 - **Já numa sala:** Criar sala e Entrar numa sala continuam ligados; o app pergunta antes de tirar você da sala em que está.
 - **Carregando:** criando ou entrando (pelo endereço, pelo código, na sala de um amigo, por um convite ou numa chamada), aparece **Entrando na sala…** com o passo da conexão até a sala abrir. Enquanto isso, clicar de novo não abre outra conexão. **Cancelar** (ou Esc) desiste da entrada.
 - **Tamanho:** até 12 pessoas.
-- **Senha:** é opcional, mas recomendada se a rede da Radmin tiver mais gente.
+- **Senha:** é opcional, também no modo Internet (lá, sem senha, entra quem tiver o código). Recomendada se a rede
+  da Radmin tiver mais gente.
 - **Nome da sala:** no topo do painel da sala, em cima das abas, o nome da sala ("Sua sala" ou "Sala de Ana");
   à direita, **Grade** / **Destaque** (com telas abertas). As telas começam no topo da janela. Quantas pessoas
   estão na sala fica na aba **Pessoas**. Com o painel recolhido, o nome some junto com ele.
@@ -44,7 +45,7 @@ Tudo o que dá para fazer no Nebula, com os detalhes. Para começar do zero, vej
   - o endereço da sala, com **Copiar**;
   - a **senha** da sala (para quem entrou com ela e para o host), escondida, com o **olho** para mostrar, **Copiar** e
     **Mudar**. Só o host muda: quem já está continua na sala e recebe a nova; quem entrar depois precisa dela. Vazia,
-    a sala fica sem senha (no modo Internet, mínimo 4 caracteres). No modo Internet, mudar também cancela os convites
+    a sala fica sem senha (também no modo Internet: aí só o código protege a sala). No modo Internet, mudar também cancela os convites
     sem senha (pelas mensagens e pela lista dos amigos), e se o host sai, quem está há mais tempo assume. Numa sala
     cujo servidor é antigo, o **Mudar** fica desativado e explica;
   - **Amigos de quem está na sala podem entrar** (só o host, no modo Internet);
@@ -286,14 +287,14 @@ Salva os últimos segundos de uma transmissão, com o som dela, num arquivo de v
 Para ver uma transmissão enquanto joga.
 
 - **Abrir:** o botão da janelinha na barra do vídeo abre a transmissão numa janela pequena, sempre por cima, até do jogo.
-- **Ajustar:** a janela abre no modo de ajuste. Arraste para mover e puxe as bordas para redimensionar. Há tamanhos rápidos (P, M, G) e a transparência.
+- **Ajustar:** a janela abre no modo de ajuste. Arraste para mover e puxe as bordas para redimensionar. Na barra de baixo ficam os três tamanhos rápidos (os retângulos: pequena, média, grande), a transparência (a gota), o cadeado para travar e o X. Se a janela crescer encostada na borda da tela, ela volta para dentro sozinha.
 - **Travar:** clique em **Travar** ou aperte **Ctrl+Shift+E**. Travada, o mouse passa direto: o clique vai para o jogo, e ela nunca tira o foco dele. Aperte Ctrl+Shift+E de novo, até de dentro do jogo, para ajustar.
 - **No app,** o quadro dessa pessoa mostra "Picture in picture ativado, transmissão pausada", com **Trazer de volta** e **Ajustar janela**. O som continua saindo pelo app, e o vídeo continua chegando com o app minimizado.
 - **Música do YouTube:** o quadro da música também tem o botão. O player vai para a janela flutuante (recarrega no ponto da sala, 1 a 2 s) e volta para o quadro ao fechar. O som e os controles continuam no app.
 - **Quem está falando:** a janela ganha uma borda verde quando a pessoa dela fala. Embaixo aparece quem mais está falando na voz.
 - **Várias janelas:** dá para abrir uma para cada pessoa. Elas nascem empilhadas no canto, sem uma cobrir a outra, e Travar ou Ctrl+Shift+E valem para todas. O app lembra a posição, o tamanho e a transparência da 1ª, da 2ª... janela, e o X da barra fecha todas.
 - **Arrumar em grupo** (com 2 ou mais):
-  - **Todas do mesmo tamanho:** redimensionar uma, com o mouse ou pelo P, M e G, muda todas e reorganiza a fila.
+  - **Todas do mesmo tamanho:** redimensionar uma, com o mouse ou pelos tamanhos rápidos, muda todas e reorganiza a fila.
   - **Como enfileirar:** em **Coluna** ou em **Linha**, a partir de um canto da tela (↖ ↗ ↙ ↘). Quando a fila não cabe, continua ao lado.
 - **Tela cheia exclusiva:** a janela não aparece por cima de jogo em tela cheia **exclusiva**. Use o modo janela sem bordas do jogo.
 
@@ -361,6 +362,8 @@ Clique em **Entrar na voz**, na barra de baixo, para ligar o microfone padrão d
 - **Painel recolhido:** na barra de baixo, ao lado de **Entrar na voz**, ficam até três fotos de quem está na voz (quem fala acende em verde) e quantos são ("6 na voz"). Clicar abre uma lista para cima com cada pessoa (clicar nela abre o perfil, com o volume), **Entrar na voz** (se você está fora) e **Abrir o painel da voz**. Esc ou um clique fora fecha.
 - **Roda do mouse:** em cima do controle do cartão de volume, muda de 5 em 5%. Em cima da tela da pessoa ou da janela flutuante (no modo de ajuste), muda o som da tela, com um balãozinho mostrando o valor. A voz de alguém só muda com o cartão aberto.
 - **Sons da voz:** dois tons subindo quando alguém entra na voz (ou você), dois descendo quando sai, e um toque curto quando você muta ou desmuta o microfone. Os de quem entra e sai só tocam enquanto você está na voz; quem muta do outro lado e o apertar para falar não tocam. O som e o volume de cada um ficam em **Configurações** (a engrenagem no topo).
+- **Fone ou microfone desconectado:** você continua na chamada. O app passa para outro microfone (o padrão do Windows)
+  e avisa; sem nenhum microfone, você segue ouvindo e volta a falar sozinho quando conectar um.
 - **Microfone negado:** se o Windows negar o microfone, permita o acesso para aplicativos de desktop nas configurações de privacidade.
 - **Voz e transmissão juntas:** se a captura que exclui o som do app falhar durante a conversa, a tela é transmitida sem áudio do PC, para não retransmitir as vozes. Se uma transmissão já estiver capturando todo o som do PC, pare, entre na voz e recomece a transmissão.
 - **Como funciona:** a voz usa WebRTC direto pela Radmin, uma conexão por par de pessoas, sem servidor. Usa o microfone padrão.

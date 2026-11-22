@@ -180,7 +180,7 @@ function createInternetServer(options = {}) {
     failWindowMs: options.failWindowMs ?? envInt('FAIL_WINDOW_MS', 10 * 60 * 1000),
     graceMs: options.graceMs ?? envInt('RECONNECT_GRACE_MS', 30000),
     denyDelayMs: options.denyDelayMs ?? envInt('DENY_DELAY_MS', 400),
-    minPassword: options.minPassword ?? envInt('MIN_PASSWORD', 4),
+    minPassword: options.minPassword ?? envInt('MIN_PASSWORD', 0), // 0: a sala pode não ter senha (só o código)
     maxEspectadores: options.maxEspectadores ?? envInt('MAX_ESPECTADORES', 5), // quem assiste pelo navegador, por sala
     maxConvidados: options.maxConvidados ?? envInt('MAX_CONVIDADOS', 5), // quem entra na conversa pelo navegador, por sala
     trustProxy: options.trustProxy ?? process.env.TRUST_PROXY === '1',
@@ -358,7 +358,7 @@ function createInternetServer(options = {}) {
       if (me && msg.type === 'senha') {
         if (id !== room.hostId) return send(ws, { type: 'senha-erro', message: 'Só o host da sala muda a senha.' });
         const nova = cleanSenha(msg.password, cfg.minPassword);
-        if (nova === null) return send(ws, { type: 'senha-erro', message: `No modo Internet a senha precisa ter de ${cfg.minPassword} a 64 caracteres.` });
+        if (nova === null) return send(ws, { type: 'senha-erro', message: cfg.minPassword > 0 ? `Neste servidor a senha precisa ter de ${cfg.minPassword} a 64 caracteres.` : 'A senha pode ter até 64 caracteres.' });
         room.check = passwordCheck(nova);
         room.passes.clear();
         for (const [mid, m] of room.members) if (!room.away.has(mid) && ehPessoa(m)) send(m.ws, m.viaPasse ? { type: 'senha', by: id } : { type: 'senha', password: nova, by: id });
@@ -391,7 +391,7 @@ function createInternetServer(options = {}) {
       if (msg.create === true && !pelaWeb) {
         const password = typeof msg.password === 'string' ? msg.password : '';
         if (password.length < cfg.minPassword || password.length > 64) {
-          send(ws, { type: 'error', message: `No modo Internet a sala precisa de senha (${cfg.minPassword} a 64 caracteres).` });
+          send(ws, { type: 'error', message: cfg.minPassword > 0 ? `Neste servidor a sala precisa de senha (${cfg.minPassword} a 64 caracteres).` : 'A senha pode ter até 64 caracteres.' });
           return ws.close();
         }
         if (rooms.size >= cfg.maxRooms) { send(ws, { type: 'error', message: 'O servidor está cheio agora. Tente daqui a pouco.' }); return ws.close(); }

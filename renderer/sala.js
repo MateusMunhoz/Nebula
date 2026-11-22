@@ -185,7 +185,6 @@ async function criarSalaAgora() {
   try {
     await requireSelectedNetwork();
     if (selectedNetworkProvider() === 'internet') {
-      if (password.length < 4) throw new Error('No modo Internet a sala precisa de senha (mínimo 4 caracteres).');
       const url = internetServerUrl();
       // amigosMembros: amigos de quem estiver na sala também entram com um clique (docs/spec/entrar-pelos-amigos.md)
       const amigosMembros = $('roomAmigosMembros').checked;

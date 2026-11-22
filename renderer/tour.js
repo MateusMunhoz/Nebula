@@ -76,9 +76,9 @@ const ROTEIROS = {
       {
         alvo: () => [$('roomAddr').closest('.field'), $('joinPassword').closest('.field')],
         titulo: 'Código e senha',
-        texto: 'Digite o código da sala (6 letras e números) e a senha que o host te passou. Sem um código agora? Use o exemplo para ensaiar.',
+        texto: 'Digite o código da sala (6 letras e números) e, se ela tiver, a senha que o host te passou. Sem um código agora? Use o exemplo para ensaiar.',
         extra: { rotulo: 'Preencher exemplo', acao: () => { $('roomAddr').value = TOUR_EXEMPLO.codigo; $('joinPassword').value = TOUR_EXEMPLO.senha; } },
-        esperar: () => $('roomAddr').value.trim().length >= 4 && $('joinPassword').value.length >= 4,
+        esperar: () => $('roomAddr').value.trim().length >= 4,
       },
       {
         alvo: () => $('joinBtn'),
@@ -190,9 +190,9 @@ const ROTEIROS = {
       },
       {
         alvo: () => $('roomPassword').closest('.field'),
-        titulo: () => tourNaInternet() ? 'A senha (obrigatória)' : 'A senha',
+        titulo: () => 'A senha',
         texto: () => tourNaInternet()
-          ? 'Pela internet a sala precisa de senha, com pelo menos 4 caracteres. Quem tiver o código e a senha entra. Digite uma ou gere uma.'
+          ? 'A senha é opcional. Sem ela, quem tiver o código entra; com ela, precisa do código e da senha. Digite uma, gere uma ou deixe vazio.'
           : 'Na sua rede a senha é opcional, mas recomendada. Digite uma ou gere uma.',
         extra: { rotulo: 'Gerar uma senha', acao: () => { $('roomPassword').type = 'text'; $('roomPassword').value = novaSenhaSala(); } },
         esperar: () => $('roomPassword').value.length >= 4,

@@ -323,7 +323,7 @@ function renderSenhaSala() {
 
 async function mudarSenhaSala() {
   const internet = !!state.cloud;
-  const min = internet ? 4 : 0;
+  const min = 0; // a senha é opcional também no modo Internet (o servidor pode exigir: MIN_PASSWORD)
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = 64;
@@ -342,12 +342,12 @@ async function mudarSenhaSala() {
   const p = document.createElement('p');
   p.className = 'app-confirm-text';
   p.textContent = 'Quem já está na sala continua e recebe a senha nova. Quem entrar depois precisa dela.'
-    + (internet ? ' Os convites que entram sem senha (pelas mensagens e pela lista dos amigos) deixam de valer.' : ' Vazio: a sala fica sem senha.');
+    + (internet ? ' Os convites que entram sem senha (pelas mensagens e pela lista dos amigos) deixam de valer. Vazio: a sala fica sem senha.' : ' Vazio: a sala fica sem senha.');
   const nova = await dialogoChamada({
     titulo: 'Mudar a senha da sala', corpo: [p, linha], ok: 'Mudar',
     ler() {
       const v = input.value.trim();
-      if (v.length < min || v.length > 64 || /[\u0000-\u001f\u007f]/.test(v)) throw new Error(internet ? 'No modo Internet a senha precisa ter de 4 a 64 caracteres.' : 'A senha pode ter até 64 caracteres.');
+      if (v.length < min || v.length > 64 || /[\u0000-\u001f\u007f]/.test(v)) throw new Error('A senha pode ter até 64 caracteres.');
       return v;
     },
     aoAbrir: () => { setTimeout(() => input.select()); return input; },

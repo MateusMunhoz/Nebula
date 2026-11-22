@@ -89,10 +89,22 @@ test('senha errada e sala inexistente dão a mesma resposta, e o IP é bloqueado
   assert.match(blocked.first.message, /Muitas tentativas/);
 });
 
-test('criar sala sem senha é recusado', async (t) => {
+test('sala sem senha: entra só com o código; senha errada continua recusada', async (t) => {
   const { url } = await start(t);
+  const a = await connect(url, { create: true, name: 'Ana', password: '', client: client() });
+  t.after(() => a.ws.terminate());
+  assert.equal(a.first.type, 'welcome');
+  const b = await connect(url, { room: a.first.sala, name: 'Beto', client: client() });
+  t.after(() => b.ws.terminate());
+  assert.equal(b.first.type, 'welcome');
+  assert.equal((await connect(url, { room: a.first.sala, name: 'X', password: 'chute' })).first.type, 'error');
+});
+
+test('com MIN_PASSWORD o servidor exige senha', async (t) => {
+  const { url } = await start(t, { minPassword: 4 });
   const a = await connect(url, { create: true, name: 'Ana', password: '' });
   assert.equal(a.first.type, 'error');
+  assert.match(a.first.message, /precisa de senha/);
 });
 
 test('conexão que cai volta com o mesmo número; quem sai pelo botão sai na hora', async (t) => {
@@ -205,10 +217,10 @@ test('mudar a senha: só o host; a antiga e os passes param de valer; quem entro
   t.after(() => c.ws.terminate());
   assert.equal(c.first.type, 'welcome');
 
-  // Só o host muda, e no modo Internet a senha precisa do mínimo
+  // Só o host muda, e a senha tem no máximo 64 caracteres
   b.send({ type: 'senha', password: 'tentei-mudar' });
   assert.match((await b.wait((m) => m.type === 'senha-erro')).message, /host/);
-  a.send({ type: 'senha', password: 'abc' });
+  a.send({ type: 'senha', password: 'x'.repeat(65) });
   await a.wait((m) => m.type === 'senha-erro');
 
   a.send({ type: 'senha', password: 'K7P-4MX-Q2R' });

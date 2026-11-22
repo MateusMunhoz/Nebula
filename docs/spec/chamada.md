@@ -36,7 +36,7 @@ voz. E poder trocar a senha de uma sala aberta.
 - `senha { password }` (do app ao servidor): só do host; até 64 caracteres, sem caracteres de controle
   (`cleanSenha`, `sala-protocolo.js`).
   - Radmin e Razze (`signaling.js`): vazia tira a senha.
-  - Internet (`servidor-internet/server.js`): mínimo `minPassword` (4); troca o HMAC da senha e limpa os passes (a
+  - Internet (`servidor-internet/server.js`): mínimo `minPassword` (padrão 0, `MIN_PASSWORD` na VPS; vazia tira a senha); troca o HMAC da senha e limpa os passes (a
     chave dos passes fica, para quem entrou por um passe ainda voltar depois de a conexão cair).
 - `senha { password, by }` (do servidor a todos): quem já está continua. No modo Internet, quem entrou por um passe
   recebe só `{ by }`, sem a senha.

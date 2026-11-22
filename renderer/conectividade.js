@@ -93,7 +93,7 @@ function testInternetServer(url, timeoutMs = 6000) {
   });
 }
 
-// Tela inicial e Criar sala mudam de texto no modo Internet (código em vez de endereço, senha obrigatória)
+// Tela inicial e Criar sala mudam de texto no modo Internet (código em vez de endereço)
 function renderHomeForNetwork() {
   const internet = selectedNetworkProvider() === 'internet';
   // Pela internet, a lista é a das salas dos amigos do Razze (salas-amigos.js)
@@ -102,11 +102,11 @@ function renderHomeForNetwork() {
   $('sessionsTitle').textContent = internet ? 'Salas dos seus amigos'
     : provider === 'razze' ? 'Salas abertas na rede Razze'
     : window.api.platform === 'linux' ? 'Salas abertas na rede local' : 'Salas abertas na Radmin';
-  $('goJoinSub').textContent = internet ? 'Digite o código e a senha da sala.' : 'Cole o endereço que te mandaram, tipo 26.12.34.56:8765.';
+  $('goJoinSub').textContent = internet ? 'Digite o código da sala (e a senha, se ela tiver).' : 'Cole o endereço que te mandaram, tipo 26.12.34.56:8765.';
   $('joinPanelTitle').textContent = internet ? 'Entrar com código' : 'Entrar com endereço';
   $('roomAddrLabel').textContent = internet ? 'Código da sala' : 'Endereço de quem criou';
   $('roomAddr').placeholder = internet ? 'ABC234' : '26.123.45.67:8765';
-  $('joinPassword').placeholder = internet ? 'A senha que quem criou passou' : 'Só se a sala tiver uma';
+  $('joinPassword').placeholder = 'Só se a sala tiver uma';
   $('roomPortField').hidden = internet;
   $('roomAmigosMembrosLine').hidden = !internet; // passe da sala: só o servidor do modo Internet tem
   const visible = internet ? 'Mostrar esta sala para meus amigos do Razze' : 'Mostrar esta sala para quem está na rede';
@@ -115,8 +115,8 @@ function renderHomeForNetwork() {
   $('roomVisibleText').textContent = visible;
   $('roomVisibleTip').dataset.tip = tip;
   $('roomVisibleTip').setAttribute('aria-label', tip);
-  $('roomPasswordLabel').textContent = internet ? 'Senha (obrigatória)' : 'Senha (opcional)';
-  $('roomPassword').placeholder = internet ? 'Mínimo 4 caracteres; use uma forte' : 'Vazio = sem senha';
+  $('roomPasswordLabel').textContent = 'Senha (opcional)';
+  $('roomPassword').placeholder = 'Vazio = sem senha';
   $('createHint').textContent = internet
     ? 'Mande o código e a senha, ou deixe a caixinha marcada: os amigos do Razze entram pela lista, com um clique.'
     : 'A sala fecha quando todos saírem.';

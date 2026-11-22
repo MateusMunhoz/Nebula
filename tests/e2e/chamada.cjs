@@ -125,8 +125,8 @@ app.whenReady().then(async () => {
 
     await ana.run('void mudarSenhaSala()');
     await ana.until(`!!document.querySelector('.chamada-dialogo input[type=text]')`);
-    await ana.run(`(() => { const i = document.querySelector('.chamada-dialogo input[type=text]'); i.value = 'ab'; document.querySelector('.chamada-dialogo .btn.primary').click(); })()`);
-    check('Senha curta demais no modo Internet: explica e não fecha', await ana.run(`!!document.querySelector('.chamada-dialogo .warn:not([hidden])')`));
+    await ana.run(`(() => { const i = document.querySelector('.chamada-dialogo input[type=text]'); i.value = 'x'.repeat(65); document.querySelector('.chamada-dialogo .btn.primary').click(); })()`);
+    check('Senha comprida demais: explica e não fecha', await ana.run(`!!document.querySelector('.chamada-dialogo .warn:not([hidden])')`));
     await ana.run(`(() => { const i = document.querySelector('.chamada-dialogo input[type=text]'); i.value = 'nova-senha-123'; document.querySelector('.chamada-dialogo .btn.primary').click(); })()`);
     check('O Beto recebe a senha nova', await beto.until(`state.password === 'nova-senha-123'`));
     check('A Ana também', await ana.until(`state.password === 'nova-senha-123'`));

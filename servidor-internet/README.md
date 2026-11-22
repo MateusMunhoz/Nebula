@@ -103,6 +103,7 @@ clicam em Entrar na lista precisam digitar a senha. Atualize para eles entrarem 
 | `TURN_TTL_SECONDS` | 86400 | Validade do acesso ao TURN que cada pessoa recebe |
 | `TURNS_URL` | vazio | Opcional: `turns:turn.seudominio.com:5349` (TURN com TLS, para firewalls que só liberam HTTPS) |
 | `STUN_URLS` | `stun:stun.l.google.com:19302` | STUN extra, separados por vírgula |
+| `MIN_PASSWORD` | 0 | Tamanho mínimo da senha da sala; 0 = senha opcional |
 | `MAX_ROOMS` | 200 | Salas abertas ao mesmo tempo |
 | `CREATE_PER_IP_PER_HOUR` | 20 | Salas criadas por IP por hora |
 | `FAIL_PER_IP` / `FAIL_WINDOW_MS` | 10 / 10 min | Tentativas erradas (código ou senha) antes de bloquear o IP |
@@ -168,7 +169,7 @@ Quando o vídeo passa pelo TURN, a VPS recebe e manda de novo: uma transmissão 
 
 ## Segurança, resumido
 
-- Sala só com senha (mínimo 4, use uma forte); sala inexistente e senha errada respondem igual e no mesmo tempo; o IP é bloqueado depois de várias tentativas erradas.
+- Senha opcional: sem ela, o código da sala é a proteção (para exigir senha, `MIN_PASSWORD=4`); sala inexistente e senha errada respondem igual e no mesmo tempo; o IP é bloqueado depois de várias tentativas erradas.
 - A senha fica guardada só como HMAC, em memória. Nada é gravado em disco.
 - **Passe de convite** (salas dos amigos): quem entrou com a senha pode registrar um passe (32 bytes aleatórios), que o app entrega só aos amigos do Razze. O passe também fica só como HMAC, vale só enquanto quem convidou está na sala, conta como tentativa errada se não valer, e quem entrou por um passe não cria outro.
 - **Passe da sala** (amigos de quem está na sala, app novo): ligado por padrão ao criar (`hello { create, amigosMembros }`; a ligação também cria com ele e manda `chamada: true`, que volta no `welcome` de todos como `chamada: true` para ninguém anunciar a ligação aos amigos). O servidor gera um passe para a sala inteira e entrega a todos, no `welcome` (`passeSala`, `amigosMembros`, feature `passe-sala`) e em `passe-sala { passe, amigosMembros }` quando muda. Ele não cai quando alguém sai; troca quando o host muda a senha e cai quando o host manda `amigos-membros { on: false }` (só o host; `true` gera outro). Fica em memória (em texto, porque é entregue a quem entra, e como HMAC para conferir), e passe errado conta no mesmo limite de tentativas. Spec: `docs/spec/entrar-pelos-amigos.md`.
