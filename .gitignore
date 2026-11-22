@@ -20,6 +20,8 @@ native/obj/
 # Segredos e banco local da RazzeAPI
 razze-api/.env
 razze-api/data/
+# Sites do Caddy de cada máquina (o modelo, ver.caddy.exemplo, vai para o Git)
+razze-api/sites/*.caddy
 
 # Anotações locais
 Explicacao.txt

@@ -159,21 +159,12 @@ com o protocolo de voz dos apps (`voz.js`). Spec: `docs/spec/convidado-web.md`.
   Caddy e o limite de tentativas errada vale para todos juntos).
 
 ### HTTPS quando a VPS já tem o Caddy da RazzeAPI (Docker, portas 80 e 443)
-Não suba outro Caddy: acrescente um site ao Caddyfile da RazzeAPI (`/opt/tela-p2p/razze-api/Caddyfile`, montado no container
-`razze-api-caddy-1`). Sem domínio, use `<IP com hífens>.sslip.io` (ex.: `34-63-86-72.sslip.io` aponta para `34.63.86.72`):
-
-```
-34-63-86-72.sslip.io {
-        reverse_proxy <endereço que o container alcança>:8765 {
-                header_up X-Forwarded-For {remote_host}
-        }
-}
-```
-
-O endereço da porta 8765 vista de dentro do container é o do IP público ou o do gateway da rede do Compose (teste com
-`docker exec razze-api-caddy-1 wget -qO- http://<endereço>:8765/health`). Anexe ao arquivo (não troque o arquivo: ele é montado como
-arquivo único), faça backup, `docker exec razze-api-caddy-1 caddy validate --config /etc/caddy/Caddyfile` e só então `caddy reload`.
-Depois ligue `TRUST_PROXY=1` em `/etc/tela-p2p-internet.env` e reinicie o serviço. O app dos hosts continua em `ws://IP:8765`.
+Não suba outro Caddy: o `Caddyfile` da RazzeAPI importa `razze-api/sites/*.caddy`, os sites a mais de cada máquina, que
+ficam fora do Git. Copie o modelo `razze-api/sites/ver.caddy.exemplo` para `razze-api/sites/ver.caddy` e troque o nome
+(sem domínio, `<IP com hífens>.sslip.io` aponta sozinho para o IP). O Caddy alcança esta porta 8765, que roda fora do Docker,
+por `host.docker.internal` (o `compose.yaml` já liga isso). Valide antes de aplicar, depois `docker-compose up -d`, e ligue
+`TRUST_PROXY=1` em `/etc/tela-p2p-internet.env` (o `instalar.sh` mantém a linha). Passo a passo com os comandos e o
+servidor da equipe: `docs/servidores-producao.md`, "Página /ver com HTTPS". O app dos hosts continua em `ws://IP:8765`.
 
 ## Banda da VPS
 

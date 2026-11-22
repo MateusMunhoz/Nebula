@@ -4,3 +4,7 @@
 		header_up X-Forwarded-For {remote_host}
 	}
 }
+
+# Sites a mais desta máquina, como a página /ver do servidor das salas com HTTPS. Ficam em razze-api/sites/*.caddy,
+# fora do Git (cada servidor tem o seu nome); sem nenhum, o Caddy só avisa e segue. Modelo: sites/ver.caddy.exemplo
+import /etc/caddy/sites/*.caddy

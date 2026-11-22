@@ -1,0 +1,9 @@
+# Página /ver do servidor das salas com HTTPS: o celular só libera o microfone do convidado em HTTPS.
+# Uso: copie para ver.caddy (mesma pasta), troque o nome pelo IP do seu servidor com hífens (sslip.io aponta sozinho para
+# esse IP, sem cadastro) e recarregue o Caddy. O servidor das salas precisa de TRUST_PROXY=1 em /etc/tela-p2p-internet.env.
+# Passo a passo: docs/servidores-producao.md, "Página /ver com HTTPS".
+34-63-86-72.sslip.io {
+	reverse_proxy host.docker.internal:8765 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}
