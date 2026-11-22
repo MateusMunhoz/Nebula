@@ -193,7 +193,7 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
       (passo a passo em `servidor-internet/README.md`, "HTTPS quando a VPS já tem o Caddy da RazzeAPI"). O `Caddyfile`
       está no repositório: a mudança entra por PR, não editada só na VM, senão o próximo `git pull` briga com ela.
 - [ ] Testar com o app publicado uma sala pela internet com alguém no 4G (o caminho que usa o TURN da Cloudflare).
-- [ ] Trocar o token do DuckDNS (duckdns.org › menu da conta), se ainda não foi trocado: o antigo foi exposto durante a
-      migração. Nada na VM usa o token; depois, conferir que `nebula-sys` continua em `34.63.86.72`.
+- [x] Token do DuckDNS trocado em 22/11/2026 (o antigo foi exposto na migração e agora é recusado). Nada na VM usa o
+      token. Para trocar de novo: duckdns.org › os três risquinhos ao lado do e-mail › **recreate token**.
 - [ ] Depois de 27/11/2026: nada a fazer; a Hostinger sai do ar sozinha. Se aparecer alguém sem conseguir entrar, é um
       app anterior à 1.20.24 que ainda não abriu desde então: ao abrir, ele pede a atualização.
