@@ -3,6 +3,7 @@
 // Roda por último (todos os outros scripts já definiram o que ele usa).
 
 voice.media = { getUserMedia: () => openMic() };
+voice.recuperarMic = recuperarMicrofone; // fone desconectado: continua na chamada (renderer/microfone.js)
 document.addEventListener('mousedown', (e) => {
   const card = $('personCard');
   if (!card.hidden && !card.contains(e.target) && !e.target.closest('.vol-btn, .vs-row, [data-profile], #imageViewer')) closePersonCard();
@@ -90,7 +91,10 @@ $('micSelect').onchange = () => {
   saveVoiceCfg();
   restartMic();
 };
-navigator.mediaDevices.addEventListener('devicechange', () => { if (voiceSettingsOpen()) renderMicList(); });
+navigator.mediaDevices.addEventListener('devicechange', () => {
+  if (voiceSettingsOpen()) renderMicList();
+  if (micPerdido.ativo && voice.session === micPerdido.sessao) recuperarMicrofone(); // conectou um microfone
+});
 $('echoOn').onchange = () => { voiceCfg.echo = $('echoOn').checked; saveVoiceCfg(); restartMic(); };
 document.querySelectorAll('input[name="talkMode"]').forEach((r) => {
   r.onchange = () => {

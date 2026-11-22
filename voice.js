@@ -86,10 +86,7 @@ class VoiceChat {
       this.mixer?.local(stream);
       this.session = this.token();
       this.muted = false;
-      for (const track of stream.getAudioTracks()) track.onended = () => {
-        this.leave();
-        this.error('O microfone foi desconectado. Conecte-o e entre na voz novamente.');
-      };
+      for (const track of stream.getAudioTracks()) track.onended = () => this.micLost();
       this.announce(); // Espera a confirmação do servidor antes de iniciar ofertas.
       clearInterval(this.medidor);
       if (this.medirMs) { this.medidor = setInterval(() => void this.medir(), this.medirMs); this.medidor.unref?.(); }
@@ -103,6 +100,14 @@ class VoiceChat {
     } finally {
       if (epoch === this.epoch) { this.pending = false; this.changed(); }
     }
+  }
+  // Microfone desconectado (ex.: o fone saiu do PC). Com recuperarMic (renderer/microfone.js), a pessoa continua na
+  // chamada e o app tenta outro microfone; sem ele, sai da voz como antes.
+  micLost() {
+    if (!this.session) return;
+    if (this.recuperarMic) return void this.recuperarMic();
+    this.leave();
+    this.error('O microfone foi desconectado. Conecte-o e entre na voz novamente.');
   }
   announce() { this.send({ type: 'voice-state', session: this.session, channel: this.session ? this.channel : '', muted: this.muted, deafened: this.deafened }); }
   // Ir para outro canal (Voz geral ou uma subsala). Fora da voz, entra direto nele.

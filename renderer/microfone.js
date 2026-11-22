@@ -163,13 +163,14 @@ function closeMic(mic) {
 }
 
 // Trocar o filtro no meio da conversa: abre o microfone de novo e troca a faixa em cada conexão, sem cair
-async function restartMic() {
-  if (!voice.session || !voice.stream) { refreshMicTest(); return; }
+// Devolve true se trocou o microfone. silencioso: sem o aviso de erro (quem chama avisa).
+async function restartMic(silencioso = false) {
+  if (!voice.session || !voice.stream) { refreshMicTest(); return false; }
   const old = micNow;
   const oldTrack = voice.stream.getAudioTracks()[0];
   let stream;
-  try { stream = await openMic(); } catch (err) { toast(`Não foi possível reabrir o microfone: ${err.message}`, 'error'); return; }
-  if (!voice.session) { closeMic(micNow); return; }
+  try { stream = await openMic(); } catch (err) { if (!silencioso) toast(`Não foi possível reabrir o microfone: ${err.message}`, 'error'); return false; }
+  if (!voice.session) { closeMic(micNow); return false; }
   const track = stream.getAudioTracks()[0];
   track.onended = oldTrack ? oldTrack.onended : null;
   if (oldTrack) oldTrack.onended = null;
@@ -182,6 +183,32 @@ async function restartMic() {
   closeMic(old);
   applyMicGate();
   syncMicTest();
+  return true;
+}
+
+// Microfone desconectado no meio da conversa (o fone saiu do PC): a pessoa continua na chamada. O Windows leva um
+// instante para trocar o microfone padrão, então tenta algumas vezes. Sem nenhum microfone, segue ouvindo e tenta de
+// novo quando um microfone for conectado (devicechange em renderer/inicio.js).
+// ativo: está sem microfone nesta entrada na voz (sessao), à espera de um novo
+const micPerdido = { ativo: false, sessao: '', tentando: false };
+async function recuperarMicrofone() {
+  if (micPerdido.tentando || !voice.session) return;
+  micPerdido.tentando = true;
+  const avisar = !micPerdido.ativo || micPerdido.sessao !== voice.session;
+  micPerdido.ativo = true;
+  micPerdido.sessao = voice.session;
+  try {
+    for (const espera of [300, 1000, 2500]) {
+      await new Promise((r) => setTimeout(r, espera));
+      if (!voice.session) { micPerdido.ativo = false; return; }
+      if (await restartMic(true)) {
+        micPerdido.ativo = false;
+        toast(avisar ? 'O microfone foi desconectado. Usando outro microfone.' : 'Microfone conectado de novo.');
+        return;
+      }
+    }
+    if (avisar) toast('O microfone foi desconectado. Você continua na chamada ouvindo; conecte um microfone para falar.', 'error');
+  } finally { micPerdido.tentando = false; }
 }
 
 // ---------- Ouvir a própria voz (testar o microfone) ----------

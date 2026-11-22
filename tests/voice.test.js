@@ -91,6 +91,14 @@ test('desconectar microfone encerra a chamada e notifica a sala', async () => {
   assert.match(f.errors[0], /desconectado/);
 });
 
+test('com recuperarMic, desconectar o microfone não tira da chamada', async () => {
+  const f = fixture(); let chamou = 0; f.v.recuperarMic = () => { chamou++; };
+  await f.v.join(); const sessao = f.v.session; const enviados = f.sent.length;
+  f.track.onended();
+  assert.equal(chamou, 1); assert.equal(f.v.session, sessao); assert.equal(f.sent.length, enviados);
+  assert.equal(f.errors.length, 0);
+});
+
 test('avisos de voz seguem entradas e saídas, sem repetir em mute, reconexão ou reset', async () => {
   const f = fixture(); const events=[]; f.v.activity=(event,id)=>events.push([event,id]);
   f.v.reset({id:'2',features:['voice'],members:[{id:'1',voiceSession:'existing'}]});
