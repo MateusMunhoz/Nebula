@@ -1,7 +1,7 @@
 # Servidores em produção
 
 Onde rodam os servidores da equipe, quem tem acesso, como atualizar, quanto custa e o que fazer quando algo quebra.
-Escrito para quem chega sem contexto (pessoa ou IA). Atualizado em 21/11/2026, depois da saída da Hostinger.
+Escrito para quem chega sem contexto (pessoa ou IA). Atualizado em 22/11/2026.
 
 Nenhum segredo fica neste arquivo. Eles existem só no servidor e no backup do dono (veja "Segredos").
 
@@ -200,15 +200,15 @@ mantém essa linha. Conferir: abrir `https://34-63-86-72.sslip.io/ver` no celula
   endereços, TURN da Cloudflare, docs) juntado; servidor das salas da VM atualizado para a `main`; Cloudflare ligada;
   **1.20.24 publicada como obrigatória**. Backup final e `.env` da Hostinger baixados para o PC do dono.
 - O domínio `rezzenha.tech` (Hostinger) é outra assinatura e não foi mexido.
+- 22/11: token do DuckDNS trocado; a mensagem do app para servidor fora do ar ficou clara (PR #89, entra na próxima
+  versão); página `/ver` com HTTPS de volta (PR #90).
 - 22/11 ~09:57: a VM travou por **falta de memória** (1 GB, sem swap, com o Ops Agent ligado): a RazzeAPI dava 502 e o
   servidor das salas não respondia, com a VM "Running". Reset da VM, 2 GB de swap, Ops Agent removido e a etiqueta
   `goog-ops-agent-policy` tirada. Depois disso: 433 MB livres e o swap sem uso.
 
 ## Pendências
 
-- [ ] **Ligar a página `/ver` com HTTPS na VM** ("Página /ver com HTTPS", acima). Ela estava em
-      `https://2-25-253-140.sslip.io/ver` (Hostinger) e saiu do ar em 21/11; o novo endereço é
-      `https://34-63-86-72.sslip.io/ver`. Até ligar, `http://34.63.86.72:8765/ver` só deixa assistir.
+- [x] Página `/ver` com HTTPS ligada na VM em 22/11/2026: `https://34-63-86-72.sslip.io/ver` (testada no celular).
 - [ ] Testar com o app publicado uma sala pela internet com alguém no 4G (o caminho que usa o TURN da Cloudflare).
 - [x] Token do DuckDNS trocado em 22/11/2026 (o antigo foi exposto na migração e agora é recusado). Nada na VM usa o
       token. Para trocar de novo: duckdns.org › os três risquinhos ao lado do e-mail › **recreate token**.

@@ -262,4 +262,7 @@ A chave foi criada uma vez com `node publicar.js --gerar-chave`, que grava a par
   - rode `npm test` e `npm run test:e2e`;
   - se mexeu em voz, janelas ou atalhos, passe o [roteiro de teste](roteiro-de-teste.md) numa call.
 - **Depois que um PR é aceito no GitHub,** rode `git pull` na pasta do projeto antes de mexer em mais coisa, para trazer o código novo.
+- **Mexeu em servidor** (`razze-api/`, `servidor-internet/`, `sala-protocolo.js`)? O servidor de produção é atualizado
+  antes da versão do app, e só o Andrick acessa: diga no PR o que ele precisa rodar ([servidores em produção](servidores-producao.md)).
+- **Quem é quem e a quem pedir acesso:** [Fluxo com IA › Primeira vez](fluxo-com-ia.md#primeira-vez).
 - **Arquivos novos** que o app precisa em tempo de execução entram em `PACK_FILES` (`publicar.js`) e em `build.files` (`package.json`). Sem isso, eles não vão nas atualizações nem no `.exe`.
