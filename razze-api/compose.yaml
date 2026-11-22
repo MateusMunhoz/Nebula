@@ -46,8 +46,12 @@ services:
       - "80:80/tcp"
       - "443:443/tcp"
       - "443:443/udp"
+    # host.docker.internal: o servidor das salas (porta 8765) roda fora do Docker, no próprio host (sites/ver.caddy.exemplo)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sites:/etc/caddy/sites:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

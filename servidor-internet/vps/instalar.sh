@@ -79,15 +79,16 @@ systemctl enable -q coturn
 systemctl restart coturn
 
 passo "Servidor das salas (porta $SALA_PORT)"
-# O TURN da Cloudflare (CF_TURN_*) é posto à mão no $ENV_FILE: guarda antes de reescrever o arquivo e põe de volta
+# O TURN da Cloudflare (CF_TURN_*) e o TRUST_PROXY (página /ver atrás do Caddy) são postos à mão no $ENV_FILE:
+# guarda antes de reescrever o arquivo e põe de volta
 CF_GUARDADO=""
-[ -f "$ENV_FILE" ] && CF_GUARDADO=$(grep -E '^CF_TURN_(KEY_ID|API_TOKEN|TTL_SECONDS)=' "$ENV_FILE" || true)
+[ -f "$ENV_FILE" ] && CF_GUARDADO=$(grep -E '^(CF_TURN_(KEY_ID|API_TOKEN|TTL_SECONDS)|TRUST_PROXY)=' "$ENV_FILE" || true)
 sed -e "s/IP_DA_VPS/$IP/" -e "s/SEGREDO_DO_TURN/$SECRET/" -e "s/^PORT=.*/PORT=$SALA_PORT/" -e "s/^TURN_PORT=.*/TURN_PORT=$TURN_PORT/" \
   vps/tela-p2p-internet.env > "$ENV_FILE"
 if [ -n "$CF_GUARDADO" ]; then
-  grep -vE '^CF_TURN_(KEY_ID|API_TOKEN|TTL_SECONDS)=' "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
+  grep -vE '^(CF_TURN_(KEY_ID|API_TOKEN|TTL_SECONDS)|TRUST_PROXY)=' "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
   printf '%s\n' "$CF_GUARDADO" >> "$ENV_FILE"
-  echo "TURN da Cloudflare: mantido"
+  echo "Configuração manual (Cloudflare, TRUST_PROXY): mantida"
 fi
 chmod 600 "$ENV_FILE"
 cp vps/tela-p2p-internet.service /etc/systemd/system/tela-p2p-internet.service

@@ -16,6 +16,7 @@ até **27/11/2026** e depois some sozinha.
 |---|---|---|---|
 | RazzeAPI: conta, amigos, presença, mensagens, painel admin (+ Caddy com HTTPS) | VM, Docker Compose em `~/nebula/razze-api` | `https://nebula-sys.duckdns.org` | `main/razze-service.js` |
 | Servidor das salas do modo Internet | VM, serviço `tela-p2p-internet`, código em `/opt/tela-p2p` | `ws://34.63.86.72:8765` | `renderer/conectividade.js` |
+| Página `/ver` (assistir e conversar pelo navegador do celular) | servidor das salas, com HTTPS pelo Caddy da RazzeAPI | `https://34-63-86-72.sslip.io/ver` (o link vai à mão) | — |
 | TURN principal (vídeo que não vai direto) | Cloudflare Realtime TURN | entregue pelo servidor das salas | — |
 | TURN de reserva (coturn) | VM, serviço `coturn`, porta 3479 | entregue pelo servidor das salas, só se a Cloudflare falhar | — |
 | Atualizações do app | GitHub Releases de `MateusMunhoz/Nebula` | — | `github.js` |
@@ -110,6 +111,25 @@ docker-compose start razze-api
 ```
 O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do backup: o que mudou depois se perde.
 
+### Página /ver com HTTPS
+O celular só libera o microfone do convidado em HTTPS. O Caddy da RazzeAPI serve um site a mais,
+`34-63-86-72.sslip.io` (o sslip.io aponta sozinho para o IP do nome, sem cadastro), que repassa para o servidor das salas.
+O site fica em `~/nebula/razze-api/sites/ver.caddy`, **fora do Git** (modelo no Git: `sites/ver.caddy.exemplo`); o
+`Caddyfile` importa `sites/*.caddy`. Para ligar (ou refazer numa VM nova), na VM:
+```sh
+cd ~/nebula && git pull && cd razze-api
+cp -n sites/ver.caddy.exemplo sites/ver.caddy          # troque o nome se o IP for outro
+docker run --rm --add-host host.docker.internal:host-gateway -e API_DOMAIN=nebula-sys.duckdns.org \
+  -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" -v "$PWD/sites:/etc/caddy/sites:ro" caddy:2-alpine \
+  caddy validate --config /etc/caddy/Caddyfile          # tem que dizer "Valid configuration"
+docker-compose up -d                                    # recria só o Caddy (pasta sites e host.docker.internal)
+sudo sed -i 's/^TRUST_PROXY=.*/TRUST_PROXY=1/' /etc/tela-p2p-internet.env && sudo systemctl restart tela-p2p-internet
+sleep 15 && curl -s https://34-63-86-72.sslip.io/health  # {"ok":true,"app":"tela-p2p-internet",...}
+```
+O `TRUST_PROXY=1` faz o servidor das salas ver o IP real de quem entra pelo Caddy (senão todos os convidados parecem um IP
+só e o limite de senhas erradas vale para todos juntos); conexões diretas na 8765 continuam com o IP delas. O `instalar.sh`
+mantém essa linha. Conferir: abrir `https://34-63-86-72.sslip.io/ver` no celular e ligar **Entrar na conversa**.
+
 ### Ligar ou trocar a chave da Cloudflare
 1. https://dash.cloudflare.com › Realtime › TURN Server › Create (ou a chave existente). Anote o **Turn Token ID** e o
    **API Token** (o token aparece uma vez só).
@@ -134,7 +154,7 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
 | Nada responde, mas a VM está **Running** (502 do Caddy, SSH lento ou sem abrir) | VM instances › a VM › Logs › **Serial port 1**: aparece `Under memory pressure` ou `Out of memory`? | Falta de memória: **Reset** da VM (os serviços voltam sozinhos; nada se perde). Depois, pelo SSH: `free -m` (swap ativo?) e `systemctl status google-cloud-ops-agent` (não deve existir). Se faltar, refaça os passos da memória em "Recriar o servidor do zero" |
 | O nome não aponta para o IP certo | https://dns.google/resolve?name=nebula-sys.duckdns.org&type=A | Em duckdns.org, pôr `34.63.86.72` no campo do `nebula-sys` e "update ip" |
 | E-mail do alerta de orçamento | Billing › Reports, por SKU | Ver se o tráfego subiu (Cloudflare caiu?) ou se surgiu um recurso novo |
-| Convidado pelo navegador não consegue falar | O link é `https://`? | Sem HTTPS o celular não libera o microfone; veja a pendência da página `/ver` |
+| Convidado pelo navegador não consegue falar | O link é `https://34-63-86-72.sslip.io/ver`? | Sem HTTPS o celular não libera o microfone. Se o endereço não abre: `docker-compose logs --tail=30 caddy` e refaça "Página /ver com HTTPS" |
 
 ## Trocar de servidor no futuro (o que aprendemos)
 
@@ -186,12 +206,9 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
 
 ## Pendências
 
-- [ ] **Página `/ver` com HTTPS** (convidado que fala pelo navegador do celular). Ela estava em
-      `https://2-25-253-140.sslip.io/ver`, um site a mais no Caddy da Hostinger, e **saiu do ar em 21/11** com o repasse.
-      Hoje `http://34.63.86.72:8765/ver` só deixa **assistir** (o microfone exige HTTPS). Para voltar: um site
-      `34-63-86-72.sslip.io` no Caddy da VM apontando para a porta 8765 e `TRUST_PROXY=1` no `/etc/tela-p2p-internet.env`
-      (passo a passo em `servidor-internet/README.md`, "HTTPS quando a VPS já tem o Caddy da RazzeAPI"). O `Caddyfile`
-      está no repositório: a mudança entra por PR, não editada só na VM, senão o próximo `git pull` briga com ela.
+- [ ] **Ligar a página `/ver` com HTTPS na VM** ("Página /ver com HTTPS", acima). Ela estava em
+      `https://2-25-253-140.sslip.io/ver` (Hostinger) e saiu do ar em 21/11; o novo endereço é
+      `https://34-63-86-72.sslip.io/ver`. Até ligar, `http://34.63.86.72:8765/ver` só deixa assistir.
 - [ ] Testar com o app publicado uma sala pela internet com alguém no 4G (o caminho que usa o TURN da Cloudflare).
 - [x] Token do DuckDNS trocado em 22/11/2026 (o antigo foi exposto na migração e agora é recusado). Nada na VM usa o
       token. Para trocar de novo: duckdns.org › os três risquinhos ao lado do e-mail › **recreate token**.
