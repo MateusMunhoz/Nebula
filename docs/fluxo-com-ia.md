@@ -4,14 +4,29 @@ Como trabalhamos com o agente, do pedido até a versão nova nos PCs dos amigos.
 
 ## Primeira vez
 
+### Quem é quem (e a quem pedir acesso)
+
+| Para | Quem | Como |
+|---|---|---|
+| Mexer no código | Qualquer pessoa da equipe | Ramo próprio e Pull Request (abaixo). Acesso ao repositório `MateusMunhoz/Nebula`: peça ao **Mateus**, dono do repositório no GitHub |
+| Aprovar e juntar um PR (merge) | A equipe, pelo GitHub | Com o CI verde e alguém tendo olhado |
+| Publicar uma versão (`npm run publicar`) | **Andrick** e **Mateus**, os únicos com a chave de assinatura | Combinem antes, para não publicar duas versões ao mesmo tempo. A chave nunca é passada para ninguém |
+| Servidores (VM do Google Cloud, Cloudflare, DuckDNS) | Só o **Andrick** | Precisa de algo no servidor? Peça a ele, dizendo o que rodar ([servidores em produção](servidores-producao.md)) |
+
+Nenhuma senha, token ou chave fica no Git nem é passada por chat. Os agentes (Claude) são bloqueados de publicar, dar
+`push` e ler segredos (`.claude/settings.json`).
+
+### Preparar o PC
+
 ```
-git clone https://github.com/MateusMunhoz/AmostradinhoScreenShare
-cd AmostradinhoScreenShare
+git clone https://github.com/MateusMunhoz/Nebula
+cd Nebula
 npm ci
 claude
 ```
 
-Precisa do Node.js 24 ou mais novo. O Claude já abre sabendo das regras do projeto: não precisa colar prompt grande.
+Precisa do Node.js 24 ou mais novo e do Git. O Claude já abre sabendo das regras do projeto: não precisa colar prompt
+grande. Para abrir o app com o seu código: `npm run dev` (veja [Desenvolvimento](desenvolvimento.md#rodar-pelo-código)).
 
 | Arquivo | Para quê |
 |---|---|
@@ -64,6 +79,9 @@ CI no GitHub: testes no Linux (~1 min) + Windows smoke (~2 min)
 - Publicar é sempre de um humano, com a chave no próprio PC (detalhes em
   [Publicar uma versão](desenvolvimento.md#publicar-uma-versão-só-quem-tem-a-chave)). O Claude é bloqueado de rodar.
 - Antes de publicar, confira que o CI da `main` está verde (aba Actions).
+- **O PR mexeu em `razze-api/`, `servidor-internet/` ou `sala-protocolo.js`?** Então o servidor de produção precisa ser
+  atualizado **antes** de publicar, senão quem atualizar o app fala com um servidor velho. Diga no PR o que rodar; o
+  Andrick roda na VM ([servidores em produção](servidores-producao.md), "Rotinas") e avisa quando estiver pronto.
 
 ## O que o CI faz
 

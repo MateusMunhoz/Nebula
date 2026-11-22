@@ -89,7 +89,7 @@ Aparência em Opaco, Transparente ou Líquido (vidro no estilo do iOS; no Window
 
 ## Baixar
 
-Pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/AmostradinhoScreenShare/releases/latest). Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza. As atualizações são assinadas: o app só instala o que foi publicado pela equipe.
+Pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunhoz/Nebula/releases/latest). Depois disso, o próprio app avisa quando sair uma versão nova, e um botão atualiza. As atualizações são assinadas: o app só instala o que foi publicado pela equipe.
 
 | Sistema | Arquivo | Como é |
 |---|---|---|
@@ -99,11 +99,19 @@ Pegue o arquivo da versão mais nova em [Releases](https://github.com/MateusMunh
 
 ## Começar
 
-1. **Radmin VPN (todos):** instale a [Radmin VPN](https://www.radmin-vpn.com). Uma pessoa cria a rede (Rede > Criar rede) e passa o nome e a senha. Os outros entram nela. Cada um fica com um IP que começa com 26.
-2. **Criar a sala (uma pessoa):** abra o app, confira no topo que a **Rede** está na Radmin (clique para trocar), digite seu nome e clique em **Criar sala**. Mande para os amigos o endereço que aparece (tipo `26.12.34.56:8765`).
-3. **Entrar (os outros):** a sala aparece em **Salas abertas na Radmin**, na tela inicial: clique em **Entrar**. Se não aparecer, clique em **Entrar numa sala**, cole o endereço e clique em **Entrar**.
-4. **Firewall:** na primeira vez, o Windows pergunta se o app pode acessar a rede. Marque **redes privadas e públicas** e permita, em todos os PCs.
+O app já vem pronto para a internet, com o servidor da equipe: ninguém precisa instalar VPN.
 
+1. **Baixar e abrir:** pegue o arquivo em [Baixar](#baixar). Na primeira vez, o Windows pergunta se o app pode acessar a
+   rede: marque **redes privadas e públicas** e permita.
+2. **Criar a conta:** o app guia na primeira abertura (com o Google ou com e-mail). Sua conta ganha um identificador,
+   como `ana#1234`.
+3. **Adicionar os amigos:** pelo identificador deles. Amigo aceito aparece online e com as salas em que está.
+4. **Criar a sala:** clique em **Criar sala** (a senha é opcional). Os amigos entram pela sala que aparece na lista
+   deles, ou por **Entrar numa sala** com o código.
+5. **Amigo sem o app:** mande `https://34-63-86-72.sslip.io/ver#CODIGO` (com o código da sala no fim). Ele assiste ou
+   conversa pelo navegador do celular, digitando só a senha.
+
+Prefere a **Radmin VPN** ou a rede local (a sala fica no seu PC)? Ligue em **Configurações › Rede › Outras redes**.
 Detalhes de cada coisa no [Guia de uso](docs/guia.md).
 
 ## Linux
@@ -133,7 +141,10 @@ No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-
 
 | Problema | O que fazer |
 | --- | --- |
-| "Não foi possível conectar" | Confira se a Radmin está ligada nos dois PCs e se o endereço está certo. Teste com um ping no IP 26.x. |
+| "O servidor da conta está fora do ar ou reiniciando" | É no servidor da equipe, não no seu PC: espere uns minutos. Se continuar, avise o Andrick (ele cuida do servidor; [servidores](docs/servidores-producao.md)). |
+| "Não foi possível conectar" (modo Internet) | Confira a sua internet e tente de novo. Se for com todo mundo ao mesmo tempo, é o servidor: veja a linha acima. |
+| "Não foi possível conectar" (Radmin) | Confira se a Radmin está ligada nos dois PCs e se o endereço está certo. Teste com um ping no IP 26.x. |
+| O amigo entra pelo navegador mas não consegue falar | O link tem que ser o `https://34-63-86-72.sslip.io/ver`: sem HTTPS o celular não libera o microfone. |
 | Conecta, mas o vídeo não aparece | Libere o app no Firewall do Windows (redes públicas) nos dois PCs. |
 | "A porta já está em uso" | Troque a porta (ex.: 8766) e passe o endereço novo. |
 | Sem áudio na transmissão | Veja se há som tocando no dispositivo de saída padrão do Windows. |
@@ -150,6 +161,7 @@ No Ubuntu 22.04 e no Mint 21, troque `libfuse2t64` por `libfuse2`. O `wireguard-
 |------|------|
 | Usar tudo (sala, transmitir, janelas flutuantes, chat, voz, atalhos, estatísticas) | [docs/guia.md](docs/guia.md) |
 | Jogar e transmitir sem pesar (qualidade, NVENC, tela cheia, Windows 10) | [docs/desempenho.md](docs/desempenho.md) |
+| **Entrar na equipe:** quem é quem, a quem pedir cada acesso, primeira vez | [docs/fluxo-com-ia.md](docs/fluxo-com-ia.md#primeira-vez) |
 | Mexer no código, testar e publicar | [docs/desenvolvimento.md](docs/desenvolvimento.md) |
 | Trabalhar em equipe com o Claude Code (issue, spec, PR, CI, versão nova) | [docs/fluxo-com-ia.md](docs/fluxo-com-ia.md) |
 | Testar numa call com gente de verdade | [docs/roteiro-de-teste.md](docs/roteiro-de-teste.md) |
