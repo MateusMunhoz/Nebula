@@ -38,6 +38,11 @@ pede a ele; ele roda os comandos deste documento ou dá um acesso temporário co
 
 - **VM:** `instance-20261118-043544`, zona `us-central1-c`, tipo `e2-micro` (2 vCPU compartilhadas, 1 GB), Debian 13,
   disco padrão de 30 GB, snapshots diários do disco (agendamento `default-schedule-1`).
+- **Memória (importante):** 1 GB é pouco para RazzeAPI + Caddy + servidor das salas + coturn. A VM tem **2 GB de swap**
+  (`/swapfile`, no `/etc/fstab`, `vm.swappiness=10`) e **não tem o Ops Agent** do Google (o monitoramento que vem ligado
+  na criação gastava memória à toa; foi removido e a etiqueta `goog-ops-agent-policy`, que fazia o Google reinstalá-lo,
+  foi tirada da VM). Sem isso a VM trava por falta de memória (aconteceu em 22/11/2026). Confira com `free -m`:
+  a linha `Swap` deve ter uns 2047.
 - **IP externo fixo:** `34.63.86.72` (endereço estático `nebula-vm-ip`). Ele não muda ao reiniciar a VM.
 - **Nome:** `nebula-sys.duckdns.org` aponta para esse IP. Como o IP é fixo, nada precisa atualizar o DuckDNS.
 - **Firewall** (Rede VPC › Firewall, regra `nebula-servidor`, entrada de qualquer lugar): TCP 80, 443, 8765, 3479;
@@ -126,6 +131,7 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
 | Sala pela internet não abre | `curl -s http://34.63.86.72:8765/health` | Na VM: `sudo systemctl status tela-p2p-internet`, `sudo journalctl -u tela-p2p-internet -n 50`, `sudo systemctl restart tela-p2p-internet` |
 | Sala abre mas o vídeo não chega para quem está no 4G | `/health` com `"turnCloudflare":false`? | `sudo journalctl -u tela-p2p-internet -n 20` (`HTTP 401` = chave da Cloudflare errada ou apagada: refaça "Ligar ou trocar a chave") |
 | Nada responde | Console do Google: a VM está **Running**? | Iniciar a VM (Start). O IP é fixo, nada muda no app |
+| Nada responde, mas a VM está **Running** (502 do Caddy, SSH lento ou sem abrir) | VM instances › a VM › Logs › **Serial port 1**: aparece `Under memory pressure` ou `Out of memory`? | Falta de memória: **Reset** da VM (os serviços voltam sozinhos; nada se perde). Depois, pelo SSH: `free -m` (swap ativo?) e `systemctl status google-cloud-ops-agent` (não deve existir). Se faltar, refaça os passos da memória em "Recriar o servidor do zero" |
 | O nome não aponta para o IP certo | https://dns.google/resolve?name=nebula-sys.duckdns.org&type=A | Em duckdns.org, pôr `34.63.86.72` no campo do `nebula-sys` e "update ip" |
 | E-mail do alerta de orçamento | Billing › Reports, por SKU | Ver se o tráfego subiu (Cloudflare caiu?) ou se surgiu um recurso novo |
 | Convidado pelo navegador não consegue falar | O link é `https://`? | Sem HTTPS o celular não libera o microfone; veja a pendência da página `/ver` |
@@ -148,6 +154,14 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
    mude também `renderer/conectividade.js` e publique, migrando o endereço antigo como acima).
 2. Na VM: `sudo apt update && sudo apt install -y docker.io docker-compose git && sudo systemctl enable --now docker`
    e `sudo usermod -aG docker $USER` (feche e abra a janela SSH para valer).
+   **Memória, antes de tudo** (na criação, desmarque "Install Ops Agent" em Observability; se veio, remova):
+   ```sh
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf && sudo sysctl -p /etc/sysctl.d/99-swap.conf
+   sudo systemctl disable --now google-cloud-ops-agent; sudo apt-get remove -y google-cloud-ops-agent
+   ```
+   E tire da VM a etiqueta `goog-ops-agent-policy` (VM instances › marcar a VM › Labels), senão o Google reinstala o agente.
 3. `git clone https://github.com/MateusMunhoz/Nebula.git ~/nebula`, enviar o `.env` guardado para `~/nebula/razze-api/.env`,
    `cd ~/nebula/razze-api && docker-compose create`, restaurar o backup do banco ("Restaurar um backup") e `docker-compose up -d --build`.
 4. Servidor das salas: `git clone -b main https://github.com/MateusMunhoz/Nebula ~/tela && sudo IP_PUBLICO=<IP> bash ~/tela/servidor-internet/vps/instalar.sh`, depois ligar a chave da Cloudflare.
@@ -166,6 +180,9 @@ O `ls` deve mostrar `razze.sqlite`. Restaurar volta o banco para o momento do ba
   endereços, TURN da Cloudflare, docs) juntado; servidor das salas da VM atualizado para a `main`; Cloudflare ligada;
   **1.20.24 publicada como obrigatória**. Backup final e `.env` da Hostinger baixados para o PC do dono.
 - O domínio `rezzenha.tech` (Hostinger) é outra assinatura e não foi mexido.
+- 22/11 ~09:57: a VM travou por **falta de memória** (1 GB, sem swap, com o Ops Agent ligado): a RazzeAPI dava 502 e o
+  servidor das salas não respondia, com a VM "Running". Reset da VM, 2 GB de swap, Ops Agent removido e a etiqueta
+  `goog-ops-agent-policy` tirada. Depois disso: 433 MB livres e o swap sem uso.
 
 ## Pendências
 
