@@ -3,12 +3,22 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.24",
+    "date": "2026-11-21",
+    "items": [
+      "Teste da migração do endereço: WireGuard falso, como os outros testes do serviço"
+    ]
+  },
+  {
     "version": "1.20.23",
     "date": "2026-11-21",
     "items": [
       "Janela flutuante: barra só embaixo e sem sair da tela",
       "feat(sala): senha opcional também no modo Internet",
-      "fix(voz): microfone desconectado não tira mais da chamada"
+      "fix(voz): microfone desconectado não tira mais da chamada",
+      "Docs: servidores no Google Cloud e checklist de saída da Hostinger",
+      "Servidor das salas: TURN da Cloudflare, com o coturn de reserva",
+      "Migra os servidores padrão da Hostinger para a VM do Google"
     ]
   },
   {
@@ -84,14 +94,6 @@ const NOVIDADES = [
     "items": [
       "Música na janela flutuante: player novo ao ir e voltar (não fica preto)",
       "Música do YouTube na janela flutuante e foto de perfil em GIF"
-    ]
-  },
-  {
-    "version": "1.20.14",
-    "date": "2026-11-07",
-    "items": [
-      "test(mobile): ponte do iPhone com o escolhedor do YouTube e versão 1.20.12",
-      "fix(abertura): deixar o fundo inert com o card de atualização à vista"
     ]
   }
 ];
