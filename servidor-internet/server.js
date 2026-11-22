@@ -107,6 +107,60 @@ function turnCredentials(secret, name, ttlSeconds, now = Date.now()) {
   return { username, credential };
 }
 
+// TURN da Cloudflare (Realtime TURN, 1.000 GB/mês grátis): com CF_TURN_KEY_ID e CF_TURN_API_TOKEN, a sala entrega a
+// credencial da Cloudflare e o coturn da VPS só entra se a Cloudflare não respondeu (o relay pela VPS gasta o tráfego dela).
+// Uma credencial para o servidor todo: pedida na subida e renovada a cada quarto da validade (24 h: a cada 6 h), então quem
+// entra leva pelo menos 3/4 dela. A porta 53 sai da lista (a Cloudflare avisa que os navegadores a bloqueiam)
+function createCloudflareTurn({ keyId, apiToken, ttl, fetchImpl = globalThis.fetch, now = Date.now, log = () => {} }) {
+  let atual = null; // { iceServers, expira }
+  let timer = null;
+  let parado = false;
+  const urlOk = (u) => typeof u === 'string' && u.length <= 300 && /^(stuns?|turns?):/.test(u) && !/:53(\?|$)/.test(u);
+  function normalizar(body) {
+    const lista = Array.isArray(body?.iceServers) ? body.iceServers : body?.iceServers ? [body.iceServers] : [];
+    const out = [];
+    for (const s of lista.slice(0, 5)) {
+      const urls = (Array.isArray(s?.urls) ? s.urls : [s?.urls]).filter(urlOk).slice(0, 10);
+      if (!urls.length) continue;
+      if (!urls.some((u) => /^turns?:/.test(u))) { out.push({ urls }); continue; }
+      if (typeof s.username !== 'string' || typeof s.credential !== 'string') continue;
+      out.push({ urls, username: s.username, credential: s.credential });
+    }
+    return out.some((s) => s.username) ? out : null;
+  }
+  function agendar(ms) {
+    if (parado) return;
+    clearTimeout(timer);
+    timer = setTimeout(renovar, ms);
+    timer.unref?.();
+  }
+  async function renovar() {
+    try {
+      const res = await fetchImpl(`https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(keyId)}/credentials/generate-ice-servers`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ttl }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const iceServers = normalizar(await res.json());
+      if (!iceServers) throw new Error('resposta sem TURN');
+      atual = { iceServers, expira: now() + ttl * 1000 };
+      log(`TURN da Cloudflare renovado (vale ${ttl}s)`);
+      agendar(Math.max(60, Math.floor(ttl / 4)) * 1000);
+    } catch (err) {
+      log(`TURN da Cloudflare falhou (${err.message}); tenta de novo em 1 min (o coturn cobre enquanto isso, se houver)`);
+      agendar(60_000);
+    }
+  }
+  return {
+    iniciar: () => renovar(),
+    // Só entrega se ainda vale mais de 1/4: credencial quase vencida cairia no meio da chamada
+    atual: () => (atual && atual.expira - now() > (ttl * 1000) / 4 ? atual.iceServers : null),
+    parar() { parado = true; clearTimeout(timer); },
+  };
+}
+
 // Tentativas erradas por IP: passou do limite, fica bloqueado um tempo
 function createLimiter({ max, windowMs, now }) {
   const hits = new Map();
@@ -190,6 +244,10 @@ function createInternetServer(options = {}) {
     turnsUrl: options.turnsUrl ?? process.env.TURNS_URL ?? '', // opcional: turns:turn.seudominio.com:5349
     turnSecret: options.turnSecret ?? process.env.TURN_SECRET ?? '',
     turnTtl: options.turnTtl ?? envInt('TURN_TTL_SECONDS', 24 * 60 * 60),
+    cfTurnKeyId: options.cfTurnKeyId ?? process.env.CF_TURN_KEY_ID ?? '', // TURN da Cloudflare (opcional, veja createCloudflareTurn)
+    cfTurnApiToken: options.cfTurnApiToken ?? process.env.CF_TURN_API_TOKEN ?? '',
+    cfTurnTtl: options.cfTurnTtl ?? envInt('CF_TURN_TTL_SECONDS', 24 * 60 * 60),
+    fetch: options.fetch ?? globalThis.fetch,
     log: options.log ?? ((...a) => console.log(new Date().toISOString(), ...a)),
     now: options.now ?? Date.now,
   };
@@ -204,8 +262,14 @@ function createInternetServer(options = {}) {
   const rooms = new Map(); // código -> sala
   const fails = createLimiter({ max: cfg.failPerIp, windowMs: cfg.failWindowMs, now: cfg.now });
   const creates = createLimiter({ max: cfg.createPerIpPerHour, windowMs: 60 * 60 * 1000, now: cfg.now });
+  const cloudflare = cfg.cfTurnKeyId && cfg.cfTurnApiToken
+    ? createCloudflareTurn({ keyId: cfg.cfTurnKeyId, apiToken: cfg.cfTurnApiToken, ttl: cfg.cfTurnTtl, fetchImpl: cfg.fetch, now: cfg.now, log: cfg.log })
+    : null;
+  const temTurn = () => !!(cloudflare?.atual() || (cfg.turnHost && cfg.turnSecret));
 
   function iceServersFor(code, id) {
+    const cf = cloudflare?.atual();
+    if (cf) return [...(cfg.stunUrls.length ? [{ urls: [...cfg.stunUrls] }] : []), ...cf.map((s) => ({ ...s, urls: [...s.urls] }))];
     const list = [];
     const stun = [...cfg.stunUrls];
     if (cfg.turnHost) stun.push(`stun:${cfg.turnHost}:${cfg.turnPort}`);
@@ -284,7 +348,7 @@ function createInternetServer(options = {}) {
   const httpServer = http.createServer((req, res) => {
     if (req.method === 'GET' && (req.url === '/health' || req.url === '/')) {
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ ok: true, app: 'tela-p2p-internet', salas: rooms.size, turn: !!(cfg.turnHost && cfg.turnSecret) }));
+      return res.end(JSON.stringify({ ok: true, app: 'tela-p2p-internet', salas: rooms.size, turn: temTurn(), ...(cloudflare ? { turnCloudflare: !!cloudflare.atual() } : {}) }));
     }
     const pagina = req.method === 'GET' ? web.get(String(req.url).split('?')[0]) : null;
     if (pagina) {
@@ -380,7 +444,7 @@ function createInternetServer(options = {}) {
       }
       if (me) return handleMemberMessage(salaCtx(), id, me, msg);
       if (busy) return;
-      if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: !!(cfg.turnHost && cfg.turnSecret), stun: [...cfg.stunUrls, ...(cfg.turnHost ? [`stun:${cfg.turnHost}:${cfg.turnPort}`] : [])] }); return ws.close(); }
+      if (msg.type === 'info') { send(ws, { type: 'info', app: 'tela-p2p-internet', turn: temTurn(), stun: [...cfg.stunUrls, ...(cfg.turnHost ? [`stun:${cfg.turnHost}:${cfg.turnPort}`] : [])] }); return ws.close(); }
       if (msg.type !== 'hello') return;
       const espectador = msg.role === 'espectador'; // assiste pelo navegador: nunca cria sala, nunca volta com "resume"
       const convidado = msg.role === 'convidado'; // conversa pelo navegador: mesmas regras de entrada do espectador
@@ -525,10 +589,11 @@ function createInternetServer(options = {}) {
     listen() {
       return new Promise((resolve, reject) => {
         httpServer.once('error', reject);
-        httpServer.listen(cfg.port, cfg.host, () => resolve(httpServer.address()));
+        httpServer.listen(cfg.port, cfg.host, () => { cloudflare?.iniciar(); resolve(httpServer.address()); });
       });
     },
     close() {
+      cloudflare?.parar();
       clearInterval(pingTimer);
       clearInterval(musicTimer);
       for (const r of rooms.values()) for (const t of r.away.values()) clearTimeout(t);
@@ -545,7 +610,8 @@ if (require.main === module) {
   server.listen().then((addr) => {
     const { cfg } = server;
     cfg.log(`Tela P2P Internet ouvindo em ${addr.address}:${addr.port}`);
-    cfg.log(cfg.turnHost && cfg.turnSecret ? `TURN: ${cfg.turnHost}:${cfg.turnPort} (acesso temporário, ${cfg.turnTtl}s)` : 'TURN desligado (defina TURN_HOST e TURN_SECRET)');
+    if (cfg.cfTurnKeyId && cfg.cfTurnApiToken) cfg.log(`TURN principal: Cloudflare (credencial de ${cfg.cfTurnTtl}s, renovada sozinha)`);
+    cfg.log(cfg.turnHost && cfg.turnSecret ? `TURN${cfg.cfTurnKeyId ? ' de reserva' : ''}: ${cfg.turnHost}:${cfg.turnPort} (acesso temporário, ${cfg.turnTtl}s)` : 'coturn desligado (defina TURN_HOST e TURN_SECRET)');
   }).catch((err) => { console.error(err.message); process.exit(1); });
   const stop = () => server.close().then(() => process.exit(0));
   process.on('SIGINT', stop);

@@ -58,6 +58,67 @@ test('cria a sala com código e entrega STUN + TURN com acesso temporário', asy
   assert.ok(expira > Date.now() / 1000 + 3600);
 });
 
+// Resposta no formato do generate-ice-servers da Cloudflare (com a porta 53, que os navegadores bloqueiam)
+function cloudflareFalsa(chamadas, { falhar = false } = {}) {
+  return async (url, opts) => {
+    chamadas.push({ url, opts });
+    if (falhar) return { ok: false, status: 401, json: async () => ({}) };
+    return {
+      ok: true, status: 201,
+      json: async () => ({ iceServers: [
+        { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
+        { urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turn:turn.cloudflare.com:53?transport=udp', 'turns:turn.cloudflare.com:443?transport=tcp'], username: 'cf-user', credential: 'cf-pass' },
+      ] }),
+    };
+  };
+}
+const umInstante = () => new Promise((r) => setTimeout(r, 20));
+
+test('com a chave da Cloudflare, a sala entrega o TURN dela e não o coturn da VPS', async (t) => {
+  const chamadas = [];
+  const { url } = await start(t, { cfTurnKeyId: 'chave-123', cfTurnApiToken: 'token-secreto', cfTurnTtl: 86400, fetch: cloudflareFalsa(chamadas) });
+  await umInstante();
+  assert.equal(chamadas.length, 1);
+  assert.equal(chamadas[0].url, 'https://rtc.live.cloudflare.com/v1/turn/keys/chave-123/credentials/generate-ice-servers');
+  assert.equal(chamadas[0].opts.method, 'POST');
+  assert.equal(chamadas[0].opts.headers.Authorization, 'Bearer token-secreto');
+  assert.deepEqual(JSON.parse(chamadas[0].opts.body), { ttl: 86400 });
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  const todas = a.first.iceServers.flatMap((s) => s.urls);
+  assert.ok(!todas.some((u) => u.includes('turn.exemplo.com')), 'o coturn da VPS não entra');
+  assert.ok(!todas.some((u) => /:53(\?|$)/.test(u)), 'a porta 53 sai');
+  const turn = a.first.iceServers.find((s) => s.username);
+  assert.deepEqual(turn, { urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turns:turn.cloudflare.com:443?transport=tcp'], username: 'cf-user', credential: 'cf-pass' });
+  const saude = await (await fetch(url.replace('ws:', 'http:') + '/health')).json();
+  assert.equal(saude.turn, true);
+  assert.equal(saude.turnCloudflare, true);
+});
+
+test('se a Cloudflare falha, a sala volta para o coturn da VPS', async (t) => {
+  const chamadas = [];
+  const { url } = await start(t, { cfTurnKeyId: 'chave-123', cfTurnApiToken: 'errado', fetch: cloudflareFalsa(chamadas, { falhar: true }) });
+  await umInstante();
+  assert.equal(chamadas.length, 1);
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  const turn = a.first.iceServers.find((s) => s.username);
+  assert.deepEqual(turn.urls, ['turn:turn.exemplo.com:3479?transport=udp', 'turn:turn.exemplo.com:3479?transport=tcp']);
+  const saude = await (await fetch(url.replace('ws:', 'http:') + '/health')).json();
+  assert.equal(saude.turnCloudflare, false);
+});
+
+test('credencial da Cloudflare quase vencida não é entregue (volta para o coturn até renovar)', async (t) => {
+  let agora = 1_000_000_000_000;
+  const chamadas = [];
+  const { url } = await start(t, { cfTurnKeyId: 'k', cfTurnApiToken: 't', cfTurnTtl: 3600, fetch: cloudflareFalsa(chamadas), now: () => agora });
+  await umInstante();
+  agora += 3600 * 1000 * 0.8; // passou de 3/4 da validade sem renovar (o relógio pulou)
+  const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client() });
+  t.after(() => a.ws.terminate());
+  assert.equal(a.first.iceServers.find((s) => s.username).urls[0], 'turn:turn.exemplo.com:3479?transport=udp');
+});
+
 test('entra com código + senha, repassa sinais e não espalha IPs', async (t) => {
   const { url } = await start(t);
   const a = await connect(url, { create: true, name: 'Ana', password: 'pizza-azul', client: client(), addrs: ['192.168.0.10'] });
