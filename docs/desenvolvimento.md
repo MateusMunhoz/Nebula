@@ -249,6 +249,10 @@ Opções:
 
 Para mandar para o GitHub, o PC precisa do Git e do [GitHub CLI](https://cli.github.com), logado (`gh auth login`) na conta dona do repositório.
 
+**Mudou servidor ou protocolo da sala?** Atualize o servidor de produção **antes** de publicar (passo a passo em
+[Servidores em produção](servidores-producao.md)): um app novo falando com um servidor velho quebra para quem atualizou.
+Quem publica (Andrick ou Mateus) combina antes, para duas pessoas não publicarem ao mesmo tempo.
+
 A chave foi criada uma vez com `node publicar.js --gerar-chave`, que grava a parte pública no `boot.js`. **Não rode de novo:** uma chave nova faria os apps dos amigos recusarem as suas atualizações.
 
 ## Contribuir (PR e merge)

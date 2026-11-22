@@ -1,5 +1,8 @@
 # Contexto para continuar em outra IA (05/10/2026)
 
+> **Desatualizado nos servidores:** desde 21/11/2026 eles rodam no Google Cloud, não na VPS da Hostinger citada abaixo.
+> Endereços, acessos e como atualizar: [Servidores em produção](servidores-producao.md).
+
 Cole este arquivo no início da conversa. Projeto: **Tela P2P / AmostradinhoScreenShare** (Electron, Windows; transmitir a tela e voz de PC para PC).
 Pasta: `C:\Users\andri\AmostradinhoScreenShare`. Repositório: `MateusMunhoz/AmostradinhoScreenShare`. Dono da conversa: Andrick (`andrickneer@gmail.com`).
 Idioma de tudo (código, comentários, docs, commits, textos da interface): **português do Brasil**. O Andrick pede respostas **curtas, só o resultado**.

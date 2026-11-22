@@ -16,6 +16,7 @@ Produto: `README.md` e `docs/guia.md`. Futuro: `docs/roadmap.md`. Arquitetura e 
 | Sala: sinalização e protocolo | `signaling.js` (no PC do host), `sala-protocolo.js` (compartilhado com `servidor-internet/`) |
 | Ajudantes nativos (só Windows) | `native/*.cpp` → `bin/*.exe` (binários versionados) |
 | Serviços de servidor (Node ≥ 24 na RazzeAPI) | `razze-api/`, `servidor-internet/` |
+| Servidores em produção (VM do Google Cloud, TURN da Cloudflare): acessos, atualizar, backup, problemas | `docs/servidores-producao.md` |
 | Publicação | `publicar.js`, `github.js`, `icone-exe.js`, `linux/` |
 
 Regras específicas de cada parte carregam sozinhas de `.claude/rules/` quando você mexe nos arquivos dela.
@@ -53,6 +54,9 @@ Regras específicas de cada parte carregam sozinhas de `.claude/rules/` quando v
 - Antes de mexer em `boot.js`, IPC (`main.js`/`preload.js`), `main/razze-*`, `publicar.js` ou protocolo da sala:
   apresente o plano e espere aprovação.
 - Comportamento visível mudou? Atualize `docs/guia.md`. Comando, arquivo ou arquitetura mudou? `docs/desenvolvimento.md`.
+- Mexeu em `razze-api/`, `servidor-internet/` ou `sala-protocolo.js`? O servidor de produção precisa ser atualizado
+  **antes** de publicar o app, e só o Andrick acessa a VM: diga no PR o que ele precisa rodar (`docs/servidores-producao.md`).
+  Trocar um endereço padrão de servidor exige migrar o endereço antigo gravado no PC das pessoas.
 - Terminou: `npm test` passando e, no fim, diga o que foi testado e o que ficou para teste manual (Windows, call real).
 
 ## Skills
