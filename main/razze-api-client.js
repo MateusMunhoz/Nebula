@@ -35,14 +35,19 @@ class RazzeApiClient {
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (error) {
-      if (error?.name === 'TimeoutError') throw new RazzeApiError(0, 'timeout', 'A RazzeAPI não respondeu a tempo.');
-      throw new RazzeApiError(0, 'network_error', 'Não foi possível acessar a RazzeAPI.');
+      if (error?.name === 'TimeoutError') throw new RazzeApiError(0, 'timeout', 'O servidor da conta demorou para responder. Tente de novo.');
+      throw new RazzeApiError(0, 'network_error', 'Não deu para falar com o servidor da conta. Confira a internet e tente de novo.');
     }
     let payload = {};
     try { payload = await response.json(); } catch {}
     if (!response.ok) {
       const error = payload && payload.error || {};
-      throw new RazzeApiError(response.status, error.code || 'request_failed', error.message || 'A RazzeAPI recusou a requisição.', error);
+      // 5xx sem o JSON da RazzeAPI: quem respondeu foi o proxy (Caddy dá 502 quando a API caiu ou está reiniciando).
+      // A API não recusou nada; dizer "recusou" fazia a pessoa achar que o erro era dela
+      if (!error.code && !error.message && response.status >= 500) {
+        throw new RazzeApiError(response.status, 'server_unavailable', 'O servidor da conta está fora do ar ou reiniciando. Tente de novo em alguns minutos.');
+      }
+      throw new RazzeApiError(response.status, error.code || 'request_failed', error.message || `O servidor da conta respondeu com erro (HTTP ${response.status}).`, error);
     }
     return payload;
   }
