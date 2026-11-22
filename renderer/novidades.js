@@ -3,6 +3,18 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.25",
+    "date": "2026-11-22",
+    "items": [
+      "Docs: entrada de quem chega (modo Internet, quem é quem, servidor no fluxo)",
+      "Página /ver com HTTPS de volta: site extra no Caddy da RazzeAPI",
+      "Docs: token do DuckDNS trocado",
+      "Conta: servidor fora do ar não aparece mais como \"a RazzeAPI recusou a requisição\"",
+      "Docs: VM travou por falta de memória; swap de 2 GB e sem o Ops Agent",
+      "Docs: operação dos servidores no Google Cloud, acessos e o que fazer quando quebra"
+    ]
+  },
+  {
     "version": "1.20.24",
     "date": "2026-11-21",
     "items": [
@@ -86,14 +98,6 @@ const NOVIDADES = [
       "feat(chamada): qualquer pessoa da ligação convida, e ela continua oculta",
       "fix(conta): sessão só cai quando o servidor recusa; pedidos de amizade na hora",
       "fix(razze-api): até 5 sessões por conta e renovação com o uso"
-    ]
-  },
-  {
-    "version": "1.20.15",
-    "date": "2026-11-08",
-    "items": [
-      "Música na janela flutuante: player novo ao ir e voltar (não fica preto)",
-      "Música do YouTube na janela flutuante e foto de perfil em GIF"
     ]
   }
 ];
