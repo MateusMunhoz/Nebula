@@ -3,6 +3,15 @@
 // Não edite à mão; para mudar o texto, mude a mensagem do commit. Mostrado por renderNews (renderer/atualizacao.js).
 const NOVIDADES = [
   {
+    "version": "1.20.23",
+    "date": "2026-11-21",
+    "items": [
+      "Janela flutuante: barra só embaixo e sem sair da tela",
+      "feat(sala): senha opcional também no modo Internet",
+      "fix(voz): microfone desconectado não tira mais da chamada"
+    ]
+  },
+  {
     "version": "1.20.22",
     "date": "2026-11-15",
     "items": [
@@ -83,17 +92,6 @@ const NOVIDADES = [
     "items": [
       "test(mobile): ponte do iPhone com o escolhedor do YouTube e versão 1.20.12",
       "fix(abertura): deixar o fundo inert com o card de atualização à vista"
-    ]
-  },
-  {
-    "version": "1.20.13",
-    "date": "2026-11-07",
-    "items": [
-      "build(nativos): versionar bin/foco.exe",
-      "build(nativos): foco.exe em C# compilado pelo csc do Windows",
-      "feat(atividade): generalizar Codando para o que estou fazendo no PC",
-      "feat(atividade): mostrar \"Codando no <editor>\" no perfil",
-      "feat(atualizacao): card da abertura com etapa e barra de progresso"
     ]
   }
 ];
