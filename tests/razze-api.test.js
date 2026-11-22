@@ -265,3 +265,33 @@ test('membro sai da rede, dono tira membro, e os dispositivos saem junto', async
   assert.deepEqual(members, [dono.id]);
   assert.equal((await request('/v1/networks/' + network.id + '/members/' + nico.id, { method: 'DELETE' }, dono.token)).status, 404);
 });
+
+test('cliente: erro sem o JSON da API não diz que ela "recusou"; 502 do proxy vira servidor fora do ar', async () => {
+  const { RazzeApiClient } = require('../main/razze-api-client');
+  const resposta = (status, body) => async () => ({ ok: status < 400, status, json: async () => { if (body === undefined) throw new SyntaxError('vazio'); return body; } });
+  const erroDe = async (fetch) => { try { await new RazzeApiClient('https://api.exemplo.com', { fetch }).me(); } catch (e) { return e; } assert.fail('devia falhar'); };
+  for (const status of [500, 502, 503, 504]) {
+    const e = await erroDe(resposta(status));
+    assert.equal(e.status, status);
+    assert.equal(e.code, 'server_unavailable');
+    assert.match(e.message, /fora do ar ou reiniciando/);
+    assert.doesNotMatch(e.message, /recusou/);
+  }
+  // Erro com o JSON da API continua com o código e a mensagem dela (inclusive 5xx de verdade, como o Google fora)
+  const google = await erroDe(resposta(503, { error: { code: 'google_unavailable', message: 'Não deu para falar com o Google agora.' } }));
+  assert.equal(google.code, 'google_unavailable');
+  assert.equal(google.message, 'Não deu para falar com o Google agora.');
+  const sessao = await erroDe(resposta(401, { error: { code: 'unauthorized', message: 'Sessão inválida.' } }));
+  assert.equal(sessao.code, 'unauthorized');
+  // 4xx sem JSON (proxy, Wi-Fi de hotel): diz o código HTTP, sem acusar a API de recusar
+  const semCorpo = await erroDe(resposta(403));
+  assert.equal(semCorpo.code, 'request_failed');
+  assert.match(semCorpo.message, /HTTP 403/);
+  // Sem rede e demora: mensagens para quem usa o app, sem o nome técnico
+  const semRede = await erroDe(async () => { throw new TypeError('fetch failed'); });
+  assert.equal(semRede.code, 'network_error');
+  assert.match(semRede.message, /Confira a internet/);
+  const demora = await erroDe(async () => { const e = new Error('t'); e.name = 'TimeoutError'; throw e; });
+  assert.equal(demora.code, 'timeout');
+  assert.match(demora.message, /demorou para responder/);
+});
