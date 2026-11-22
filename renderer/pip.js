@@ -41,6 +41,9 @@ function pipMusicBack(p) {
   if (link?.music) link.music.moverPlayer(null);
 }
 
+// Tamanhos rápidos da lista: letra (a largura de cada uma fica em main/janela-flutuante.js › PIP_SIZES), nome e largura
+const PIP_TAMANHOS = [['P', 'Pequena', 320], ['M', 'Média', 480], ['G', 'Grande', 640]];
+
 function pipButton(d, text, onClick, primary) {
   const b = d.createElement('button');
   b.type = 'button';
@@ -54,15 +57,20 @@ function pipButton(d, text, onClick, primary) {
   return b;
 }
 
-// Botão de fechar (um X) para as janelas montadas por código, no mesmo tamanho dos outros botões delas
-function pipCloseButton(d, label, onClick) {
-  const b = pipButton(d, '', onClick, false);
-  b.innerHTML = ICON.close;
+// Botão só com ícone para as janelas montadas por código, no mesmo tamanho dos outros botões delas
+function pipIconButton(d, icon, label, onClick, primary) {
+  const b = pipButton(d, '', onClick, primary);
+  b.innerHTML = icon;
   b.title = label;
   b.setAttribute('aria-label', label);
   Object.assign(b.style, { width: '28px', padding: '0', display: 'inline-grid', placeItems: 'center' });
   Object.assign(b.firstElementChild.style, { width: '16px', height: '16px', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round' });
   return b;
+}
+
+// Botão de fechar (um X)
+function pipCloseButton(d, label, onClick) {
+  return pipIconButton(d, ICON.close, label, onClick, false);
 }
 
 // Tudo por CSSOM: a página herda a regra de segurança do app, que não deixa estilo escrito em HTML
@@ -80,58 +88,25 @@ function buildPip(win, id) {
   video.playsInline = true;
   Object.assign(video.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', objectFit: 'contain' });
 
-  // Modo de ajuste: borda, nome, botões e a dica; a janela inteira arrasta
+  // Modo de ajuste: borda, o nome num canto e uma barra só embaixo (tamanho, transparência, travar, fechar).
+  // A janela inteira arrasta, menos os controles
   const edit = d.createElement('div');
   Object.assign(edit.style, {
-    position: 'fixed', inset: '0', boxSizing: 'border-box', border: `2px solid ${THEME.accent}`, padding: '8px',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px',
-    background: 'rgba(0, 0, 0, .35)', fontSize: '12px', cursor: 'move',
+    position: 'fixed', inset: '0', boxSizing: 'border-box', border: `2px solid ${THEME.accent}`,
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '12px', cursor: 'move',
   });
   edit.style.setProperty('-webkit-app-region', 'drag');
-  const top = d.createElement('div');
-  Object.assign(top.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+  const noDrag = (el) => { el.style.setProperty('-webkit-app-region', 'no-drag'); return el; };
   const name = d.createElement('span');
-  Object.assign(name.style, { flex: '1', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: 'none' });
-  Object.assign(top.style, { background: THEME.glass, margin: '-8px -8px 0', padding: '8px' });
-  const sizes = d.createElement('div');
-  Object.assign(sizes.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
-  sizes.style.setProperty('-webkit-app-region', 'no-drag');
+  Object.assign(name.style, {
+    alignSelf: 'flex-start', margin: '8px', padding: '3px 8px', borderRadius: '5px', background: THEME.glass, boxSizing: 'border-box',
+    maxWidth: 'calc(100% - 16px)', fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  });
   const winId = pipWinId(id);
-  for (const key of ['P', 'M', 'G']) {
-    const b = pipButton(d, key, () => window.api.pipSize(winId, key), false);
-    Object.assign(b.style, { width: '28px', height: '24px', padding: '0', border: '0', borderRadius: '4px', background: 'transparent', color: THEME.muted });
-    b.title = { P: 'Pequena', M: 'Média', G: 'Grande' }[key];
-    sizes.append(b);
-  }
-  top.append(name, sizes, pipButton(d, 'Travar', () => window.api.pipSetEdit(false), true), pipCloseButton(d, 'Fechar a janela flutuante', () => closePip(id)));
-  const bottom = d.createElement('div');
-  Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', gap: '6px', background: THEME.glass, margin: '0 -8px -8px', padding: '8px 10px' });
-  const opacityRow = d.createElement('label');
-  Object.assign(opacityRow.style, { display: 'flex', alignItems: 'center', gap: '8px', color: THEME.muted });
-  opacityRow.style.setProperty('-webkit-app-region', 'no-drag');
-  const opacity = d.createElement('input');
-  opacity.type = 'range';
-  opacity.min = '40';
-  opacity.max = '100';
-  opacity.value = '100';
-  Object.assign(opacity.style, { flex: '1', accentColor: THEME.accent });
-  opacity.oninput = () => window.api.pipOpacity(winId, Number(opacity.value) / 100);
-  opacityRow.append('Transparência', opacity);
-
-  // Com 2 ou mais janelas: mesmo tamanho para todas e como enfileirar (coluna ou linha, a partir de qual canto)
-  const groupRow = d.createElement('div');
-  Object.assign(groupRow.style, { display: 'none', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px', color: THEME.muted });
-  groupRow.style.setProperty('-webkit-app-region', 'no-drag');
-  const linkedLabel = d.createElement('label');
-  Object.assign(linkedLabel.style, { display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' });
-  const linked = d.createElement('input');
-  linked.type = 'checkbox';
-  linked.style.accentColor = THEME.accent;
-  linked.onchange = () => window.api.pipGroup(winId, { linked: linked.checked });
-  linkedLabel.append(linked, 'Todas do mesmo tamanho');
+  // Caixinha de opções lado a lado (tamanhos; com 2 ou mais janelas, fila e canto)
   const seg = (items, onPick) => {
-    const box = d.createElement('div');
-    Object.assign(box.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px' });
+    const box = noDrag(d.createElement('div'));
+    Object.assign(box.style, { display: 'flex', gap: '2px', padding: '2px', background: THEME.sunken, borderRadius: '6px', cursor: 'default' });
     const btns = {};
     for (const [key, text, title] of items) {
       const b = pipButton(d, text, () => onPick(key), false);
@@ -143,6 +118,64 @@ function buildPip(win, id) {
     }
     return { box, btns };
   };
+  const segOn = (b, on) => {
+    b.style.background = on ? THEME.accentSoft : 'transparent';
+    b.style.color = on ? THEME.accent : THEME.muted;
+    b.setAttribute('aria-pressed', String(on));
+  };
+
+  // Tamanhos rápidos: três retângulos, do menor para o maior; aceso, o tamanho em que a janela está
+  const sizeSeg = seg(PIP_TAMANHOS.map(([key, text]) => [key, '', text]), (key) => window.api.pipSize(winId, key));
+  PIP_TAMANHOS.forEach(([key], i) => {
+    const b = sizeSeg.btns[key];
+    Object.assign(b.style, { width: '28px', minWidth: '0', padding: '0', display: 'inline-grid', placeItems: 'center' });
+    const box = d.createElement('span');
+    Object.assign(box.style, { width: `${8 + i * 4.5}px`, height: `${5 + i * 3}px`, border: '1.5px solid currentColor', borderRadius: '2px', boxSizing: 'border-box' });
+    b.append(box);
+  });
+  const showSize = () => {
+    for (const [key, , width] of PIP_TAMANHOS) segOn(sizeSeg.btns[key], Math.abs(win.innerWidth - width) <= 1);
+  };
+
+  // Transparência: a gota e o controle ocupam o meio da barra
+  const drop = d.createElement('span');
+  drop.innerHTML = svg('M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z');
+  drop.title = 'Transparência';
+  Object.assign(drop.style, { display: 'inline-grid', color: THEME.muted });
+  Object.assign(drop.firstElementChild.style, { width: '16px', height: '16px', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinejoin: 'round' });
+  const opacity = noDrag(d.createElement('input'));
+  opacity.type = 'range';
+  opacity.min = '40';
+  opacity.max = '100';
+  opacity.value = '100';
+  opacity.title = 'Transparência';
+  opacity.setAttribute('aria-label', 'Transparência');
+  Object.assign(opacity.style, { flex: '1', minWidth: '0', margin: '0', accentColor: THEME.accent, cursor: 'pointer' });
+  opacity.oninput = () => window.api.pipOpacity(winId, Number(opacity.value) / 100);
+  const lock = pipIconButton(d, ICON.lock, 'Travar todas (Ctrl+Shift+E)', () => window.api.pipSetEdit(false), true);
+  lock.style.marginLeft = 'auto';
+  const bar = d.createElement('div');
+  Object.assign(bar.style, { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px' });
+  bar.append(sizeSeg.box, drop, opacity, lock, pipCloseButton(d, 'Fechar a janela flutuante', () => closePip(id)));
+  // Janela estreita: a transparência sai para caber o resto
+  const fitBar = () => {
+    showSize();
+    drop.style.display = opacity.style.display = win.innerWidth < 260 ? 'none' : '';
+  };
+  win.addEventListener('resize', fitBar);
+  fitBar();
+
+  // Com 2 ou mais janelas, uma linha acima da barra: mesmo tamanho para todas e como enfileirar (coluna ou
+  // linha, a partir de qual canto)
+  const groupRow = d.createElement('div');
+  Object.assign(groupRow.style, { display: 'none', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px', padding: '8px 8px 0', color: THEME.muted });
+  const linkedLabel = noDrag(d.createElement('label'));
+  Object.assign(linkedLabel.style, { display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' });
+  const linked = d.createElement('input');
+  linked.type = 'checkbox';
+  linked.style.accentColor = THEME.accent;
+  linked.onchange = () => window.api.pipGroup(winId, { linked: linked.checked });
+  linkedLabel.append(linked, 'Todas do mesmo tamanho');
   const layoutSeg = seg([['coluna', 'Coluna', 'Enfileirar em coluna'], ['linha', 'Linha', 'Enfileirar em linha']],
     (layout) => window.api.pipGroup(winId, { layout }));
   const cornerSeg = seg([['tl', '↖', 'Começar no canto de cima à esquerda'], ['tr', '↗', 'Começar no canto de cima à direita'],
@@ -150,15 +183,10 @@ function buildPip(win, id) {
     (corner) => window.api.pipGroup(winId, { corner }));
   groupRow.append(linkedLabel, layoutSeg.box, cornerSeg.box);
 
-  const hint = d.createElement('span');
-  hint.textContent = 'Arraste para mover · puxe um canto para redimensionar · Ctrl+Shift+E trava todas';
-  Object.assign(hint.style, { lineHeight: '1.35', color: THEME.muted });
-  bottom.append(groupRow, opacityRow, hint);
-  // Janela baixa (tamanho P): a dica sai para caber o resto
-  const fitHint = () => { hint.style.display = win.innerHeight < 230 ? 'none' : ''; };
-  win.addEventListener('resize', fitHint);
-  fitHint();
-  edit.append(top, bottom);
+  const bottom = d.createElement('div');
+  Object.assign(bottom.style, { display: 'flex', flexDirection: 'column', background: THEME.glass });
+  bottom.append(groupRow, bar);
+  edit.append(name, bottom);
 
   // Travada: só uma etiqueta pequena com o nome; ao travar, um aviso rápido
   const lockTag = d.createElement('span');

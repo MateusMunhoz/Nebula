@@ -62,7 +62,18 @@ function freeSlot() {
 
 const livePip = (id) => { const p = pips.get(String(id)); return p && !p.win.isDestroyed() ? p : null; };
 
-// Tamanhos rápidos (P, M, G) mantendo o canto de baixo à direita no lugar
+// Empurra a janela de volta para dentro da tela (a de `ref`, onde ela estava) quando ela passa da borda
+function insideScreen(b, ref = b) {
+  const wa = screen.getDisplayMatching(ref).workArea;
+  return {
+    ...b,
+    x: Math.max(wa.x, Math.min(b.x, wa.x + wa.width - b.width)),
+    y: Math.max(wa.y, Math.min(b.y, wa.y + wa.height - b.height)),
+  };
+}
+
+// Tamanhos rápidos (P, M, G; os nomes da lista ficam em renderer/pip.js) mantendo o canto de baixo à direita
+// no lugar, sem deixar a janela sair da tela
 const PIP_SIZES = { P: 320, M: 480, G: 640 };
 function setPipSize(id, key) {
   const p = livePip(id);
@@ -71,7 +82,7 @@ function setPipSize(id, key) {
   const width = PIP_SIZES[key];
   const height = Math.round(width * 9 / 16);
   markArranging();
-  p.win.setBounds({ x: b.x + b.width - width, y: b.y + b.height - height, width, height });
+  p.win.setBounds(insideScreen({ x: b.x + b.width - width, y: b.y + b.height - height, width, height }, b));
   if (group().linked) arrangePips(id);
 }
 
@@ -183,8 +194,12 @@ function setupPip(child, id, slot) {
   child.on('moved', save);
   child.on('resized', () => {
     save();
+    if (Date.now() <= arrangingUntil) return;
     // Com "todas do mesmo tamanho", redimensionar uma com o mouse muda todas e reorganiza a fila
-    if (group().linked && Date.now() > arrangingUntil) arrangePips(id);
+    if (group().linked) return arrangePips(id);
+    // Cresceu para fora da tela (estava encostada na borda): volta para dentro
+    const b = child.getBounds(), fit = insideScreen(b);
+    if (fit.x !== b.x || fit.y !== b.y) { markArranging(); child.setBounds(fit); }
   });
   // Nova janela com "todas do mesmo tamanho": entra na fila com o tamanho das outras
   if (group().linked && pips.size > 1) {
