@@ -119,7 +119,7 @@ test('sessão gravada com o endereço da Hostinger passa para o servidor novo; s
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'razze-service-'));
     fs.mkdirSync(path.join(profile, 'razze'));
     fs.writeFileSync(path.join(profile, 'razze', 'session.json'), JSON.stringify({ baseUrl: gravado, secret: '' }));
-    const service = createRazzeService({ app: { getPath: () => profile }, safeStorage, baseUrl: 'https://nebula-sys.duckdns.org' });
+    const service = createRazzeService({ app: { getPath: () => profile }, safeStorage, wireguard: {}, baseUrl: 'https://nebula-sys.duckdns.org' });
     assert.equal(service.state().baseUrl, esperado); // a sessão gravada é lida ao criar o serviço
     fs.rmSync(profile, { recursive: true, force: true });
   }
